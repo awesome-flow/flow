@@ -1,17 +1,16 @@
 package receiver
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
-	"booking/msgrelay/util"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/whiteboxio/msgrelay/pkg/data"
+	"github.com/whiteboxio/msgrelay/pkg/flow"
+
 	"github.com/facebookgo/grace/gracemulti"
-	"gitlab.booking.com/go/tell"
 )
 
 var (

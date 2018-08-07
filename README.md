@@ -283,7 +283,7 @@ Below there is an example of a plugin
 package main
 
 import (
-	"booking/msgrelay/flow"
+	"github.com/whitebox/msgrelay/pkg/flow"
 	"bufio"
 	"fmt"
 	"os"
