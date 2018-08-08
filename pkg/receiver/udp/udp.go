@@ -1,18 +1,16 @@
 package receiver
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"fmt"
 	"net"
 
-	"github.com/facebookgo/grace/gracemulti"
-	"gitlab.booking.com/go/tell"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
 const (
 	MaxDatagramPayloadSize = 65536
-	UdpRcvMaxThreads       = 2
 )
 
 var (
@@ -21,60 +19,54 @@ var (
 )
 
 type UDP struct {
-	Name   string
-	Server *gracemulti.UdpServer
-	*flow.Connector
+	Name string
+	conn *net.UDPConn
+	*core.Connector
 }
 
-func NewUDP(name string, params flow.Params) (flow.Link, error) {
+func NewUDP(name string, params core.Params) (core.Link, error) {
 	udpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("UDP receiver parameters are missing bind_addr")
 	}
-	udp := &UDP{name, nil, flow.NewConnector()}
-	udp.Server = &gracemulti.UdpServer{
-		Addr:    udpAddr.(string),
-		Network: "udp4",
-		Threads: UdpRcvMaxThreads,
-		Handler: udp.updRecv,
-		Data:    nil,
+	udp := &UDP{name, nil, core.NewConnector()}
+
+	addr, addrErr := net.ResolveUDPAddr("udp", udpAddr.(string))
+	if addrErr != nil {
+		return nil, addrErr
 	}
-	// TODO: make this beautiful
-	var servers gracemulti.MultiServer
-	servers.UDP = append(servers.UDP, udp.Server)
-	go func() {
-		grcErr := gracemulti.Serve(servers)
-		if grcErr != nil {
-			tell.Fatalf("Failed to start gracemulti servers: %s", grcErr.Error())
-		}
-	}()
+
+	conn, connErr := net.ListenUDP("udp", addr)
+	if connErr != nil {
+		return nil, connErr
+	}
+
+	udp.conn = conn
+
+	go udp.recv()
 
 	return udp, nil
 }
 
-func (udp *UDP) updRecv(conn *net.UDPConn, data interface{}) {
-
+func (udp *UDP) recv() {
 	buf := make([]byte, MaxDatagramPayloadSize)
-
 	for {
-		n, _, err := conn.ReadFrom(buf)
-		bmetrics.GetOrRegisterCounter("receiver", "udp", "received").Inc(1)
+		n, _, err := udp.conn.ReadFromUDP(buf)
+		metrics.GetCounter("receiver.udp.received").Inc(1)
 		if err != nil {
 			if nerr, ok := err.(net.Error); ok && (nerr.Temporary() || nerr.Timeout()) {
-				bmetrics.GetOrRegisterCounter("receiver", "udp", "failed").Inc(1)
-				tell.Errorf("Temporary UDP error: %s", err.Error())
+				metrics.GetCounter("receiver.udp.failed").Inc(1)
 				continue
 			}
-			tell.Errorf("UDP connection closed: %s", err.Error())
 			return
 		}
 
-		msg := flow.NewMessage(nil, buf[:n])
+		msg := core.NewMessage(nil, buf[:n])
 
 		if sendErr := udp.Send(msg); sendErr != nil {
-			tell.Errorf("UDP failed to accept message: %s", sendErr.Error())
+			log.Errorf("UDP failed to accept message: %s", sendErr.Error())
 		} else {
-			bmetrics.GetOrRegisterCounter("receiver", "udp", "sent").Inc(1)
+			metrics.GetCounter("receiver.udp.sent").Inc(1)
 		}
 	}
 }

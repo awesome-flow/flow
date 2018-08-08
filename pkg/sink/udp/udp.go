@@ -1,15 +1,14 @@
 package sink
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"fmt"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/whiteboxio/flow/pkg/core"
+
 	"github.com/cenk/backoff"
-	"gitlab.booking.com/go/tell"
 )
 
 const (
@@ -21,17 +20,17 @@ type UDP struct {
 	Name string
 	addr string
 	conn net.Conn
-	*flow.Connector
+	*core.Connector
 	*sync.Mutex
 }
 
-func NewUDP(name string, params flow.Params) (flow.Link, error) {
+func NewUDP(name string, params core.Params) (core.Link, error) {
 	udpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("UDP sink parameters are missing bind_addr")
 	}
 	udp := &UDP{
-		name, udpAddr.(string), nil, flow.NewConnector(), &sync.Mutex{},
+		name, udpAddr.(string), nil, core.NewConnector(), &sync.Mutex{},
 	}
 	go udp.connect()
 
@@ -60,7 +59,7 @@ func (udp *UDP) connect() {
 	})
 }
 
-func (udp *UDP) Recv(msg *flow.Message) error {
+func (udp *UDP) Recv(msg *core.Message) error {
 	bmetrics.GetOrRegisterCounter("sink", "udp", "received").Inc(1)
 	if udp.conn == nil {
 		bmetrics.GetOrRegisterCounter("sink", "udp", "no_connection").Inc(1)
@@ -80,6 +79,6 @@ func (udp *UDP) Recv(msg *flow.Message) error {
 	return msg.AckDone()
 }
 
-func (udp *UDP) ConnectTo(flow.Link) error {
+func (udp *UDP) ConnectTo(core.Link) error {
 	panic("UDP sink is not supposed to be connnected")
 }

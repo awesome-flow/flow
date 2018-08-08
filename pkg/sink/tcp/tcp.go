@@ -1,15 +1,14 @@
 package sink
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"fmt"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/whiteboxio/flow/pkg/core"
+
 	"github.com/cenk/backoff"
-	"gitlab.booking.com/go/tell"
 )
 
 const (
@@ -21,17 +20,17 @@ type TCP struct {
 	Name string
 	addr string
 	conn net.Conn
-	*flow.Connector
+	*core.Connector
 	*sync.Mutex
 }
 
-func NewTCP(name string, params flow.Params) (flow.Link, error) {
+func NewTCP(name string, params core.Params) (core.Link, error) {
 	tcpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("TCP sink parameters are missing bind_addr")
 	}
 	tcp := &TCP{
-		name, tcpAddr.(string), nil, flow.NewConnector(), &sync.Mutex{},
+		name, tcpAddr.(string), nil, core.NewConnector(), &sync.Mutex{},
 	}
 	go tcp.connect()
 	return tcp, nil
@@ -59,7 +58,7 @@ func (tcp *TCP) connect() {
 	})
 }
 
-func (tcp *TCP) Recv(msg *flow.Message) error {
+func (tcp *TCP) Recv(msg *core.Message) error {
 	bmetrics.GetOrRegisterCounter("sink", "tcp", "received").Inc(1)
 	if tcp.conn == nil {
 		bmetrics.GetOrRegisterCounter("sink", "tcp", "no_connection").Inc(1)
@@ -81,6 +80,6 @@ func (tcp *TCP) Recv(msg *flow.Message) error {
 	return msg.AckDone()
 }
 
-func (tcp *TCP) ConnectTo(flow.Link) error {
+func (tcp *TCP) ConnectTo(core.Link) error {
 	panic("TCP sink is not supposed to be connnected")
 }

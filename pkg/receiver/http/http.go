@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/whiteboxio/msgrelay/pkg/data"
-	"github.com/whiteboxio/msgrelay/pkg/flow"
+	"github.com/whiteboxio/flow/pkg/core"
 
-	"github.com/facebookgo/grace/gracemulti"
+	"github.com/facebookgo/grace/gracehttp"
 )
 
 var (
@@ -20,17 +19,17 @@ var (
 type HTTP struct {
 	Name   string
 	Server *http.Server
-	*flow.Connector
+	*core.Connector
 }
 
-func NewHTTP(name string, params flow.Params) (flow.Link, error) {
+func NewHTTP(name string, params core.Params) (core.Link, error) {
 
 	httpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("HTTP parameters are missing bind_addr")
 	}
 
-	h := &HTTP{name, nil, flow.NewConnector()}
+	h := &HTTP{name, nil, core.NewConnector()}
 
 	srvMx := http.NewServeMux()
 	srv := &http.Server{
@@ -44,21 +43,19 @@ func NewHTTP(name string, params flow.Params) (flow.Link, error) {
 		h.handleSendV1(rw, req)
 	})
 
-	var servers gracemulti.MultiServer
-	servers.HTTP = append(servers.HTTP, h.Server)
 	go func() {
-		grcErr := gracemulti.Serve(servers)
+		grcErr := gracehttp.Serve(h.server)
 		if grcErr != nil {
-			tell.Fatalf("Failed to start gracemulti servers: %s", grcErr.Error())
+			panic(fmt.Sprintf("Failed to start gracemulti servers: %s", grcErr.Error()))
 		}
 	}()
 
 	return h, nil
 }
 
-func (h *HTTP) ExecCmd(cmd *flow.Cmd) error {
+func (h *HTTP) ExecCmd(cmd *core.Cmd) error {
 	switch cmd.Code {
-	case flow.CmdCodeStop:
+	case core.CmdCodeStop:
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		return h.Server.Shutdown(ctx)
 	}
@@ -74,7 +71,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, "Zero-size request size", http.StatusBadRequest)
 		return
 	}
-	msgMeta := flow.NewMsgMeta()
+	msgMeta := core.NewMsgMeta()
 	if parseErr := util.ParseQuery(msgMeta, req.URL.RawQuery); parseErr != nil {
 		bmetrics.GetOrRegisterCounter("receiver", "http", "bad_query").Inc(1)
 		http.Error(rw, "Bad query", http.StatusBadRequest)
@@ -89,7 +86,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	msg := flow.NewMessage(msgMeta, body)
+	msg := core.NewMessage(msgMeta, body)
 
 	if sendErr := h.Send(msg); sendErr != nil {
 		bmetrics.GetOrRegisterCounter("receiver", "http", "send_error").Inc(1)
@@ -118,21 +115,21 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func status2resp(s flow.MsgStatus) (int, []byte) {
+func status2resp(s core.MsgStatus) (int, []byte) {
 	switch s {
-	case flow.MsgStatusDone:
+	case core.MsgStatusDone:
 		return http.StatusOK, []byte("OK")
-	case flow.MsgStatusPartialSend:
+	case core.MsgStatusPartialSend:
 		return http.StatusConflict, []byte("Partial send")
-	case flow.MsgStatusInvalid:
+	case core.MsgStatusInvalid:
 		return http.StatusBadRequest, []byte("Invalid message")
-	case flow.MsgStatusFailed:
+	case core.MsgStatusFailed:
 		return http.StatusInternalServerError, []byte("Failed to send")
-	case flow.MsgStatusTimedOut:
+	case core.MsgStatusTimedOut:
 		return http.StatusGatewayTimeout, []byte("Timed out to send message")
-	case flow.MsgStatusUnroutable:
+	case core.MsgStatusUnroutable:
 		return http.StatusNotAcceptable, []byte("Unknown destination")
-	case flow.MsgStatusThrottled:
+	case core.MsgStatusThrottled:
 		return http.StatusTooManyRequests, []byte("Message throttled")
 	default:
 		return http.StatusTeapot, []byte("OlegS screwed, this should not happen")

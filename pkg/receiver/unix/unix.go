@@ -1,16 +1,14 @@
 package receiver
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"bytes"
 	"fmt"
 	"io"
 	"net"
 
-	"github.com/facebookgo/grace/gracenet"
+	"github.com/whiteboxio/flow/pkg/core"
 
-	"gitlab.booking.com/go/tell"
+	"github.com/facebookgo/grace/gracenet"
 )
 
 const (
@@ -25,20 +23,20 @@ var (
 type Unix struct {
 	Name     string
 	listener net.Listener
-	*flow.Connector
+	*core.Connector
 }
 
-func NewUnix(name string, params flow.Params) (flow.Link, error) {
+func NewUnix(name string, params core.Params) (core.Link, error) {
 	path, ok := params["path"]
 	if !ok {
-		path = "/tmp/flow.sock"
+		path = "/tmp/core.sock"
 	}
 	net := &gracenet.Net{}
 	lstnr, err := net.Listen("unix", path.(string))
 	if err != nil {
 		return nil, err
 	}
-	ux := &Unix{name, lstnr, flow.NewConnector()}
+	ux := &Unix{name, lstnr, core.NewConnector()}
 	go func() {
 		for {
 			fd, err := lstnr.Accept()
@@ -52,9 +50,9 @@ func NewUnix(name string, params flow.Params) (flow.Link, error) {
 	return ux, nil
 }
 
-func (ux *Unix) ExecCmd(cmd *flow.Cmd) error {
+func (ux *Unix) ExecCmd(cmd *core.Cmd) error {
 	switch cmd.Code {
-	case flow.CmdCodeStop:
+	case core.CmdCodeStop:
 		if err := ux.listener.Close(); err != nil {
 			tell.Warnf("Failed to close unix socket properly: %s", err.Error())
 		}
@@ -82,7 +80,7 @@ func unixRecv(ux *Unix, conn net.Conn) {
 		if n == 0 {
 			return
 		}
-		msg := flow.NewMessage(nil, buf.Bytes())
+		msg := core.NewMessage(nil, buf.Bytes())
 
 		if sendErr := ux.Send(msg); sendErr != nil {
 			tell.Errorf("Unix socket failed to send message: %s", sendErr.Error())

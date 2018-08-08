@@ -1,15 +1,14 @@
 package receiver
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"fmt"
 	"net"
 	"strings"
 	"time"
 
+	"github.com/whiteboxio/flow/pkg/core"
+
 	"github.com/facebookgo/grace/gracenet"
-	"gitlab.booking.com/go/tell"
 )
 
 const (
@@ -39,10 +38,10 @@ var (
 type TCP struct {
 	Name string
 	srv  net.Listener
-	*flow.Connector
+	*core.Connector
 }
 
-func NewTCP(name string, params flow.Params) (flow.Link, error) {
+func NewTCP(name string, params core.Params) (core.Link, error) {
 	tcpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("TCP receiver parameters are missing bind_addr")
@@ -52,7 +51,7 @@ func NewTCP(name string, params flow.Params) (flow.Link, error) {
 	if err != nil {
 		return nil, err
 	}
-	tcp := &TCP{name + "@" + tcpAddr.(string), srv, flow.NewConnector()}
+	tcp := &TCP{name + "@" + tcpAddr.(string), srv, core.NewConnector()}
 	go tcp.handleListener()
 
 	return tcp, nil
@@ -82,7 +81,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		return
 	}
 
-	msg := flow.NewMessage(nil, buf[:len])
+	msg := core.NewMessage(nil, buf[:len])
 
 	if sendErr := tcp.Send(msg); sendErr != nil {
 		bmetrics.GetOrRegisterCounter("receiver", "tcp", "failed").Inc(1)
@@ -107,21 +106,21 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 	}
 }
 
-func status2resp(s flow.MsgStatus) []byte {
+func status2resp(s core.MsgStatus) []byte {
 	switch s {
-	case flow.MsgStatusDone:
+	case core.MsgStatusDone:
 		return []byte(TCP_RESP_SENT)
-	case flow.MsgStatusPartialSend:
+	case core.MsgStatusPartialSend:
 		return []byte(TCP_RESP_PSNT)
-	case flow.MsgStatusInvalid:
+	case core.MsgStatusInvalid:
 		return []byte(TCP_RESP_INVD)
-	case flow.MsgStatusFailed:
+	case core.MsgStatusFailed:
 		return []byte(TCP_RESP_FAIL)
-	case flow.MsgStatusTimedOut:
+	case core.MsgStatusTimedOut:
 		return []byte(TCP_RESP_TIME)
-	case flow.MsgStatusUnroutable:
+	case core.MsgStatusUnroutable:
 		return []byte(TCP_RESP_UNRT)
-	case flow.MsgStatusThrottled:
+	case core.MsgStatusThrottled:
 		return []byte(TCP_RESP_THRT)
 	default:
 		return []byte("OlegS made a mistake, this should not happen")
