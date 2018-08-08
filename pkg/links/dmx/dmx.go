@@ -1,23 +1,23 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type DMX struct {
 	Name string
-	*flow.Connector
+	*core.Connector
 }
 
-func NewDMX(name string, _ flow.Params) (flow.Link, error) {
+func NewDMX(name string, _ core.Params) (core.Link, error) {
 	dmx := &DMX{
 		name,
-		flow.NewConnector(),
+		core.NewConnector(),
 	}
 	return dmx, nil
 }
 
-func (dmx *DMX) LinkTo(links []flow.Link) error {
+func (dmx *DMX) LinkTo(links []core.Link) error {
 	for _, link := range links {
 		if err := link.ConnectTo(dmx); err != nil {
 			return err

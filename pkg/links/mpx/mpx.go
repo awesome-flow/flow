@@ -1,9 +1,10 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"sync"
 	"time"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 const (
@@ -12,23 +13,23 @@ const (
 
 type MPX struct {
 	Name  string
-	links []flow.Link
-	*flow.Connector
+	links []core.Link
+	*core.Connector
 	*sync.Mutex
 }
 
-func NewMPX(name string, _ flow.Params) (flow.Link, error) {
-	links := make([]flow.Link, 0)
-	mpx := &MPX{name, links, flow.NewConnector(), &sync.Mutex{}}
+func NewMPX(name string, _ core.Params) (core.Link, error) {
+	links := make([]core.Link, 0)
+	mpx := &MPX{name, links, core.NewConnector(), &sync.Mutex{}}
 	go mpx.multiplex()
 	return mpx, nil
 }
 
-func (mpx *MPX) ConnectTo(flow.Link) error {
+func (mpx *MPX) ConnectTo(core.Link) error {
 	panic("MPX link is not supposed to be connected directly")
 }
 
-func (mpx *MPX) LinkTo(links []flow.Link) error {
+func (mpx *MPX) LinkTo(links []core.Link) error {
 	mpx.Lock()
 	defer mpx.Unlock()
 	mpx.links = append(mpx.links, links...)
@@ -39,13 +40,13 @@ func (mpx *MPX) multiplex() {
 	for msg := range mpx.GetMsgCh() {
 		mpx.Lock()
 		linksLen := len(mpx.links)
-		acks := make(chan flow.MsgStatus, linksLen)
+		acks := make(chan core.MsgStatus, linksLen)
 		ackChClosed := false
 		for _, link := range mpx.links {
-			go func(l flow.Link) {
-				msgCp := flow.NewMessage(msg.Meta, msg.Payload)
+			go func(l core.Link) {
+				msgCp := core.NewMessage(msg.Meta, msg.Payload)
 				if sendErr := l.Recv(msgCp); sendErr != nil {
-					acks <- flow.MsgStatusFailed
+					acks <- core.MsgStatusFailed
 					return
 				}
 				for ack := range msgCp.GetAckCh() {
@@ -65,7 +66,7 @@ func (mpx *MPX) multiplex() {
 			select {
 			case s := <-acks:
 				ackCnt++
-				if s != flow.MsgStatusDone {
+				if s != core.MsgStatusDone {
 					failedCnt++
 				}
 			case <-time.After(MpxMsgSendTimeout):

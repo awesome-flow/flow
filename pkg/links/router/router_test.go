@@ -1,21 +1,22 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"testing"
 	"time"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type A struct {
 	rcvCnt int
-	*flow.Connector
+	*core.Connector
 }
 
 func NewA() *A {
-	return &A{0, flow.NewConnector()}
+	return &A{0, core.NewConnector()}
 }
 
-func (a *A) Recv(msg *flow.Message) error {
+func (a *A) Recv(msg *core.Message) error {
 	a.rcvCnt++
 	return msg.AckDone()
 }
@@ -24,15 +25,15 @@ func TestRouter_Dispatch(t *testing.T) {
 	a1, a2 := NewA(), NewA()
 	r, rErr := NewRouter(
 		"router",
-		flow.Params{"routing_key": "sender"},
+		core.Params{"routing_key": "sender"},
 	)
 	if rErr != nil {
 		t.Errorf("Failed to initialize router: %s", rErr.Error())
 	}
-	if linkErr := r.RouteTo(map[string]flow.Link{"a1": a1, "a2": a2}); linkErr != nil {
+	if linkErr := r.RouteTo(map[string]core.Link{"a1": a1, "a2": a2}); linkErr != nil {
 		t.Errorf("Failed to link router: %s", linkErr.Error())
 	}
-	m1 := flow.NewMessage(map[string]string{"sender": "a1"}, []byte(""))
+	m1 := core.NewMessage(map[string]string{"sender": "a1"}, []byte(""))
 	r.Send(m1)
 	select {
 	case <-m1.GetAckCh():
@@ -45,7 +46,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	if a2.rcvCnt != 0 {
 		t.Errorf("Unexpected counter value in a2: %d", a2.rcvCnt)
 	}
-	m2 := flow.NewMessage(map[string]string{"sender": "a2"}, []byte(""))
+	m2 := core.NewMessage(map[string]string{"sender": "a2"}, []byte(""))
 	r.Send(m2)
 	select {
 	case <-m2.GetAckCh():
@@ -58,12 +59,12 @@ func TestRouter_Dispatch(t *testing.T) {
 	if a2.rcvCnt != 1 {
 		t.Errorf("Unexpected counter value in a2: %d", a2.rcvCnt)
 	}
-	m3 := flow.NewMessage(map[string]string{"sender": "a3"}, []byte(""))
+	m3 := core.NewMessage(map[string]string{"sender": "a3"}, []byte(""))
 	r.Send(m3)
 
 	select {
 	case s := <-m3.GetAckCh():
-		if s != flow.MsgStatusUnroutable {
+		if s != core.MsgStatusUnroutable {
 			t.Errorf("Unexpected msg return status: %d", s)
 		}
 	case <-time.After(100 * time.Millisecond):

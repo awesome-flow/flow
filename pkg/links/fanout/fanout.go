@@ -1,13 +1,14 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"fmt"
 	"sync"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type RingLink struct {
-	self flow.Link
+	self core.Link
 	next *RingLink
 	prev *RingLink
 }
@@ -16,21 +17,21 @@ type Fanout struct {
 	Name     string
 	ringHead *RingLink
 	*sync.Mutex
-	*flow.Connector
+	*core.Connector
 }
 
-func NewFanout(name string, params flow.Params) (flow.Link, error) {
+func NewFanout(name string, params core.Params) (core.Link, error) {
 	ft := &Fanout{
 		name,
 		nil,
 		&sync.Mutex{},
-		flow.NewConnector(),
+		core.NewConnector(),
 	}
 	go ft.fanout()
 	return ft, nil
 }
 
-func (ft *Fanout) ConnectTo(flow.Link) error {
+func (ft *Fanout) ConnectTo(core.Link) error {
 	panic("Fanout is not supposed to be connected")
 }
 
@@ -46,7 +47,7 @@ func (ft *Fanout) fanout() {
 	}
 }
 
-func (ft *Fanout) LinkTo(links []flow.Link) error {
+func (ft *Fanout) LinkTo(links []core.Link) error {
 
 	for _, link := range links {
 		ft.AddLink(link)
@@ -55,11 +56,11 @@ func (ft *Fanout) LinkTo(links []flow.Link) error {
 	return nil
 }
 
-func (ft *Fanout) AddLink(link flow.Link) error {
+func (ft *Fanout) AddLink(link core.Link) error {
 	return ft.addRingLink(&RingLink{self: link})
 }
 
-func (ft *Fanout) FindLink(link flow.Link) (*RingLink, bool) {
+func (ft *Fanout) FindLink(link core.Link) (*RingLink, bool) {
 	ft.Lock()
 	defer ft.Unlock()
 
@@ -106,7 +107,7 @@ func (ft *Fanout) addRingLink(rl *RingLink) error {
 	return nil
 }
 
-func (ft Fanout) RemoveLink(link flow.Link) error {
+func (ft Fanout) RemoveLink(link core.Link) error {
 	if ptr, ok := ft.FindLink(link); ok {
 		return ft.removeRingLink(ptr)
 	} else {

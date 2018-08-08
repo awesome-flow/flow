@@ -1,46 +1,47 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"testing"
 	"time"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type A struct {
 	rcvCnt int
-	*flow.Connector
+	*core.Connector
 }
 
-func NewA() *A { return &A{0, flow.NewConnector()} }
+func NewA() *A { return &A{0, core.NewConnector()} }
 
 // This function always marks messages as done
-func (a *A) Recv(msg *flow.Message) error {
+func (a *A) Recv(msg *core.Message) error {
 	a.rcvCnt++
 	return msg.AckDone()
 }
 
 type B struct {
 	rcvCnt int
-	*flow.Connector
+	*core.Connector
 }
 
-func NewB() *B { return &B{0, flow.NewConnector()} }
+func NewB() *B { return &B{0, core.NewConnector()} }
 
 // This function always marks messages as failed
-func (b *B) Recv(msg *flow.Message) error {
+func (b *B) Recv(msg *core.Message) error {
 	b.rcvCnt++
 	return msg.AckFailed()
 }
 
 type C struct {
 	rcvCnt int
-	*flow.Connector
+	*core.Connector
 }
 
-func NewC() *C { return &C{0, flow.NewConnector()} }
+func NewC() *C { return &C{0, core.NewConnector()} }
 
 // This function never acks the message, so it should time out
-func (c *C) Recv(msg *flow.Message) error {
+func (c *C) Recv(msg *core.Message) error {
 	c.rcvCnt++
 	return nil
 }
@@ -48,13 +49,13 @@ func (c *C) Recv(msg *flow.Message) error {
 func TestMPX_multiplex(t *testing.T) {
 	tests := []struct {
 		descr  string
-		links  []flow.Link
-		expSts flow.MsgStatus
+		links  []core.Link
+		expSts core.MsgStatus
 	}{
-		{"succ send", []flow.Link{NewA(), NewA(), NewA()}, flow.MsgStatusDone},
-		{"part send", []flow.Link{NewB(), NewA(), NewA()}, flow.MsgStatusPartialSend},
-		{"fail send", []flow.Link{NewB(), NewB(), NewB()}, flow.MsgStatusFailed},
-		{"time out", []flow.Link{NewA(), NewA(), NewC()}, flow.MsgStatusPartialSend},
+		{"succ send", []core.Link{NewA(), NewA(), NewA()}, core.MsgStatusDone},
+		{"part send", []core.Link{NewB(), NewA(), NewA()}, core.MsgStatusPartialSend},
+		{"fail send", []core.Link{NewB(), NewB(), NewB()}, core.MsgStatusFailed},
+		{"time out", []core.Link{NewA(), NewA(), NewC()}, core.MsgStatusPartialSend},
 	}
 
 	for _, tstCase := range tests {
@@ -67,7 +68,7 @@ func TestMPX_multiplex(t *testing.T) {
 			if linkErr != nil {
 				t.Errorf("Failed to connect links to mpx: %s", linkErr.Error())
 			}
-			msg := flow.NewMessage(nil, []byte(""))
+			msg := core.NewMessage(nil, []byte(""))
 			if rcvErr := mpx.Recv(msg); rcvErr != nil {
 				t.Errorf("Unexpected rcv error: %s", rcvErr.Error())
 			}

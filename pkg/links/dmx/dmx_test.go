@@ -1,29 +1,30 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"testing"
 	"time"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type A struct {
-	*flow.Connector
+	*core.Connector
 }
 
 func NewA() *A {
-	return &A{flow.NewConnector()}
+	return &A{core.NewConnector()}
 }
 
 type Cntr struct {
 	rcvCnt int
-	*flow.Connector
+	*core.Connector
 }
 
 func NewCntr() *Cntr {
-	return &Cntr{0, flow.NewConnector()}
+	return &Cntr{0, core.NewConnector()}
 }
 
-func (cntr *Cntr) Recv(msg *flow.Message) error {
+func (cntr *Cntr) Recv(msg *core.Message) error {
 	cntr.rcvCnt++
 	return msg.AckDone()
 }
@@ -35,18 +36,18 @@ func TestDMX_Demultiplex(t *testing.T) {
 	if dmxErr != nil {
 		t.Errorf("Unexpected DMX error: %s", dmxErr.Error())
 	}
-	if linkErr := dmx.LinkTo([]flow.Link{a1, a2}); linkErr != nil {
+	if linkErr := dmx.LinkTo([]core.Link{a1, a2}); linkErr != nil {
 		t.Errorf("Failed to link dmx: %s", linkErr.Error())
 	}
 	dmx.ConnectTo(cntr)
 
-	msg1 := flow.NewMessage(nil, []byte(""))
+	msg1 := core.NewMessage(nil, []byte(""))
 	if sendErr1 := a1.Send(msg1); sendErr1 != nil {
 		t.Errorf("Unexpected a1 send error: %s", sendErr1.Error())
 	}
 	select {
 	case s := <-msg1.GetAckCh():
-		if s != flow.MsgStatusDone {
+		if s != core.MsgStatusDone {
 			t.Errorf("Unexpected message status: %d", s)
 		}
 	case <-time.After(100 * time.Millisecond):
@@ -56,13 +57,13 @@ func TestDMX_Demultiplex(t *testing.T) {
 		t.Errorf("Unexpected received counter value: %d", cntr.rcvCnt)
 	}
 
-	msg2 := flow.NewMessage(nil, []byte(""))
+	msg2 := core.NewMessage(nil, []byte(""))
 	if sendErr2 := a2.Send(msg2); sendErr2 != nil {
 		t.Errorf("Unexpected a2 send error: %s", sendErr2.Error())
 	}
 	select {
 	case s := <-msg2.GetAckCh():
-		if s != flow.MsgStatusDone {
+		if s != core.MsgStatusDone {
 			t.Errorf("Unexpected message status: %d", s)
 		}
 	case <-time.After(100 * time.Millisecond):

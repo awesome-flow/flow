@@ -1,29 +1,30 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"fmt"
 	"testing"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type A struct {
 	rcvd int
-	*flow.Connector
+	*core.Connector
 }
 
-func NewA() *A { return &A{0, flow.NewConnector()} }
-func (a *A) Recv(msg *flow.Message) error {
+func NewA() *A { return &A{0, core.NewConnector()} }
+func (a *A) Recv(msg *core.Message) error {
 	a.rcvd++
 	return msg.AckDone()
 }
 
 func TestFanout_RingSize(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
 	a1, a2, a3 := NewA(), NewA(), NewA()
-	if linkErr := ft.LinkTo([]flow.Link{a1, a2, a3}); linkErr != nil {
+	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
 	ringSize := ft.(*Fanout).RingSize()
@@ -33,16 +34,16 @@ func TestFanout_RingSize(t *testing.T) {
 }
 
 func TestFanout_Send(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
 	a1, a2, a3 := NewA(), NewA(), NewA()
-	if linkErr := ft.LinkTo([]flow.Link{a1, a2, a3}); linkErr != nil {
+	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
 	for i := 0; i < 3; i++ {
-		ft.Send(flow.NewMessage(nil, []byte("")))
+		ft.Send(core.NewMessage(nil, []byte("")))
 	}
 	if a1.rcvd != 1 && a2.rcvd != 1 && a3.rcvd != 1 {
 		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.rcvd, a2.rcvd, a3.rcvd)
@@ -50,16 +51,16 @@ func TestFanout_Send(t *testing.T) {
 }
 
 func TestFanout_Recv(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
 	a1, a2, a3 := NewA(), NewA(), NewA()
-	if linkErr := ft.LinkTo([]flow.Link{a1, a2, a3}); linkErr != nil {
+	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
 	for i := 0; i < 3; i++ {
-		ft.Recv(flow.NewMessage(nil, []byte("")))
+		ft.Recv(core.NewMessage(nil, []byte("")))
 	}
 	if a1.rcvd != 1 && a2.rcvd != 1 && a3.rcvd != 1 {
 		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.rcvd, a2.rcvd, a3.rcvd)
@@ -67,7 +68,7 @@ func TestFanout_Recv(t *testing.T) {
 }
 
 func TestFanout_addRingLinkAsHead(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -84,7 +85,7 @@ func TestFanout_addRingLinkAsHead(t *testing.T) {
 }
 
 func TestFanout_addRingLinkAsExtra(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -103,7 +104,7 @@ func TestFanout_addRingLinkAsExtra(t *testing.T) {
 }
 
 func TestFanout_removeRingLinkAsHead(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -123,7 +124,7 @@ func TestFanout_removeRingLinkAsHead(t *testing.T) {
 }
 
 func TestFanout_Connections(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -237,7 +238,7 @@ func TestFanout_Connections(t *testing.T) {
 }
 
 func TestFanout_FindLink(t *testing.T) {
-	ft, ftErr := NewFanout("fanout", flow.Params{})
+	ft, ftErr := NewFanout("fanout", core.Params{})
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize fanout: %s", ftErr.Error())
 	}
@@ -246,7 +247,7 @@ func TestFanout_FindLink(t *testing.T) {
 		&RingLink{self: b},
 		&RingLink{self: c}
 	type lookupCheck struct {
-		lookup   flow.Link
+		lookup   core.Link
 		expected *RingLink
 		expBool  bool
 	}

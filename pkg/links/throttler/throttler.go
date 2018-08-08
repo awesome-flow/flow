@@ -1,13 +1,14 @@
 package links
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"fmt"
 	"math"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
 type Throttler struct {
@@ -15,7 +16,7 @@ type Throttler struct {
 	key     string
 	rps     uint64
 	buckets *sync.Map
-	*flow.Connector
+	*core.Connector
 }
 
 type stts struct {
@@ -23,7 +24,7 @@ type stts struct {
 	timestamp int64
 }
 
-func NewThrottler(name string, params flow.Params) (flow.Link, error) {
+func NewThrottler(name string, params core.Params) (core.Link, error) {
 	rps, rpsOk := params["rps"]
 	if !rpsOk {
 		return nil, fmt.Errorf("Throttler params are missing rps")
@@ -33,7 +34,7 @@ func NewThrottler(name string, params flow.Params) (flow.Link, error) {
 		"",
 		uint64(rps.(int)),
 		&sync.Map{},
-		flow.NewConnector(),
+		core.NewConnector(),
 	}
 	if key, keyOk := params["msg_key"]; keyOk {
 		th.key = key.(string)
@@ -42,7 +43,7 @@ func NewThrottler(name string, params flow.Params) (flow.Link, error) {
 	return th, nil
 }
 
-func (th *Throttler) Recv(msg *flow.Message) error {
+func (th *Throttler) Recv(msg *core.Message) error {
 	msgKey := ""
 	if len(th.key) > 0 {
 		if _, ok := msg.Meta[th.key]; ok {
@@ -76,13 +77,13 @@ func (th *Throttler) Recv(msg *flow.Message) error {
 		if atomic.CompareAndSwapInt64(&(bucket.(*stts)).timestamp, prevTimestamp, t) {
 			// TODO: Race condition here
 			atomic.StoreInt64(&(bucket.(*stts)).budget, newBudget)
-			bmetrics.GetOrRegisterCounter(
-				"links", "throttler", th.Name+"_pass").Inc(1)
+			metrics.GetCounter(
+				"links.throttler." + th.Name + "_pass").Inc(1)
 			return th.Send(msg)
 		}
 		loopBreaker--
 	}
 
-	bmetrics.GetOrRegisterCounter("links", "throttler", th.Name+"_reject").Inc(1)
+	metrics.GetCounter("links.throttler." + th.Name + "_reject").Inc(1)
 	return msg.AckThrottled()
 }

@@ -1,16 +1,17 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"testing"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type Nil struct {
-	*flow.Connector
+	*core.Connector
 }
 
-func NewNil() *Nil                          { return &Nil{flow.NewConnector()} }
-func (n *Nil) Recv(msg *flow.Message) error { return msg.AckDone() }
+func NewNil() *Nil                          { return &Nil{core.NewConnector()} }
+func (n *Nil) Recv(msg *core.Message) error { return msg.AckDone() }
 
 func TestThrottler_Recv(t *testing.T) {
 	tests := []struct {
@@ -25,7 +26,7 @@ func TestThrottler_Recv(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			th, thErr := NewThrottler("t",
-				flow.Params{"msg_key": test.msgKey, "rps": test.rps})
+				core.Params{"msg_key": test.msgKey, "rps": test.rps})
 			if thErr != nil {
 				t.Errorf("Could not instantiate throttler: %s", thErr.Error())
 			}
@@ -33,12 +34,12 @@ func TestThrottler_Recv(t *testing.T) {
 			cnt := 0
 			var err error
 			for {
-				if err = th.Recv(flow.NewMessage(flow.MsgMeta{}, []byte(""))); err != nil {
+				if err = th.Recv(core.NewMessage(core.MsgMeta{}, []byte(""))); err != nil {
 					break
 				}
 				cnt++
 			}
-			if err != flow.ErrMsgThrottled {
+			if err != core.ErrMsgThrottled {
 				t.Errorf("Unexpected error returned: %s", err.Error())
 			}
 			if cnt != test.expectedSucc {

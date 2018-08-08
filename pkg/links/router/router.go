@@ -1,49 +1,48 @@
 package links
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"fmt"
 	"sync"
 
-	"gitlab.booking.com/go/tell"
+	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
 type Router struct {
 	Name        string
-	routingFunc flow.RoutingFunc
-	routes      map[string]flow.Link
-	*flow.Connector
+	routingFunc core.RoutingFunc
+	routes      map[string]core.Link
+	*core.Connector
 	*sync.Mutex
 }
 
-func NewRouter(name string, params flow.Params) (flow.Link, error) {
+func NewRouter(name string, params core.Params) (core.Link, error) {
 	routingKey, ok := params["routing_key"]
 	if !ok {
 		return nil, fmt.Errorf("Router %s parameters are missing routing_key", name)
 	}
-	var routingFunc flow.RoutingFunc
+	var routingFunc core.RoutingFunc
 	if strKey, ok := routingKey.(string); ok {
 		errNoKey := fmt.Errorf("Message is missing routing key %s", strKey)
-		routingFunc = func(msg *flow.Message) (string, error) {
+		routingFunc = func(msg *core.Message) (string, error) {
 			k, ok := msg.Meta[strKey]
 			if !ok {
 				return "", errNoKey
 			}
 			return k, nil
 		}
-	} else if funcKey, ok := routingKey.(func(*flow.Message) (string, error)); ok {
+	} else if funcKey, ok := routingKey.(func(*core.Message) (string, error)); ok {
 		routingFunc = funcKey
 	} else {
 		return nil, fmt.Errorf("Incompatible routing_key type")
 	}
-	routes := make(map[string]flow.Link)
-	r := &Router{name, routingFunc, routes, flow.NewConnector(), &sync.Mutex{}}
+	routes := make(map[string]core.Link)
+	r := &Router{name, routingFunc, routes, core.NewConnector(), &sync.Mutex{}}
 	go r.dsptchMsgs()
 	return r, nil
 }
 
-func (r *Router) RouteTo(routes map[string]flow.Link) error {
+func (r *Router) RouteTo(routes map[string]core.Link) error {
 	r.Lock()
 	defer r.Unlock()
 	for routeKey, routeDst := range routes {
@@ -52,7 +51,7 @@ func (r *Router) RouteTo(routes map[string]flow.Link) error {
 	return nil
 }
 
-func (r *Router) AddRoute(routeKey string, routeDst flow.Link) error {
+func (r *Router) AddRoute(routeKey string, routeDst core.Link) error {
 	r.Lock()
 	defer r.Unlock()
 	if _, ok := r.routes[routeKey]; ok {
@@ -62,7 +61,7 @@ func (r *Router) AddRoute(routeKey string, routeDst flow.Link) error {
 	return nil
 }
 
-func (r *Router) DropRoute(routeKey string) (flow.Link, error) {
+func (r *Router) DropRoute(routeKey string) (core.Link, error) {
 	r.Lock()
 	defer r.Unlock()
 	routeDst, ok := r.routes[routeKey]
@@ -73,15 +72,15 @@ func (r *Router) DropRoute(routeKey string) (flow.Link, error) {
 	return routeDst, nil
 }
 
-func (r *Router) GetRoutes() map[string]flow.Link {
+func (r *Router) GetRoutes() map[string]core.Link {
 	return r.routes
 }
 
-func (r *Router) ConnectTo(flow.Link) error {
+func (r *Router) ConnectTo(core.Link) error {
 	panic("Router is not supposed to be connected directly")
 }
 
-func (r *Router) Recv(msg *flow.Message) error {
+func (r *Router) Recv(msg *core.Message) error {
 	return r.Send(msg)
 }
 
@@ -93,11 +92,10 @@ func (r *Router) dsptchMsgs() {
 			return
 		}
 		if route, ok := r.routes[dst]; ok {
-			bmetrics.GetOrRegisterCounter("links", "router", "dst_"+dst).Inc(1)
+			metrics.GetCounter("links.router.dst_" + dst).Inc(1)
 			route.Recv(msg)
 		} else {
-			bmetrics.GetOrRegisterCounter("links", "router", "unknown").Inc(1)
-			tell.Warnf("Unknown destination: [%s]", dst)
+			metrics.GetCounter("links.router.unknown").Inc(1)
 			msg.AckUnroutable()
 		}
 	}

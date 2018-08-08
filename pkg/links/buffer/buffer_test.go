@@ -1,25 +1,25 @@
 package links
 
 import (
-	//"github.com/whiteboxio/flow/pkg/core"
-	"booking/msgrelay/flow"
 	"testing"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 func TestBuffer_TestNewBuffer(t *testing.T) {
 	tests := []struct {
 		name     string
-		params   flow.Params
+		params   core.Params
 		expCap   int
 		expStr   BufStrategy
 		expRetry int
 	}{
-		{"default params", flow.Params{}, 65536, BufStrategySub, 1},
-		{"capacity set", flow.Params{"capacity": 32768}, 32768, BufStrategySub, 1},
-		{"drop strategy set", flow.Params{"strategy": "drop"}, 65536, BufStrategyDrop, 1},
-		{"block strategy set", flow.Params{"strategy": "block"}, 65536, BufStrategyBlock, 1},
-		{"sub strategy set", flow.Params{"strategy": "sub"}, 65536, BufStrategySub, 1},
-		{"max_retry set", flow.Params{"max_retry": 5}, 65536, BufStrategySub, 5},
+		{"default params", core.Params{}, 65536, BufStrategySub, 1},
+		{"capacity set", core.Params{"capacity": 32768}, 32768, BufStrategySub, 1},
+		{"drop strategy set", core.Params{"strategy": "drop"}, 65536, BufStrategyDrop, 1},
+		{"block strategy set", core.Params{"strategy": "block"}, 65536, BufStrategyBlock, 1},
+		{"sub strategy set", core.Params{"strategy": "sub"}, 65536, BufStrategySub, 1},
+		{"max_retry set", core.Params{"max_retry": 5}, 65536, BufStrategySub, 5},
 	}
 
 	for _, test := range tests {
