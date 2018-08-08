@@ -1,10 +1,11 @@
 package links
 
 import (
-	"booking/bmetrics"
-	"booking/msgrelay/flow"
 	"fmt"
 	"time"
+
+	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
 type BufStrategy uint8
@@ -24,10 +25,10 @@ type Buffer struct {
 	capacity int
 	strategy BufStrategy
 	maxRetry int
-	msgChan  chan *flow.Message
+	msgChan  chan *core.Message
 }
 
-func NewBuffer(name string, params flow.Params) (flow.Link, error) {
+func NewBuffer(name string, params core.Params) (core.Link, error) {
 	capacity := 65536
 	if v, ok := params["capacity"]; ok {
 		capacity = v.(int)
@@ -54,16 +55,16 @@ func NewBuffer(name string, params flow.Params) (flow.Link, error) {
 		capacity,
 		strategy,
 		maxRetry,
-		make(chan *flow.Message, capacity),
+		make(chan *core.Message, capacity),
 	}
 	return buf, nil
 }
 
-func (buf *Buffer) Recv(msg *flow.Message) error {
+func (buf *Buffer) Recv(msg *core.Message) error {
 	return buf.Send(msg)
 }
 
-func (buf *Buffer) Send(msg *flow.Message) error {
+func (buf *Buffer) Send(msg *core.Message) error {
 	switch buf.strategy {
 	case BufStrategyDrop:
 		if len(buf.msgChan) >= buf.capacity {
@@ -81,39 +82,39 @@ func (buf *Buffer) Send(msg *flow.Message) error {
 	return nil
 }
 
-func (buf *Buffer) ConnectTo(link flow.Link) error {
+func (buf *Buffer) ConnectTo(link core.Link) error {
 	go func() {
 		for msg := range buf.msgChan {
 			if msg.GetAttempts() >= uint32(buf.maxRetry) {
-				bmetrics.GetOrRegisterCounter(
-					"links", "buffer", buf.Name+"_max_attempts").Inc(1)
+				metrics.GetCounter(
+					"links.buffer," + buf.Name + "_max_attempts").Inc(1)
 				msg.AckFailed()
 				continue
 			}
-			msgCp := flow.CpMessage(msg)
+			msgCp := core.CpMessage(msg)
 			if recvErr := link.Recv(msgCp); recvErr != nil {
-				bmetrics.GetOrRegisterCounter(
-					"links", "buffer", buf.Name+"_retry").Inc(1)
+				metrics.GetCounter(
+					"links.buffer." + buf.Name + "_retry").Inc(1)
 				msg.BumpAttempts()
 				buf.Send(msg)
 				continue
 			}
 			select {
 			case upd := <-msgCp.GetAckCh():
-				if upd != flow.MsgStatusDone {
-					bmetrics.GetOrRegisterCounter(
-						"links", "buffer", buf.Name+"_retry").Inc(1)
+				if upd != core.MsgStatusDone {
+					metrics.GetCounter(
+						"links.buffer." + buf.Name + "_retry").Inc(1)
 					msg.BumpAttempts()
 					buf.Send(msg)
 					continue
 				} else {
-					bmetrics.GetOrRegisterCounter(
-						"links", "buffer", buf.Name+"_success").Inc(1)
+					metrics.GetCounter(
+						"links.buffer." + buf.Name + "_success").Inc(1)
 					msg.AckDone()
 				}
 			case <-time.After(MsgSendTimeout):
-				bmetrics.GetOrRegisterCounter(
-					"links", "buffer", buf.Name+"_timeout").Inc(1)
+				metrics.GetCounter(
+					"links.buffer." + buf.Name + "_timeout").Inc(1)
 				msg.BumpAttempts()
 				buf.Send(msg)
 				continue
@@ -123,14 +124,14 @@ func (buf *Buffer) ConnectTo(link flow.Link) error {
 	return nil
 }
 
-func (buf *Buffer) LinkTo([]flow.Link) error {
+func (buf *Buffer) LinkTo([]core.Link) error {
 	panic("Buffer does not support LinkTo()")
 }
 
-func (buf *Buffer) RouteTo(map[string]flow.Link) error {
+func (buf *Buffer) RouteTo(map[string]core.Link) error {
 	panic("Buffer does not support RouteTo()")
 }
 
-func (buf *Buffer) ExecCmd(cmd *flow.Cmd) error {
+func (buf *Buffer) ExecCmd(cmd *core.Cmd) error {
 	return nil
 }

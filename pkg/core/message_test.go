@@ -1,4 +1,4 @@
-package flow
+package core
 
 import (
 	"math"
@@ -6,44 +6,6 @@ import (
 	"testing"
 	"time"
 )
-
-func TestMessage_GetDst(t *testing.T) {
-	type fields struct {
-		Meta     MsgMeta
-		Payload  []byte
-		ackCh    chan MsgStatus
-		attempts uint32
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		{
-			name:   "no sender",
-			fields: fields{nil, []byte(""), nil, 0},
-			want:   "undefined",
-		},
-		{
-			name:   "yes sender",
-			fields: fields{map[string]string{"sender": "expected"}, []byte(""), nil, 0},
-			want:   "expected",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Message{
-				Meta:     tt.fields.Meta,
-				Payload:  tt.fields.Payload,
-				ackCh:    tt.fields.ackCh,
-				attempts: tt.fields.attempts,
-			}
-			if got := m.GetDst(); got != tt.want {
-				t.Errorf("Message.RoutingKey() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestMessage_IsSync(t *testing.T) {
 	type fields struct {

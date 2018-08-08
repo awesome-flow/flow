@@ -1,4 +1,4 @@
-package util
+package data
 
 type NTree struct {
 	value    interface{}

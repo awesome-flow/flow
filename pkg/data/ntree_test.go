@@ -1,17 +1,20 @@
-package util
+package data
+
+//TODO: this test suite fails
 
 import (
-	"booking/msgrelay/flow"
 	"reflect"
 	"testing"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type A struct {
-	*flow.Connector
+	*core.Connector
 }
 
 func NewA() *A {
-	return &A{flow.NewConnector()}
+	return &A{core.NewConnector()}
 }
 
 func TestNTree_buildCompTree(t *testing.T) {

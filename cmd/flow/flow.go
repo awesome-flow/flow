@@ -1,4 +1,4 @@
-package msgrelay
+package flow
 
 import "os"
 

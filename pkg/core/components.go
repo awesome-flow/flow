@@ -1,4 +1,4 @@
-package flow
+package core
 
 type Params map[string]interface{}
 

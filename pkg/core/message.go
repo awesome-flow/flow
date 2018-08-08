@@ -1,4 +1,4 @@
-package flow
+package core
 
 import (
 	"fmt"
@@ -19,9 +19,9 @@ const (
 )
 
 var (
-	ErrMsgPartialSend = fmt.Errorf("Message was sent partialy")
+	ErrMsgPartialSend = fmt.Errorf("Partial message send")
 	ErrMsgInvalid     = fmt.Errorf("Invalid message format/payload")
-	ErrMsgFailed      = fmt.Errorf("Complete was not sent")
+	ErrMsgFailed      = fmt.Errorf("Failed message send")
 	ErrMsgTimedOut    = fmt.Errorf("Message send timeout")
 	ErrMsgUnroutable  = fmt.Errorf("Unroutable message")
 	ErrMsgThrottled   = fmt.Errorf("Message throttled")
@@ -73,15 +73,6 @@ func NewMessageWithAckCh(meta MsgMeta, payload []byte, ackCh chan MsgStatus) *Me
 		ackCh:    ackCh,
 		attempts: 0,
 	}
-}
-
-func (m *Message) GetDst() string {
-	if m.Meta != nil {
-		if s, ok := m.Meta["sender"]; ok { // TODO: sender is a suboptimal name
-			return s
-		}
-	}
-	return "undefined"
 }
 
 func (m *Message) GetAckCh() chan MsgStatus {
