@@ -1,14 +1,14 @@
 package receiver
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net"
 
-	"github.com/whiteboxio/flow/pkg/core"
-
 	"github.com/facebookgo/grace/gracenet"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
 const (
@@ -29,8 +29,9 @@ type Unix struct {
 func NewUnix(name string, params core.Params) (core.Link, error) {
 	path, ok := params["path"]
 	if !ok {
-		path = "/tmp/core.sock"
+		path = "/tmp/flow.sock"
 	}
+
 	net := &gracenet.Net{}
 	lstnr, err := net.Listen("unix", path.(string))
 	if err != nil {
@@ -41,7 +42,7 @@ func NewUnix(name string, params core.Params) (core.Link, error) {
 		for {
 			fd, err := lstnr.Accept()
 			if err != nil {
-				tell.Errorf("Unix listener failed to call accept: %s", err.Error())
+				log.Errorf("Unix listener failed to call accept: %s", err.Error())
 				continue
 			}
 			go unixRecv(ux, fd)
@@ -54,38 +55,36 @@ func (ux *Unix) ExecCmd(cmd *core.Cmd) error {
 	switch cmd.Code {
 	case core.CmdCodeStop:
 		if err := ux.listener.Close(); err != nil {
-			tell.Warnf("Failed to close unix socket properly: %s", err.Error())
+			log.Warnf("Failed to close unix socket properly: %s", err.Error())
 		}
 	}
 	return nil
 }
 
 func unixRecv(ux *Unix, conn net.Conn) {
-	// buf := make([]byte, MaxUnixPayloadSize)
-	var buf bytes.Buffer
+	buf := make([]byte, MaxUnixPayloadSize)
 	for {
-		// n, err := conn.Read(buf)
-		n, err := io.Copy(&buf, conn)
-		bmetrics.GetOrRegisterCounter("receiver", "unix", "received").Inc(1)
+		n, err := conn.Read(buf)
+		metrics.GetCounter("receiver.unix.received").Inc(1)
 
 		if err == io.EOF {
-			tell.Infof("Met EOF")
+			log.Infof("Met EOF")
 			return
 		}
 
 		if err != nil {
-			tell.Warnf("Unix conn Read failed: %s %+v", err.Error(), err)
+			log.Warnf("Unix conn Read failed: %s %+v", err.Error(), err)
 			return
 		}
 		if n == 0 {
 			return
 		}
-		msg := core.NewMessage(nil, buf.Bytes())
+		msg := core.NewMessage(nil, buf[:n])
 
 		if sendErr := ux.Send(msg); sendErr != nil {
-			tell.Errorf("Unix socket failed to send message: %s", sendErr.Error())
+			log.Errorf("Unix socket failed to send message: %s", sendErr.Error())
 		} else {
-			bmetrics.GetOrRegisterCounter("receiver", "unix", "sent").Inc(1)
+			metrics.GetCounter("receiver.unix.sent").Inc(1)
 		}
 	}
 }
