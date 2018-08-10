@@ -1,19 +1,20 @@
 package links
 
 import (
-	"booking/msgrelay/flow"
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/whiteboxio/flow/pkg/core"
 )
 
 type Dumper struct {
 	Name string
 	*bufio.Writer
-	*flow.Connector
+	*core.Connector
 }
 
-func NewDumper(name string, params flow.Params) (flow.Link, error) {
+func NewDumper(name string, params core.Params) (core.Link, error) {
 	out, outOk := params["out"]
 	if !outOk {
 		return nil, fmt.Errorf("Dumper %s params are missing out", name)
@@ -33,10 +34,10 @@ func NewDumper(name string, params flow.Params) (flow.Link, error) {
 		writer = bufio.NewWriter(f)
 	}
 
-	return &Dumper{name, writer, flow.NewConnector()}, nil
+	return &Dumper{name, writer, core.NewConnector()}, nil
 }
 
-func (d *Dumper) Recv(msg *flow.Message) error {
+func (d *Dumper) Recv(msg *core.Message) error {
 	d.Write([]byte(fmt.Sprintf("Message:\n"+
 		"    meta: %+v\n"+
 		"    payload: %s\n", msg.Meta, msg.Payload)))
@@ -46,10 +47,10 @@ func (d *Dumper) Recv(msg *flow.Message) error {
 	return msg.AckDone()
 }
 
-func (d *Dumper) Send(*flow.Message) error {
+func (d *Dumper) Send(*core.Message) error {
 	panic("Dumper is not suppsed to send messages")
 }
 
-func (d *Dumper) ConnectTo(flow.Link) error {
+func (d *Dumper) ConnectTo(core.Link) error {
 	panic("Dumper is not supposed to be connected to other links")
 }
