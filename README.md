@@ -1,5 +1,7 @@
 # Msgrelay and Flow Framework
 
+![logo](https://github.com/whiteboxio/flow/blob/master/flow.png)
+
 ## Intro
 
 Msgrelay (stands for message relay) is a modular highly configurable sidecar for
