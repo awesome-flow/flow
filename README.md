@@ -1,13 +1,13 @@
-# Msgrelay and Flow Framework
-
 ![logo](https://github.com/whiteboxio/flow/blob/master/flow.png)
+
+# The Flow Framework
 
 ## Intro
 
-Msgrelay (stands for message relay) is a modular highly configurable sidecar for
-fast and reliable real-time data transmission.
+The Flow is a modular highly configurable framework for creating sidecars and
+message relays.
 
-This software provides an extendable framework which allows one to build data
+This software provides an extendable library which allows one to build data
 pipelines, fan-outs, proxies, multiplexers and so on.
 
 In the heart of this software there is a concept of interconnected reusable
