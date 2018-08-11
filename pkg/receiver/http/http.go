@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 
 	"github.com/facebookgo/grace/gracehttp"
 )
@@ -44,7 +45,7 @@ func NewHTTP(name string, params core.Params) (core.Link, error) {
 	})
 
 	go func() {
-		grcErr := gracehttp.Serve(h.server)
+		grcErr := gracehttp.Serve(h.Server)
 		if grcErr != nil {
 			panic(fmt.Sprintf("Failed to start gracemulti servers: %s", grcErr.Error()))
 		}
@@ -64,7 +65,7 @@ func (h *HTTP) ExecCmd(cmd *core.Cmd) error {
 
 func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 
-	bmetrics.GetOrRegisterCounter("receiver", "http", "received").Inc(1)
+	metrics.GetCounter("receiver.http.received").Inc(1)
 
 	cl := req.ContentLength
 	if cl <= 0 {
@@ -72,16 +73,14 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	msgMeta := core.NewMsgMeta()
-	if parseErr := util.ParseQuery(msgMeta, req.URL.RawQuery); parseErr != nil {
-		bmetrics.GetOrRegisterCounter("receiver", "http", "bad_query").Inc(1)
-		http.Error(rw, "Bad query", http.StatusBadRequest)
-		return
+	for k, v := range req.URL.Query() {
+		msgMeta[k] = v[0]
 	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	req.Body.Close()
 	if err != nil {
-		bmetrics.GetOrRegisterCounter("receiver", "http", "bad_request").Inc(1)
+		metrics.GetCounter("receiver.http.bad_request").Inc(1)
 		http.Error(rw, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -89,13 +88,13 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 	msg := core.NewMessage(msgMeta, body)
 
 	if sendErr := h.Send(msg); sendErr != nil {
-		bmetrics.GetOrRegisterCounter("receiver", "http", "send_error").Inc(1)
+		metrics.GetCounter("receiver.http.send_error").Inc(1)
 		http.Error(rw, "Failed to send message", http.StatusInternalServerError)
 		return
 	}
 
 	if !msg.IsSync() {
-		bmetrics.GetOrRegisterCounter("receiver", "http", "accepted").Inc(1)
+		metrics.GetCounter("receiver.http.accepted").Inc(1)
 		rw.WriteHeader(http.StatusAccepted)
 		rw.Write([]byte("Accepted"))
 		return
@@ -104,12 +103,12 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 	select {
 	case s := <-msg.GetAckCh():
 		httpCode, httpResp := status2resp(s)
-		bmetrics.GetOrRegisterCounter(
-			"receiver", "http", fmt.Sprintf("ack_%d", httpCode)).Inc(1)
+		metrics.GetCounter(
+			"receiver.http." + fmt.Sprintf("ack_%d", httpCode)).Inc(1)
 		rw.WriteHeader(httpCode)
 		rw.Write(httpResp)
 	case <-time.After(HttpMsgSendTimeout):
-		bmetrics.GetOrRegisterCounter("receiver", "http", "timeout").Inc(1)
+		metrics.GetCounter("receiver.http.timeout").Inc(1)
 		rw.WriteHeader(http.StatusGatewayTimeout)
 		rw.Write([]byte("Timed out to send message"))
 	}
