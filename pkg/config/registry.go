@@ -45,11 +45,11 @@ func Get(key string) (interface{}, bool) {
 	if !ok {
 		return nil, ok
 	}
-	return keyHeap.(*util.BinHeap).GetMax().(Provider).GetValue(key)
+	return keyHeap.(*data.BinHeap).GetMax().(Provider).GetValue(key)
 }
 
 func traverseProviders() []Provider {
-	tree := &util.NTree{}
+	tree := &data.NTree{}
 	for provName, prov := range registry.providers {
 		provNode := tree.FindOrInsert(provName)
 		if depends := prov.DependsOn(); len(depends) > 0 {

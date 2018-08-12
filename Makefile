@@ -9,3 +9,6 @@ MAKE=make
 
 test: 
 	@$(GOTEST) -v ./...
+
+build:
+	@$(GOBUILD) -o $(BINARY_NAME) -v

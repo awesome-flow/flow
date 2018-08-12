@@ -63,7 +63,7 @@ func (tcp *TCP) handleListener() {
 		conn, err := tcp.srv.Accept()
 		//tell.Info("Listening from a new TCP connection")
 		if err != nil {
-			tell.Errorf("TCP server failed to accept connection: %s", err.Error())
+			log.Errorf("TCP server failed to accept connection: %s", err.Error())
 			continue
 		}
 		go tcp.handleConnection(conn)
