@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 
 	"github.com/facebookgo/grace/gracenet"
 )
@@ -71,12 +73,12 @@ func (tcp *TCP) handleListener() {
 }
 
 func (tcp *TCP) handleConnection(conn net.Conn) {
-	bmetrics.GetOrRegisterCounter("receiver", "tcp", "received").Inc(1)
+	metrics.GetCounter("receiver.tcp.received").Inc(1)
 	buf := make([]byte, MaxTCPBufSize)
 	len, err := conn.Read(buf)
 	if err != nil {
-		bmetrics.GetOrRegisterCounter("receiver", "tcp", "failed").Inc(1)
-		tell.Errorf("Failed to read TCP message: %s", err.Error())
+		metrics.GetCounter("receiver.tcp.failed").Inc(1)
+		log.Errorf("Failed to read TCP message: %s", err.Error())
 		conn.Write([]byte(TCP_RESP_INVD))
 		return
 	}
@@ -84,22 +86,22 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 	msg := core.NewMessage(nil, buf[:len])
 
 	if sendErr := tcp.Send(msg); sendErr != nil {
-		bmetrics.GetOrRegisterCounter("receiver", "tcp", "failed").Inc(1)
-		tell.Errorf("Failed to send message: %s", sendErr.Error())
+		metrics.GetCounter("receiver.tcp.failed").Inc(1)
+		log.Errorf("Failed to send message: %s", sendErr.Error())
 		conn.Write([]byte(TCP_RESP_FAIL))
 		return
 	}
 
 	if !msg.IsSync() {
-		bmetrics.GetOrRegisterCounter("receiver", "tcp", "accepted").Inc(1)
+		metrics.GetCounter("receiver.tcp.accepted").Inc(1)
 		conn.Write([]byte(TCP_RESP_ACPT))
 		return
 	}
 
 	select {
 	case s := <-msg.GetAckCh():
-		bmetrics.GetOrRegisterCounter(
-			"receiver", "tcp", "sent_"+strings.ToLower(string(status2resp(s)))).Inc(1)
+		metrics.GetCounter(
+			"receiver.tcp.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
 		conn.Write(status2resp(s))
 	case <-time.After(TcpMsgSendTimeout):
 		conn.Write([]byte(TCP_RESP_TIME))

@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 
 	"github.com/cenk/backoff"
 )
@@ -44,7 +46,7 @@ func (tcp *TCP) connect() {
 		//tell.Infof("Connecting to tcp://%s", tcp.addr)
 		conn, connErr := net.DialTimeout("tcp4", tcp.addr, TcpConnTimeout)
 		if connErr != nil {
-			tell.Warnf("Unable to connect to %s: %s", tcp.addr, connErr.Error())
+			log.Warnf("Unable to connect to %s: %s", tcp.addr, connErr.Error())
 			return connErr
 		}
 		tcp.conn = conn
@@ -53,27 +55,27 @@ func (tcp *TCP) connect() {
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = 0
 	backoff.RetryNotify(bckSub, b, func(err error, dur time.Duration) {
-		tell.Warnf("Failed to establish a TCP connection to %s because: %s. "+
+		log.Warnf("Failed to establish a TCP connection to %s because: %s. "+
 			"Next retry in %s", tcp.addr, err.Error(), dur)
 	})
 }
 
 func (tcp *TCP) Recv(msg *core.Message) error {
-	bmetrics.GetOrRegisterCounter("sink", "tcp", "received").Inc(1)
+	metrics.GetCounter("sink.tcp.received").Inc(1)
 	if tcp.conn == nil {
-		bmetrics.GetOrRegisterCounter("sink", "tcp", "no_connection").Inc(1)
+		metrics.GetCounter("sink.tcp.no_connection").Inc(1)
 		return msg.AckFailed()
 	}
 	tcp.Lock()
 	defer tcp.Unlock()
 	tcp.conn.SetDeadline(time.Now().Add(TcpWriteDeadline))
 	if _, err := tcp.conn.Write(msg.Payload); err != nil {
-		bmetrics.GetOrRegisterCounter("sink", "tcp", "failed").Inc(1)
-		tell.Warnf("Failed to send TCP packet to %s: %s", tcp.addr, err.Error())
+		metrics.GetCounter("sink.tcp.failed").Inc(1)
+		log.Warnf("Failed to send TCP packet to %s: %s", tcp.addr, err.Error())
 		go tcp.connect()
 		return msg.AckFailed()
 	} else {
-		bmetrics.GetOrRegisterCounter("sink", "tcp", "sent").Inc(1)
+		metrics.GetCounter("sink.tcp.sent").Inc(1)
 		// bmetrics.GetOrRegisterCounter("sink", "tcp", "sent_bytes").Inc(int64(n))
 	}
 

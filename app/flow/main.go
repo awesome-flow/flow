@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/config"
 	"github.com/whiteboxio/flow/pkg/pipeline"
 )
@@ -19,13 +20,11 @@ func main() {
 		panic(fmt.Sprintf("Unable to resolve config: %s", err.Error()))
 	}
 
-	tell.Init()
+	log.Infof("Starting %s version %d", ProgramName, MajVersion)
 
-	tell.Infof("Starting %s version %d", ProgramName, MajVersion)
+	metrics.Initialize("msgrelay")
 
-	bmetrics.Initialize("", "msgrelay")
-
-	tell.Infof("Initializing the pipeline")
+	log.Infof("Initializing the pipeline")
 
 	compsCfg, err := config_mapper.GetComponentsCfg()
 	if err != nil {
@@ -39,19 +38,19 @@ func main() {
 
 	pipeline, pplErr := pipeline.NewPipeline(compsCfg, pplCfg)
 	if pplErr != nil {
-		tell.Fatalf("Failed to initialize the pipeline: %s", pplErr.Error())
+		log.Fatalf("Failed to initialize the pipeline: %s", pplErr.Error())
 	}
-	tell.Info("Pipeline initalization is complete")
+	log.Info("Pipeline initalization is complete")
 
-	tell.Info("Pipeline GraphViz diagram (plot using https://www.planttext.com):")
+	log.Info("Pipeline GraphViz diagram (plot using https://www.planttext.com):")
 	fmt.Println(pipeline.Explain())
 
-	tell.Info("Activating the pipeline")
+	log.Info("Activating the pipeline")
 	startErr := pipeline.Start()
 	if startErr != nil {
-		tell.Fatalf("Failed to start the pipeline: %s", startErr.Error())
+		log.Fatalf("Failed to start the pipeline: %s", startErr.Error())
 	}
-	tell.Info("Pipeline successfully activated")
+	log.Info("Pipeline successfully activated")
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -59,7 +58,7 @@ func main() {
 	tell.Info("Terminating the pipeline")
 	stopErr := pipeline.Stop()
 	if stopErr != nil {
-		tell.Fatalf("Failed to stop the pipeline: %s", stopErr.Error())
+		log.Fatalf("Failed to stop the pipeline: %s", stopErr.Error())
 		os.Exit(1)
 	}
 

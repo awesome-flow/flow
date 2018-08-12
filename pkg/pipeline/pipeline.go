@@ -6,6 +6,7 @@ import (
 
 	"github.com/whiteboxio/flow/pkg/config"
 	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/data"
 	buffer "github.com/whiteboxio/flow/pkg/links/buffer"
 	dmx "github.com/whiteboxio/flow/pkg/links/dmx"
 	fanout "github.com/whiteboxio/flow/pkg/links/fanout"
@@ -19,12 +20,14 @@ import (
 	unix_rcv "github.com/whiteboxio/flow/pkg/receiver/unix"
 	dumper_sink "github.com/whiteboxio/flow/pkg/sink/dumper"
 	tcp_sink "github.com/whiteboxio/flow/pkg/sink/tcp"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Pipeline struct {
 	pplCfg   map[string]config.CfgBlockPipeline
 	compsCfg map[string]config.CfgBlockComponent
-	compTree *util.NTree
+	compTree *data.NTree
 }
 
 type ConstrFunc func(string, core.Params) (core.Link, error)
@@ -71,7 +74,7 @@ func NewPipeline(comps map[string]config.CfgBlockComponent,
 				"Undefined component %s in the pipeline", compName)
 		}
 		if compCfg.Connect != "" {
-			tell.Infof("Connecting %s to %s", compName, compCfg.Connect)
+			log.Infof("Connecting %s to %s", compName, compCfg.Connect)
 			if _, ok := compPool[compCfg.Connect]; !ok {
 				return nil, fmt.Errorf(
 					"Failed to connect %s to %s: %s is undefined",
@@ -83,8 +86,8 @@ func NewPipeline(comps map[string]config.CfgBlockComponent,
 			}
 		}
 		if len(compCfg.Links) > 0 {
-			tell.Infof("Linking %s with %s", compName, compCfg.Links)
-			links := make([]flow.Link, len(compCfg.Links))
+			log.Infof("Linking %s with %s", compName, compCfg.Links)
+			links := make([]core.Link, len(compCfg.Links))
 			for ix, linkName := range compCfg.Links {
 				if _, ok := compPool[linkName]; !ok {
 					return nil, fmt.Errorf(
@@ -99,7 +102,7 @@ func NewPipeline(comps map[string]config.CfgBlockComponent,
 			}
 		}
 		if len(compCfg.Routes) > 0 {
-			routes := make(map[string]flow.Link)
+			routes := make(map[string]core.Link)
 			for rtPath, rtName := range compCfg.Routes {
 				if _, ok := compPool[rtName]; !ok {
 					return nil, fmt.Errorf(
@@ -124,7 +127,7 @@ func NewPipeline(comps map[string]config.CfgBlockComponent,
 	return pipeline, nil
 }
 
-func buildComp(compName string, cfg config.CfgBlockComponent) (flow.Link, error) {
+func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error) {
 	if cfg.Plugin != "" {
 		pluginPath, _ := config.Get("flow.plugin.path")
 		if pluginPath.(string) == "" {
@@ -139,7 +142,7 @@ func buildComp(compName string, cfg config.CfgBlockComponent) (flow.Link, error)
 		if cErr != nil {
 			return nil, cErr
 		}
-		comp, err := c.(func(string, flow.Params) (flow.Link, error))(compName, cfg.Params)
+		comp, err := c.(func(string, core.Params) (core.Link, error))(compName, cfg.Params)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -185,18 +188,18 @@ func (ppl *Pipeline) Explain() string {
 	return graphViz
 }
 
-func (ppl *Pipeline) ExecCmd(cmd *flow.Cmd, cmdPpgt flow.CmdPropagation) error {
+func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
 	var stack []interface{}
 	switch cmdPpgt {
-	case flow.CmdPpgtBtmUp:
+	case core.CmdPpgtBtmUp:
 		stack = ppl.compTree.PostTraversal()
-	case flow.CmdPpgtTopDwn:
+	case core.CmdPpgtTopDwn:
 		stack = ppl.compTree.PreTraversal()
 	default:
 		panic("This should not happen, OlegS made a mistake")
 	}
 	for _, link := range stack {
-		if err := link.(flow.Link).ExecCmd(cmd); err != nil {
+		if err := link.(core.Link).ExecCmd(cmd); err != nil {
 			return err
 		}
 	}
@@ -204,21 +207,21 @@ func (ppl *Pipeline) ExecCmd(cmd *flow.Cmd, cmdPpgt flow.CmdPropagation) error {
 }
 
 func (ppl *Pipeline) Start() error {
-	return ppl.ExecCmd(&flow.Cmd{Code: flow.CmdCodeStart}, flow.CmdPpgtBtmUp)
+	return ppl.ExecCmd(&core.Cmd{Code: core.CmdCodeStart}, core.CmdPpgtBtmUp)
 }
 
 func (ppl *Pipeline) Stop() error {
-	return ppl.ExecCmd(&flow.Cmd{Code: flow.CmdCodeStop}, flow.CmdPpgtTopDwn)
+	return ppl.ExecCmd(&core.Cmd{Code: core.CmdCodeStop}, core.CmdPpgtTopDwn)
 }
 
 func buildCompTree(ppl map[string]config.CfgBlockPipeline,
-	lookup map[string]flow.Link) *util.NTree {
+	lookup map[string]core.Link) *data.NTree {
 
-	rootNode := &util.NTree{}
+	rootNode := &data.NTree{}
 
 	for name, block := range ppl {
 		ptr := rootNode.FindOrInsert(lookup[name])
-		children := make([]flow.Link, 0)
+		children := make([]core.Link, 0)
 		if len(block.Connect) > 0 {
 			children = append(children, lookup[block.Connect])
 		}
