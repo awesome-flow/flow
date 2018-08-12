@@ -16,10 +16,10 @@ import (
 	http_rcv "github.com/whiteboxio/flow/pkg/receiver/http"
 	tcp_rcv "github.com/whiteboxio/flow/pkg/receiver/tcp"
 	udp_rcv "github.com/whiteboxio/flow/pkg/receiver/udp"
-	udp_sink "github.com/whiteboxio/flow/pkg/receiver/udp"
 	unix_rcv "github.com/whiteboxio/flow/pkg/receiver/unix"
 	dumper_sink "github.com/whiteboxio/flow/pkg/sink/dumper"
 	tcp_sink "github.com/whiteboxio/flow/pkg/sink/tcp"
+	udp_sink "github.com/whiteboxio/flow/pkg/sink/udp"
 
 	log "github.com/sirupsen/logrus"
 )

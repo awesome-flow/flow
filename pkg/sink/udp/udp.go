@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 
 	"github.com/cenk/backoff"
 )
@@ -45,7 +47,7 @@ func (udp *UDP) connect() {
 		//tell.Infof("Connecting to %s", udp.addr)
 		conn, connErr := net.DialTimeout("udp4", udp.addr, UdpConnTimeout)
 		if connErr != nil {
-			tell.Warnf("Unable to connect to %s: %s", udp.addr, connErr.Error())
+			log.Warnf("Unable to connect to %s: %s", udp.addr, connErr.Error())
 			return connErr
 		}
 		udp.conn = conn
@@ -54,27 +56,26 @@ func (udp *UDP) connect() {
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = 0
 	backoff.RetryNotify(bckSub, b, func(err error, dur time.Duration) {
-		tell.Warnf("Failed to establish a UDP connection to %s because: %s. "+
+		log.Warnf("Failed to establish a UDP connection to %s because: %s. "+
 			"Next retry in %s", udp.addr, err.Error(), dur)
 	})
 }
 
 func (udp *UDP) Recv(msg *core.Message) error {
-	bmetrics.GetOrRegisterCounter("sink", "udp", "received").Inc(1)
+	metrics.GetCounter("sink.udp.received").Inc(1)
 	if udp.conn == nil {
-		bmetrics.GetOrRegisterCounter("sink", "udp", "no_connection").Inc(1)
+		metrics.GetCounter("sink.udp.no_connection").Inc(1)
 		return msg.AckFailed()
 	}
 	udp.Lock()
 	defer udp.Unlock()
 	udp.conn.SetDeadline(time.Now().Add(UdpWriteDeadline))
 	if _, err := udp.conn.Write(msg.Payload); err != nil {
-		bmetrics.GetOrRegisterCounter("sink", "udp", "failed").Inc(1)
+		metrics.GetCounter("sink.udp.failed").Inc(1)
 		go udp.connect()
 		return msg.AckFailed()
 	} else {
-		bmetrics.GetOrRegisterCounter("sink", "udp", "sent").Inc(1)
-		//bmetrics.GetOrRegisterCounter("sink", "udp", "sent_bytes").Inc(int64(n))
+		metrics.GetCounter("sink.udp.sent").Inc(1)
 	}
 	return msg.AckDone()
 }

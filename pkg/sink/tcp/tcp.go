@@ -76,7 +76,6 @@ func (tcp *TCP) Recv(msg *core.Message) error {
 		return msg.AckFailed()
 	} else {
 		metrics.GetCounter("sink.tcp.sent").Inc(1)
-		// bmetrics.GetOrRegisterCounter("sink", "tcp", "sent_bytes").Inc(int64(n))
 	}
 
 	return msg.AckDone()

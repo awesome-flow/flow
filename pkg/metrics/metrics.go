@@ -14,8 +14,14 @@ func (cntr *Counter) Inc(delta int64) {
 }
 
 var (
-	counters = &sync.Map{}
+	namespace = ""
+	counters  = &sync.Map{}
 )
+
+func Initialize(nmspc string) error {
+	namespace = nmspc
+	return nil
+}
 
 func GetCounter(name string) *Counter {
 	cntr, _ := counters.LoadOrStore(name, &Counter{})

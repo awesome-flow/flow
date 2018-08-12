@@ -1,0 +1,13 @@
+components:
+  udp_rcv:
+    module: receiver.udp
+    params:
+      bind_addr: localhost:3101
+  stdout:
+    module: sink.dumper
+    params:
+      out: STDOUT
+
+pipeline:
+  udp_rcv:
+    connect: stdout
