@@ -61,15 +61,15 @@
   version = "v1.0.6"
 
 [[projects]]
-  digest = "1:85bdb387bd7566347777efdc977c75112b9fe5fe9b44cb3c8b5dc2fd1dadda33"
+  branch = "master"
+  digest = "1:61e813d1c0128153ee9eeb065be2948889913e3cd1479ee8b969a60fdecead2f"
   name = "github.com/tidwall/evio"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "UT"
-  revision = "751f59108ad87aaef43e243de036301d233baddb"
-  version = "v0.1.0"
+  revision = "3db0020933b5ae6646c7d06f3f1e2a012f4969f8"
 
 [[projects]]
   branch = "master"
@@ -77,7 +77,7 @@
   name = "github.com/whiteboxio/msgrelay"
   packages = ["pkg/data"]
   pruneopts = "UT"
-  revision = "fc829f6e461acd7318ed0c4f273f51a2c5f0a395"
+  revision = "6d813e05070a80067da623a6d7563b74b02dab53"
 
 [[projects]]
   branch = "master"
@@ -85,7 +85,7 @@
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "UT"
-  revision = "f027049dab0ad238e394a753dba2d14753473a04"
+  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
 
 [[projects]]
   branch = "master"
@@ -93,18 +93,18 @@
   name = "golang.org/x/net"
   packages = ["context"]
   pruneopts = "UT"
-  revision = "f9ce57c11b242f0f1599cf25c89d8cb02c45295a"
+  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
 
 [[projects]]
   branch = "master"
-  digest = "1:4d16433c0d2c24761b8a507e8c2e9c8cf9193b497d6b38aaeffca038070bc8f5"
+  digest = "1:a60cae5be8993938498243605b120290533a5208fd5cac81c932afbad3642fb0"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "904bdc257025c7b3f43c19360ad3ab85783fad78"
+  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"

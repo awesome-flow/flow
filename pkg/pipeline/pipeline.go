@@ -13,6 +13,7 @@ import (
 	mpx "github.com/whiteboxio/flow/pkg/links/mpx"
 	router "github.com/whiteboxio/flow/pkg/links/router"
 	throttler "github.com/whiteboxio/flow/pkg/links/throttler"
+	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
 	http_rcv "github.com/whiteboxio/flow/pkg/receiver/http"
 	tcp_rcv "github.com/whiteboxio/flow/pkg/receiver/tcp"
 	udp_rcv "github.com/whiteboxio/flow/pkg/receiver/udp"
@@ -38,6 +39,7 @@ var (
 		"receiver.udp":    udp_rcv.NewUDP,
 		"receiver.http":   http_rcv.NewHTTP,
 		"receiver.unix":   unix_rcv.NewUnix,
+		"receiver.evio":   evio_rcv.NewEvio,
 		"links.dmx":       dmx.NewDMX,
 		"links.mpx":       mpx.NewMPX,
 		"links.router":    router.NewRouter,
