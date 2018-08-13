@@ -1,6 +1,10 @@
 package receiver
 
 import (
+	"fmt"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/tidwall/evio"
 	"github.com/whiteboxio/flow/pkg/core"
 )
@@ -12,35 +16,41 @@ type Evio struct {
 }
 
 func NewEvio(name string, params core.Params) (core.Link, error) {
-	return nil, nil
+	events := &evio.Events{}
+
+	if numLoops, ok := params["num_loops"]; ok {
+		events.NumLoops = numLoops.(int)
+	} else {
+		events.NumLoops = -1 // sets to GOMAXPROCS
+	}
+
+	listIntf, ok := params["listeners"]
+	if !ok {
+		return nil, fmt.Errorf("Failed to initialize evio: missing listeners")
+	}
+
+	ev := &Evio{
+		name,
+		events,
+		core.NewConnector(),
+	}
+
+	events.Data = func(ec evio.Conn, buf []byte) (out []byte, action evio.Action) {
+		if err := ev.Send(core.NewMessage(nil, buf)); err != nil {
+			log.Errorf("Failed to send evio message: %s", err)
+		}
+		return
+	}
+
+	listeners := make([]string, len(listIntf.([]interface{})))
+	for ix, li := range listIntf.([]interface{}) {
+		listeners[ix] = li.(string)
+	}
+	go func() {
+		if err := evio.Serve(*events, listeners...); err != nil {
+			log.Fatalf("Failed to start evio: %s", err)
+		}
+	}()
+
+	return ev, nil
 }
-
-// func NewEvioUDP(name string, params core.Params) (core.Link, error) {
-// 	udp := &UDP{name, nil, core.NewConnector()}
-
-// 	udpAddr, ok := params["bind_addr"]
-// 	if !ok {
-// 		return nil, fmt.Errorf("UDP receiver parameters are missing bind_addr")
-// 	}
-
-// 	log.Infof("Starting a new evio handler")
-
-// 	var events evio.Events
-// 	events.NumLoops = 4
-// 	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
-// 		msg := core.NewMessage(nil, in)
-// 		if sendErr := udp.Send(msg); sendErr != nil {
-// 			log.Errorf("UDP failed to accept message: %s", sendErr.Error())
-// 		} else {
-// 			metrics.GetCounter("receiver.udp.sent").Inc(1)
-// 		}
-// 		return
-// 	}
-// 	go func() {
-// 		if err := evio.Serve(events, "udp://"+udpAddr.(string)); err != nil {
-// 			log.Errorf("Unable to connect evio listener: %s", err)
-// 		}
-// 	}()
-
-// 	return udp, nil
-// }
