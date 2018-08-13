@@ -45,12 +45,31 @@
   revision = "1b76add642e42c6ffba7211ad7b3939ce654526e"
 
 [[projects]]
+  digest = "1:e196a48176f7a091097baa89631b044e29afbb94e6c1c2e60ec37d3a8a3512e5"
+  name = "github.com/kavu/go_reuseport"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2943cf5bd5f8b178905122d93c73f5b773945efb"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:d867dfa6751c8d7a435821ad3b736310c2ed68945d05b50fb9d23aee0540c8cc"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
   revision = "3e01752db0189b9157070a0e1668a620f9a85da2"
   version = "v1.0.6"
+
+[[projects]]
+  digest = "1:85bdb387bd7566347777efdc977c75112b9fe5fe9b44cb3c8b5dc2fd1dadda33"
+  name = "github.com/tidwall/evio"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "751f59108ad87aaef43e243de036301d233baddb"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -103,6 +122,7 @@
     "github.com/facebookgo/grace/gracehttp",
     "github.com/facebookgo/grace/gracenet",
     "github.com/sirupsen/logrus",
+    "github.com/tidwall/evio",
     "github.com/whiteboxio/msgrelay/pkg/data",
     "gopkg.in/yaml.v2",
   ]

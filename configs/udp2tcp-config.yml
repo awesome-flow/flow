@@ -1,0 +1,14 @@
+components:
+  udp_rcv:
+    module: receiver.udp
+    params:
+      bind_addr: localhost:3101
+      lib: evio
+  tcp_sink:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7222
+
+pipeline:
+  udp_rcv:
+    connect: tcp_sink

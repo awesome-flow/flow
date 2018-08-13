@@ -3,6 +3,7 @@ components:
     module: receiver.udp
     params:
       bind_addr: localhost:3101
+      lib: evio
   stdout:
     module: sink.dumper
     params:
