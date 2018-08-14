@@ -21,9 +21,9 @@ var (
 		dflt  interface{}
 		descr string
 	}{
-		{"string", "config.file", "config-file", "/etc/msgrelay/msgrelay-config.yml",
+		{"string", "config.file", "config", "/etc/flowd/flow-config.yml",
 			"Location of the config file"},
-		{"string", "flow.plugin.path", "flow-plugin-path", "/etc/msgrelay/plugins",
+		{"string", "flow.plugin.path", "flow-plugin-path", "/etc/flowd/plugins",
 			"Flow plugin path"},
 	}
 )

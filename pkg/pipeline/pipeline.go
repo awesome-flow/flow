@@ -133,7 +133,7 @@ func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error)
 	if cfg.Plugin != "" {
 		pluginPath, _ := config.Get("flow.plugin.path")
 		if pluginPath.(string) == "" {
-			pluginPath = "/etc/msgrelay/plugins"
+			pluginPath = "/etc/flowd/plugins"
 		}
 		p, pErr := plugin.Open(fmt.Sprintf("%s/%s/%s.so",
 			pluginPath.(string), cfg.Plugin, cfg.Plugin))
@@ -198,7 +198,7 @@ func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
 	case core.CmdPpgtTopDwn:
 		stack = ppl.compTree.PreTraversal()
 	default:
-		panic("This should not happen, OlegS made a mistake")
+		panic("This should not happen")
 	}
 	for _, link := range stack {
 		if err := link.(core.Link).ExecCmd(cmd); err != nil {

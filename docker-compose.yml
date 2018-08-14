@@ -23,73 +23,73 @@ services:
       - "8126:8126"
       - "32774:32774"
   eventlog_tcp_7222:
-    image: msgrelay/tcp_server
+    image: flow/tcp_server
     ports:
       - "7222:7222"
     environment:
       TCP_SERVER_PORT: 7222
   eventlog_tcp_7223:
-    image: msgrelay/tcp_server
+    image: flow/tcp_server
     ports:
       - "7223:7223"
     environment:
       TCP_SERVER_PORT: 7223
   eventlog_tcp_7224:
-    image: msgrelay/tcp_server
+    image: flow/tcp_server
     ports:
       - "7224:7224"
     environment:
       TCP_SERVER_PORT: 7224
   eventlog_tcp_7225:
-    image: msgrelay/tcp_server
+    image: flow/tcp_server
     ports:
       - "7225:7225"
     environment:
       TCP_SERVER_PORT: 7225
   eventlog_tcp_7226:
-    image: msgrelay/tcp_server
+    image: flow/tcp_server
     ports:
       - "7226:7226"
     environment:
       TCP_SERVER_PORT: 7226
   eventlog_tcp_7227:
-    image: msgrelay/tcp_server
+    image: flow/tcp_server
     ports:
       - "7227:7227"
     environment:
       TCP_SERVER_PORT: 7227
   eventlog_udp_7722:
-    image: msgrelay/udp_server
+    image: flow/udp_server
     ports:
       - "7722:7722/udp"
     environment:
       UDP_SERVER_PORT: 7722
   eventlog_udp_7723:
-    image: msgrelay/udp_server
+    image: flow/udp_server
     ports:
       - "7723:7723/udp"
     environment:
       UDP_SERVER_PORT: 7723
   eventlog_udp_7724:
-    image: msgrelay/udp_server
+    image: flow/udp_server
     ports:
       - "7724:7724/udp"
     environment:
       UDP_SERVER_PORT: 7724
   eventlog_udp_7725:
-    image: msgrelay/udp_server
+    image: flow/udp_server
     ports:
       - "7725:7725/udp"
     environment:
       UDP_SERVER_PORT: 7725
   eventlog_udp_7726:
-    image: msgrelay/udp_server
+    image: flow/udp_server
     ports:
       - "7726:7726/udp"
     environment:
       UDP_SERVER_PORT: 7726
   eventlog_udp_7727:
-    image: msgrelay/udp_server
+    image: flow/udp_server
     ports:
       - "7727:7727/udp"
     environment:

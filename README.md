@@ -116,7 +116,7 @@ blocks and enreaching the standard ones.
 
 ## Messages
 
-msgrelay is supposed to pass messages. From the user perspective, a message is
+flowd is supposed to pass messages. From the user perspective, a message is
 a binary payload with a set of key-value metainformation tied with it.
 
 Internally, messages are stateful. Message initiator can subscribe to message
@@ -227,7 +227,7 @@ Flow command constants are named:
 
 ## Modularity and Plugin Infrastructure
 
-msgrelay is a widely extendable software due to the plugin system. We use
+Flow is a widely extendable software due to the plugin system. We use
 Golang plugins in order to let developers create their custom links. A plugin
 must conform to the same interface as the core links: expose a constructor that
 will produce a new instance of the link. One is allowed to implement any kind
@@ -252,13 +252,13 @@ name of the plugin includes naming convention: it would be mapped to the real
 file lookup path.
 
 By default, plugins are expected to be found in folder called
-`/etc/msgrelay/plugins`, but is configurable by specifying `FLOW_PLUGIN_PATH`
+`/etc/flowd/plugins`, but is configurable by specifying `FLOW_PLUGIN_PATH`
 environment variable.
 
 A structure of a plugin folder looks like:
 
 ```
-/etc/msgrelay/plugins
+/etc/flowd/plugins
 └── plugin_name
     ├── plugin_name.go
     ├── plugin_name.so
@@ -285,7 +285,7 @@ Below there is an example of a plugin
 package main
 
 import (
-	"github.com/whitebox/msgrelay/pkg/flow"
+	flow "github.com/whitebox/flow/pkg/core"
 	"bufio"
 	"fmt"
 	"os"

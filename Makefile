@@ -1,4 +1,4 @@
-BINARY_NAME=flow
+BINARY_NAME=flowd
 DOCKER_COMPOSE=docker-compose
 GOCMD=go
 GOVERSION=1.10
@@ -11,4 +11,4 @@ test:
 	@$(GOTEST) -v ./...
 
 build:
-	@$(GOBUILD) -o $(BINARY_NAME) -v
+	@cd cmd/flowd; $(GOBUILD) -o ../../$(BINARY_NAME) -v

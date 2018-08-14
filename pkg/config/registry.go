@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	data "github.com/whiteboxio/msgrelay/pkg/data"
+	data "github.com/whiteboxio/flow/pkg/data"
 )
 
 type Registry struct {
