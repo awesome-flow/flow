@@ -7,12 +7,12 @@ import (
 	"github.com/whiteboxio/flow/pkg/config"
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/data"
-	buffer "github.com/whiteboxio/flow/pkg/links/buffer"
-	dmx "github.com/whiteboxio/flow/pkg/links/dmx"
-	fanout "github.com/whiteboxio/flow/pkg/links/fanout"
-	mpx "github.com/whiteboxio/flow/pkg/links/mpx"
-	router "github.com/whiteboxio/flow/pkg/links/router"
-	throttler "github.com/whiteboxio/flow/pkg/links/throttler"
+	buffer "github.com/whiteboxio/flow/pkg/link/buffer"
+	dmx "github.com/whiteboxio/flow/pkg/link/dmx"
+	fanout "github.com/whiteboxio/flow/pkg/link/fanout"
+	mpx "github.com/whiteboxio/flow/pkg/link/mpx"
+	router "github.com/whiteboxio/flow/pkg/link/router"
+	throttler "github.com/whiteboxio/flow/pkg/link/throttler"
 	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
 	http_rcv "github.com/whiteboxio/flow/pkg/receiver/http"
 	tcp_rcv "github.com/whiteboxio/flow/pkg/receiver/tcp"
@@ -35,20 +35,20 @@ type ConstrFunc func(string, core.Params) (core.Link, error)
 
 var (
 	compBuilders = map[string]ConstrFunc{
-		"receiver.tcp":    tcp_rcv.NewTCP,
-		"receiver.udp":    udp_rcv.NewUDP,
-		"receiver.http":   http_rcv.NewHTTP,
-		"receiver.unix":   unix_rcv.NewUnix,
-		"receiver.evio":   evio_rcv.NewEvio,
-		"links.dmx":       dmx.NewDMX,
-		"links.mpx":       mpx.NewMPX,
-		"links.router":    router.NewRouter,
-		"links.throttler": throttler.NewThrottler,
-		"links.fanout":    fanout.NewFanout,
-		"links.buffer":    buffer.NewBuffer,
-		"sink.dumper":     dumper_sink.NewDumper,
-		"sink.tcp":        tcp_sink.NewTCP,
-		"sink.udp":        udp_sink.NewUDP,
+		"receiver.tcp":   tcp_rcv.NewTCP,
+		"receiver.udp":   udp_rcv.NewUDP,
+		"receiver.http":  http_rcv.NewHTTP,
+		"receiver.unix":  unix_rcv.NewUnix,
+		"receiver.evio":  evio_rcv.NewEvio,
+		"link.dmx":       dmx.NewDMX,
+		"link.mpx":       mpx.NewMPX,
+		"link.router":    router.NewRouter,
+		"link.throttler": throttler.NewThrottler,
+		"link.fanout":    fanout.NewFanout,
+		"link.buffer":    buffer.NewBuffer,
+		"sink.dumper":    dumper_sink.NewDumper,
+		"sink.tcp":       tcp_sink.NewTCP,
+		"sink.udp":       udp_sink.NewUDP,
 	}
 )
 

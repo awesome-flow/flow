@@ -7,7 +7,7 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 MAKE=make
 
-test: 
+test:
 	@$(GOTEST) -v ./...
 
 build:

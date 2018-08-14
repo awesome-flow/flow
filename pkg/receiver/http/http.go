@@ -131,7 +131,7 @@ func status2resp(s core.MsgStatus) (int, []byte) {
 	case core.MsgStatusThrottled:
 		return http.StatusTooManyRequests, []byte("Message throttled")
 	default:
-		return http.StatusTeapot, []byte("OlegS screwed, this should not happen")
+		return http.StatusTeapot, []byte("This should not happen")
 	}
 }
 
