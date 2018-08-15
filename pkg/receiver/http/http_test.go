@@ -3,8 +3,8 @@ package receiver
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 
@@ -52,34 +52,74 @@ func (rcv *Receiver) Recv(msg *core.Message) error {
 	return fmt.Errorf("Unknown message status")
 }
 
-func TestHTTP_handleSendV1_AckDone(t *testing.T) {
-	httpRcv, err := NewHTTP("test_http", core.Params{"bind_addr": ":7101"})
-	if err != nil {
-		t.Fatalf("Failed to initialize HTTP receiver: %s", err)
+func TestHTTP_handleSendV1(t *testing.T) {
+	tests := []struct {
+		name               string
+		bindAddr           string
+		behavior           uint32
+		payload            []byte
+		extra              string
+		expectedStatusCode int
+		expectedPayload    []byte
+		expectedMeta       core.MsgMeta
+	}{
+		{
+			"async successful",
+			":7101",
+			RcvDone,
+			[]byte("hello world"),
+			"",
+			http.StatusAccepted,
+			[]byte("hello world"),
+			core.MsgMeta{},
+		},
+		{
+			"sync successful",
+			":7102",
+			RcvDone,
+			[]byte("hello world"),
+			"?sync=true",
+			http.StatusOK,
+			[]byte("hello world"),
+			core.MsgMeta{"sync": "true"},
+		},
 	}
-	rcv := NewReceiver(RcvDone)
-	httpRcv.ConnectTo(rcv)
-	time.Sleep(10 * time.Millisecond)
-	payload := "hello world"
-	buf := bytes.NewReader([]byte(payload))
-	resp, err := http.Post(
-		"http://localhost:7101/api/v1/send",
-		"application/json",
-		buf,
-	)
-	defer resp.Body.Close()
-	if err != nil {
-		t.Fatalf("Failed to execute an HTTP request: %s", err)
-	}
-	if resp.StatusCode != http.StatusAccepted {
-		t.Fatalf("Unexpected status code: %d", resp.StatusCode)
-	}
-	_, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		t.Fatalf("Failed to read the response body: %s", readErr)
-	}
-	if string(rcv.lastMessage.Payload) != payload {
-		t.Fatalf("Unexpected receiver last message contents: %s",
-			rcv.lastMessage.Payload)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			httpRcv, err := NewHTTP("test_http",
+				core.Params{"bind_addr": testCase.bindAddr})
+			if err != nil {
+				t.Errorf("Failed to create an HTTP receiver: %s", err)
+			}
+			rcv := NewReceiver(testCase.behavior)
+			httpRcv.ConnectTo(rcv)
+			time.Sleep(10 * time.Millisecond)
+			buf := bytes.NewReader(testCase.payload)
+			resp, err := http.Post(
+				"http://localhost:7101/api/v1/send"+testCase.extra,
+				"application/octet-stream",
+				buf,
+			)
+			if err != nil {
+				t.Errorf("Failed to send an HTTP request: %s", err)
+			}
+			if resp.StatusCode != testCase.expectedStatusCode {
+				t.Errorf("Unexpected HTTP status code: %d, want: %d",
+					resp.StatusCode, testCase.expectedStatusCode)
+			}
+			time.Sleep(10 * time.Millisecond)
+			if rcv.lastMessage == nil {
+				t.Fatalf("Receiver message is nil")
+			}
+			if bytes.Compare(testCase.expectedPayload, rcv.lastMessage.Payload) == 0 {
+				t.Errorf("Unexpected last message content: %s, want: %s",
+					rcv.lastMessage.Payload, testCase.expectedPayload)
+			}
+			if !reflect.DeepEqual(rcv.lastMessage.Meta, testCase.expectedMeta) {
+				t.Errorf("Unexpected message meta: %+v, want: %+v",
+					rcv.lastMessage.Meta, testCase.expectedMeta)
+			}
+		})
 	}
 }
