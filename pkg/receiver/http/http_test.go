@@ -3,8 +3,8 @@ package receiver
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
-	"reflect"
 	"testing"
 	"time"
 
@@ -12,7 +12,7 @@ import (
 )
 
 type Receiver struct {
-	lastMessage *core.Message
+	lastMessage []byte
 	behavior    uint32
 	*core.Connector
 }
@@ -28,11 +28,12 @@ const (
 )
 
 func NewReceiver(behavior uint32) *Receiver {
-	return &Receiver{nil, behavior, core.NewConnector()}
+	return &Receiver{[]byte{}, behavior, core.NewConnector()}
 }
 
 func (rcv *Receiver) Recv(msg *core.Message) error {
-	rcv.lastMessage = msg
+	rcv.lastMessage = msg.Payload
+
 	switch rcv.behavior {
 	case RcvDone:
 		return msg.AckDone()
@@ -64,8 +65,18 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		expectedMeta       core.MsgMeta
 	}{
 		{
+			"sync empty",
+			":17101",
+			RcvDone,
+			[]byte{},
+			"",
+			http.StatusBadRequest,
+			[]byte{},
+			core.MsgMeta{},
+		},
+		{
 			"async successful",
-			":7101",
+			":17101",
 			RcvDone,
 			[]byte("hello world"),
 			"",
@@ -75,7 +86,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		},
 		{
 			"sync successful",
-			":7102",
+			":17101",
 			RcvDone,
 			[]byte("hello world"),
 			"?sync=true",
@@ -83,43 +94,104 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			[]byte("hello world"),
 			core.MsgMeta{"sync": "true"},
 		},
+		{
+			"sync partial",
+			":17101",
+			RcvPartial,
+			[]byte("hello world"),
+			"?sync=true",
+			http.StatusConflict,
+			[]byte("hello world"),
+			core.MsgMeta{"sync": "true"},
+		},
+		{
+			"sync invalid",
+			":17101",
+			RcvInvalid,
+			[]byte("hello world"),
+			"?sync=true",
+			http.StatusBadRequest,
+			[]byte("hello world"),
+			core.MsgMeta{"sync": "true"},
+		},
+		{
+			"sync failed",
+			":17101",
+			RcvFailed,
+			[]byte("hello world"),
+			"?sync=true",
+			http.StatusInternalServerError,
+			[]byte("hello world"),
+			core.MsgMeta{"sync": "true"},
+		},
+		{
+			"sync timeout",
+			":17101",
+			RcvTimeout,
+			[]byte("hello world"),
+			"?sync=true",
+			http.StatusGatewayTimeout,
+			[]byte("hello world"),
+			core.MsgMeta{"sync": "true"},
+		},
+		{
+			"sync unroutable",
+			":17101",
+			RcvUnroutable,
+			[]byte("hello world"),
+			"?sync=true",
+			http.StatusNotAcceptable,
+			[]byte("hello world"),
+			core.MsgMeta{"sync": "true"},
+		},
+		{
+			"sync throttled",
+			":17101",
+			RcvThrottled,
+			[]byte("hello world"),
+			"?sync=true",
+			http.StatusTooManyRequests,
+			[]byte("hello world"),
+			core.MsgMeta{"sync": "true"},
+		},
 	}
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			httpRcv, err := NewHTTP("test_http",
-				core.Params{"bind_addr": testCase.bindAddr})
-			if err != nil {
-				t.Errorf("Failed to create an HTTP receiver: %s", err)
-			}
-			rcv := NewReceiver(testCase.behavior)
-			httpRcv.ConnectTo(rcv)
-			time.Sleep(10 * time.Millisecond)
-			buf := bytes.NewReader(testCase.payload)
-			resp, err := http.Post(
-				"http://localhost:7101/api/v1/send"+testCase.extra,
-				"application/octet-stream",
-				buf,
-			)
-			if err != nil {
-				t.Errorf("Failed to send an HTTP request: %s", err)
-			}
-			if resp.StatusCode != testCase.expectedStatusCode {
-				t.Errorf("Unexpected HTTP status code: %d, want: %d",
-					resp.StatusCode, testCase.expectedStatusCode)
-			}
-			time.Sleep(10 * time.Millisecond)
-			if rcv.lastMessage == nil {
-				t.Fatalf("Receiver message is nil")
-			}
-			if bytes.Compare(testCase.expectedPayload, rcv.lastMessage.Payload) == 0 {
-				t.Errorf("Unexpected last message content: %s, want: %s",
-					rcv.lastMessage.Payload, testCase.expectedPayload)
-			}
-			if !reflect.DeepEqual(rcv.lastMessage.Meta, testCase.expectedMeta) {
-				t.Errorf("Unexpected message meta: %+v, want: %+v",
-					rcv.lastMessage.Meta, testCase.expectedMeta)
-			}
-		})
+		t.Logf("Inspecting case %s", testCase.name)
+		httpRcv, err := NewHTTP("test_http",
+			core.Params{"bind_addr": testCase.bindAddr})
+		if err != nil {
+			t.Errorf("Failed to create an HTTP receiver: %s", err)
+		}
+		time.Sleep(10 * time.Millisecond)
+		rcv := NewReceiver(testCase.behavior)
+		httpRcv.ConnectTo(rcv)
+		buf := bytes.NewReader(testCase.payload)
+		resp, err := http.Post(
+			"http://"+testCase.bindAddr+"/send"+testCase.extra,
+			"application/octet-stream",
+			buf,
+		)
+		if err != nil {
+			t.Errorf("Failed to send an HTTP request: %s", err)
+		}
+		if resp == nil {
+			t.Fatalf("Response is nil")
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			t.Errorf("Failed to read the body: %s", err)
+		}
+		t.Logf("Body: %s", body)
+		if resp.StatusCode != testCase.expectedStatusCode {
+			t.Errorf("Unexpected HTTP status code: %d, want: %d",
+				resp.StatusCode, testCase.expectedStatusCode)
+		}
+		if bytes.Compare(testCase.expectedPayload, rcv.lastMessage) != 0 {
+			t.Errorf("Unexpected last message content: %s, want: %s",
+				rcv.lastMessage, testCase.expectedPayload)
+		}
+		httpRcv.ExecCmd(&core.Cmd{Code: core.CmdCodeStop})
 	}
 }

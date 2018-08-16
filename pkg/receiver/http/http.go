@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/metrics"
-
-	"github.com/facebookgo/grace/gracehttp"
 )
 
 var (
@@ -33,21 +32,28 @@ func NewHTTP(name string, params core.Params) (core.Link, error) {
 	h := &HTTP{name, nil, core.NewConnector()}
 
 	srvMx := http.NewServeMux()
-	srv := &http.Server{
-		Addr:    httpAddr.(string),
-		Handler: srvMx,
-	}
-
-	h.Server = srv
-
-	srvMx.HandleFunc(versionedPath("api", 1, "send"), func(rw http.ResponseWriter, req *http.Request) {
+	srvMx.HandleFunc("/send", func(rw http.ResponseWriter, req *http.Request) {
 		h.handleSendV1(rw, req)
 	})
 
+	srv := &http.Server{
+		Addr:    httpAddr.(string),
+		Handler: srvMx,
+		// ReadTimeout: from params,
+		// WriteTimeout: from params,
+		// MaxHeaderBytes: from params
+	}
+	h.Server = srv
+
 	go func() {
-		grcErr := gracehttp.Serve(h.Server)
-		if grcErr != nil {
-			panic(fmt.Sprintf("Failed to start gracemulti servers: %s", grcErr.Error()))
+		if err := srv.ListenAndServe(); err != nil {
+			switch err {
+			case http.ErrServerClosed:
+				log.Info(err.Error())
+			default:
+				panic(fmt.Sprintf("HTTP server critical error: %s", err))
+			}
+
 		}
 	}()
 
@@ -78,7 +84,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	body, err := ioutil.ReadAll(req.Body)
-	req.Body.Close()
+	defer req.Body.Close()
 	if err != nil {
 		metrics.GetCounter("receiver.http.bad_request").Inc(1)
 		http.Error(rw, "Bad request", http.StatusBadRequest)
@@ -102,6 +108,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 
 	select {
 	case s := <-msg.GetAckCh():
+		fmt.Printf("Received a message status update\n")
 		httpCode, httpResp := status2resp(s)
 		metrics.GetCounter(
 			"receiver.http." + fmt.Sprintf("ack_%d", httpCode)).Inc(1)
@@ -133,14 +140,4 @@ func status2resp(s core.MsgStatus) (int, []byte) {
 	default:
 		return http.StatusTeapot, []byte("This should not happen")
 	}
-}
-
-func versionedPath(preffix string, version int, path string) string {
-	if preffix[0] != '/' {
-		preffix = "/" + preffix
-	}
-	if path[0] != '/' {
-		path = "/" + path
-	}
-	return fmt.Sprintf("%s/v%d%s", preffix, version, path)
 }
