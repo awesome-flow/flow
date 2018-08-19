@@ -12,3 +12,7 @@ test:
 
 build:
 	@cd cmd/flowd; $(GOBUILD) -o ../../$(BINARY_NAME) -v
+
+build-docker-images:
+	@cd internal/app/tcp_server/ && $(MAKE) -f Makefile build-docker && $(MAKE) -f Makefile build-docker-image && $(MAKE) -f Makefile clean
+	@cd internal/app/udp_server/ && $(MAKE) -f Makefile build-docker && $(MAKE) -f Makefile build-docker-image && $(MAKE) -f Makefile clean

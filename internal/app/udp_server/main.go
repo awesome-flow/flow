@@ -1,9 +1,8 @@
-package tcp_server
+package main
 
 import (
 	"flag"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"sync"
@@ -17,30 +16,30 @@ type stts struct {
 }
 
 func main() {
-
 	flag.Parse()
 
-	port, ok := os.LookupEnv("TCP_SERVER_PORT")
+	port, ok := os.LookupEnv("UDP_SERVER_PORT")
 	if !ok {
-		panic("TCP_SERVER_PORT env variable must be set")
+		panic("UDP_SERVER_PORT env variable must be set")
 	}
-	bindAddr := fmt.Sprintf("0.0.0.0:%s", port)
+	bindAddr := fmt.Sprintf(":%s", port)
 
-	fmt.Printf("Starting a TCP server on %s\n", bindAddr)
+	fmt.Printf("Starting a UDP server on %s\n", bindAddr)
 
-	listener, err := net.Listen("tcp", bindAddr)
+	addr, err := net.ResolveUDPAddr("udp", bindAddr)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to start a UDP server: %s", err.Error()))
+	}
+
+	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to bind on addr %s: %s", bindAddr, err.Error()))
 	}
-	defer listener.Close()
+	defer conn.Close()
 	acc := &sync.Map{}
 	go reportEpoch(acc)
 	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Printf("Warning: Unable to accept connection: %s\n", err.Error())
-		}
-		go handleRequest(conn, acc)
+		handleRequest(conn, acc)
 	}
 }
 
@@ -68,17 +67,11 @@ func doReport(acc *sync.Map, epoch int64) {
 
 func handleRequest(conn net.Conn, acc *sync.Map) {
 	buf := make([]byte, 65536)
-	fmt.Printf("%s connected\n", conn.RemoteAddr())
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			switch err {
-			case io.EOF:
-				fmt.Printf("%s disconnected\n", conn.RemoteAddr())
-			default:
-				fmt.Printf("Warning: Failed to read from connection: %s\n", err.Error())
-			}
-			break
+			fmt.Printf("Warning: Failed to read from connection: %s\n", err.Error())
+			continue
 		}
 		if n == 0 {
 			break

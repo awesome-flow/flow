@@ -11,38 +11,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5fe3f6ede1c208a2efd3b78fe4df0306aa9624edd39476143d14f0326e5a8d29"
-  name = "github.com/facebookgo/clock"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "600d898af40aa09a7a93ecb9265d87b0504b6f03"
-
-[[projects]]
-  branch = "master"
-  digest = "1:1f21d86648746b776eae0dff77e4cafa2d9ccec0f0f1248c48306231ee800674"
+  digest = "1:433763f10d88dba9b533a7ea2fe9f5ee11e57e00306eb97a1f6090fd978e8fa1"
   name = "github.com/facebookgo/grace"
-  packages = [
-    "gracehttp",
-    "gracenet",
-  ]
+  packages = ["gracenet"]
   pruneopts = "UT"
   revision = "75cf19382434e82df4dd84953f566b8ad23d6e9e"
-
-[[projects]]
-  branch = "master"
-  digest = "1:17cb421603403a24edb0c7eeb382295dd31c72ab9ccf31cf7f0a37971f00aaa7"
-  name = "github.com/facebookgo/httpdown"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "5979d39b15c26299dc282711b0d65b113daccea6"
-
-[[projects]]
-  branch = "master"
-  digest = "1:02c7a4e944d94d6b80f51517158d10633b10775f528a3b7bdfc658d6f92415bd"
-  name = "github.com/facebookgo/stats"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "1b76add642e42c6ffba7211ad7b3939ce654526e"
 
 [[projects]]
   digest = "1:e196a48176f7a091097baa89631b044e29afbb94e6c1c2e60ec37d3a8a3512e5"
@@ -51,6 +24,14 @@
   pruneopts = "UT"
   revision = "2943cf5bd5f8b178905122d93c73f5b773945efb"
   version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:cdfb6a1ee9eb93168259c765ac2ce6f2c1ab5a9258c5bc70da46a1e1337f19ae"
+  name = "github.com/marpaia/graphite-golang"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "134b9af18cf31f936ebddbd11c03eead4d501601"
 
 [[projects]]
   digest = "1:d867dfa6751c8d7a435821ad3b736310c2ed68945d05b50fb9d23aee0540c8cc"
@@ -70,14 +51,6 @@
   ]
   pruneopts = "UT"
   revision = "3db0020933b5ae6646c7d06f3f1e2a012f4969f8"
-
-[[projects]]
-  branch = "master"
-  digest = "1:9e63272252545359003cd71affaf5e27a656065ae131ee7d37052b5266aecc63"
-  name = "github.com/whiteboxio/msgrelay"
-  packages = ["pkg/data"]
-  pruneopts = "UT"
-  revision = "6d813e05070a80067da623a6d7563b74b02dab53"
 
 [[projects]]
   branch = "master"
@@ -119,8 +92,8 @@
   analyzer-version = 1
   input-imports = [
     "github.com/cenk/backoff",
-    "github.com/facebookgo/grace/gracehttp",
     "github.com/facebookgo/grace/gracenet",
+    "github.com/marpaia/graphite-golang",
     "github.com/sirupsen/logrus",
     "github.com/tidwall/evio",
     "gopkg.in/yaml.v2",

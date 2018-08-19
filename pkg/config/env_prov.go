@@ -34,6 +34,7 @@ func (e *envProv) Setup() error {
 		settings[kDots] = v
 		Register(kDots, e)
 	}
+	e.settings.Store(settings)
 	return nil
 }
 

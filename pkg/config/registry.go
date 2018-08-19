@@ -48,6 +48,14 @@ func Get(key string) (interface{}, bool) {
 	return keyHeap.(*data.BinHeap).GetMax().(Provider).GetValue(key)
 }
 
+func GetOrDefault(key string, def interface{}) (interface{}, bool) {
+	res, ok := Get(key)
+	if !ok {
+		return def, false
+	}
+	return res, true
+}
+
 func traverseProviders() []Provider {
 	tree := &data.NTree{}
 	for provName, prov := range registry.providers {
