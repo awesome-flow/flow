@@ -1,0 +1,47 @@
+system:
+  maxprocs: 2
+
+components:
+  evio_rcv:
+    module: receiver.evio
+    params:
+      listeners:
+        - udp://localhost:3101
+  fanout:
+    module: link.fanout
+  tcp_sink_7222:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7222
+  tcp_sink_7223:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7223
+  tcp_sink_7224:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7224
+  tcp_sink_7225:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7225
+  tcp_sink_7226:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7226
+  tcp_sink_7227:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7227
+
+pipeline:
+  evio_rcv:
+    connect: fanout
+  fanout:
+    links:
+      - tcp_sink_7222
+      - tcp_sink_7223
+      - tcp_sink_7224
+      - tcp_sink_7225
+      - tcp_sink_7226
+      - tcp_sink_7227

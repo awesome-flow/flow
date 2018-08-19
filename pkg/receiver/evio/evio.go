@@ -7,6 +7,7 @@ import (
 
 	"github.com/tidwall/evio"
 	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
 type Evio struct {
@@ -36,9 +37,13 @@ func NewEvio(name string, params core.Params) (core.Link, error) {
 	}
 
 	events.Data = func(ec evio.Conn, buf []byte) (out []byte, action evio.Action) {
+		metrics.GetCounter("receiver.evio.received").Inc(1)
 		if err := ev.Send(core.NewMessage(nil, buf)); err != nil {
 			log.Errorf("Failed to send evio message: %s", err)
+			metrics.GetCounter("receiver.evio.failed").Inc(1)
+			return
 		}
+		metrics.GetCounter("receiver.evio.sent").Inc(1)
 		return
 	}
 
