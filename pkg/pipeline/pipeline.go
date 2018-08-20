@@ -3,7 +3,9 @@ package pipeline
 import (
 	"fmt"
 	"plugin"
+	"runtime"
 
+	"github.com/whiteboxio/flow/internal/pkg/admin"
 	"github.com/whiteboxio/flow/pkg/config"
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/data"
@@ -26,9 +28,10 @@ import (
 )
 
 type Pipeline struct {
-	pplCfg   map[string]config.CfgBlockPipeline
-	compsCfg map[string]config.CfgBlockComponent
-	compTree *data.NTree
+	pplCfg    map[string]config.CfgBlockPipeline
+	compsCfg  map[string]config.CfgBlockComponent
+	compTree  *data.NTree
+	adminHttp *admin.HTTP
 }
 
 type ConstrFunc func(string, core.Params) (core.Link, error)
@@ -52,11 +55,26 @@ var (
 	}
 )
 
-func NewPipeline(comps map[string]config.CfgBlockComponent,
-	ppl map[string]config.CfgBlockPipeline) (*Pipeline, error) {
+func NewPipeline(sysCfg *config.CfgBlockSystem,
+	compsCfg map[string]config.CfgBlockComponent,
+	pplCfg map[string]config.CfgBlockPipeline) (*Pipeline, error) {
+
+	var admHttp *admin.HTTP
+	if sysCfg != nil {
+		log.Infof("Setting GOMAXPROCS to %d", sysCfg.Maxprocs)
+		runtime.GOMAXPROCS(sysCfg.Maxprocs)
+
+		if sysCfg.Admin.Enabled {
+			var err error
+			admHttp, err = admin.NewHTTP(sysCfg)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	compPool := make(map[string]core.Link)
-	for compName, compParams := range comps {
+	for compName, compParams := range compsCfg {
 		comp, compErr := buildComp(compName, compParams)
 		if compErr != nil {
 			return nil, compErr
@@ -69,7 +87,7 @@ func NewPipeline(comps map[string]config.CfgBlockComponent,
 		compPool[compName] = comp
 	}
 
-	for compName, compCfg := range ppl {
+	for compName, compCfg := range pplCfg {
 		comp, ok := compPool[compName]
 		if !ok {
 			return nil, fmt.Errorf(
@@ -121,9 +139,10 @@ func NewPipeline(comps map[string]config.CfgBlockComponent,
 	}
 
 	pipeline := &Pipeline{
-		pplCfg:   ppl,
-		compsCfg: comps,
-		compTree: buildCompTree(ppl, compPool),
+		pplCfg:    pplCfg,
+		compsCfg:  compsCfg,
+		compTree:  buildCompTree(pplCfg, compPool),
+		adminHttp: admHttp,
 	}
 
 	return pipeline, nil

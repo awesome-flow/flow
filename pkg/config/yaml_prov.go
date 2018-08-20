@@ -23,8 +23,13 @@ type CfgBlockPipeline struct {
 	Routes  map[string]string
 }
 
+type CfgBlockSystemAdmin struct {
+	Enabled  bool
+	BindAddr string
+}
 type CfgBlockSystem struct {
 	Maxprocs int
+	Admin    CfgBlockSystemAdmin
 }
 
 type YAMLConfig struct {
