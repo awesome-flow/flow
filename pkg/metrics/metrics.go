@@ -23,6 +23,8 @@ var (
 	namespace    = ""
 	counters     = &sync.Map{}
 	sendInterval = 1 * time.Second
+
+	grph *graphite.Graphite = nil
 )
 
 func Initialize(nmspc string) error {
@@ -35,16 +37,28 @@ func Initialize(nmspc string) error {
 		return err
 	}
 
-	graphite, err := graphite.NewGraphite(grphHost.(string), grphPort)
+	grph, err = graphite.NewGraphite(grphHost.(string), grphPort)
 	if err != nil {
 		return err
 	}
 
-	go sendMetrics(graphite)
+	chIn := make(chan bool, 1)
+
+	go func() {
+		for {
+			<-chIn
+			if err := sendMetrics(); err != nil {
+				log.Warnf("Metrics module failed to send metrics: %s", err)
+			}
+			chIn <- true
+		}
+	}()
+	chIn <- true
+
 	return nil
 }
 
-func sendMetrics(grph *graphite.Graphite) {
+func sendMetrics() error {
 	time.Sleep(sendInterval)
 	metrics := make([]graphite.Metric, 0)
 	now := time.Now().Unix()
@@ -58,10 +72,10 @@ func sendMetrics(grph *graphite.Graphite) {
 	if len(metrics) > 0 {
 		log.Debug("Sending graphite metrics now")
 		if err := grph.SendMetrics(metrics); err != nil {
-			log.Warnf("Metrics module failed to send metrics: %s", err)
+			return err
 		}
 	}
-	sendMetrics(grph)
+	return nil
 }
 
 func GetCounter(name string) *Counter {

@@ -48,11 +48,9 @@ func (ft *Fanout) fanout() {
 }
 
 func (ft *Fanout) LinkTo(links []core.Link) error {
-
 	for _, link := range links {
 		ft.AddLink(link)
 	}
-
 	return nil
 }
 

@@ -1,5 +1,5 @@
 system:
-  maxprocs: 2
+  maxprocs: 4
 
 components:
   udp_rcv:
@@ -7,7 +7,7 @@ components:
     params:
       bind_addr: localhost:3101
   fanout:
-    module: link.fanout
+    module: link.mpx
   tcp_sink_7222:
     module: sink.tcp
     params:
