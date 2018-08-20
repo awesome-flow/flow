@@ -1,3 +1,9 @@
+system:
+  maxprocs: 4
+  admin:
+    enabled: true
+    bind_addr: "localhost:4101"
+
 components:
   udp_rcv:
     module: receiver.udp

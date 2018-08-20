@@ -83,6 +83,15 @@ func GetCounter(name string) *Counter {
 	return cntr.(*Counter)
 }
 
+func GetAll() map[string]int64 {
+	res := make(map[string]int64)
+	counters.Range(func(k interface{}, val interface{}) bool {
+		res[k.(string)] = val.(*Counter).v
+		return true
+	})
+	return res
+}
+
 func CounterRegistered(name string) bool {
 	_, ok := counters.Load(name)
 	return ok

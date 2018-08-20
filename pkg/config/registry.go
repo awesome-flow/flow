@@ -56,6 +56,15 @@ func GetOrDefault(key string, def interface{}) (interface{}, bool) {
 	return res, true
 }
 
+func GetAll() map[string]interface{} {
+	res := make(map[string]interface{})
+	registry.storage.Range(func(k interface{}, v interface{}) bool {
+		res[k.(string)], _ = v.(*data.BinHeap).GetMax().(Provider).GetValue(k.(string))
+		return true
+	})
+	return res
+}
+
 func traverseProviders() []Provider {
 	tree := &data.NTree{}
 	for provName, prov := range registry.providers {

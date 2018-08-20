@@ -25,7 +25,7 @@ type CfgBlockPipeline struct {
 
 type CfgBlockSystemAdmin struct {
 	Enabled  bool
-	BindAddr string
+	BindAddr string `yaml:"bind_addr"`
 }
 type CfgBlockSystem struct {
 	Maxprocs int
