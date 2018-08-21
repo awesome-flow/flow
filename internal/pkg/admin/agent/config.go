@@ -17,11 +17,12 @@ func init() {
 				cfg := config.GetAll()
 				respChunks := make([]string, 0)
 				for k, vItf := range cfg {
-					if v, convOk := vItf.(string); convOk {
-						respChunks = append(respChunks, fmt.Sprintf("%s: %s", k, v))
-					} else if v, convOk := vItf.(*string); convOk {
-						respChunks = append(respChunks, fmt.Sprintf("%s: %s", k, *v))
-					} else {
+					switch vItf.(type) {
+					case string:
+						respChunks = append(respChunks, fmt.Sprintf("%s: %s", k, vItf))
+					case *string:
+						respChunks = append(respChunks, fmt.Sprintf("%s: %s", k, *(vItf.(*string))))
+					default:
 						respChunks = append(respChunks, fmt.Sprintf("%s: %+v", k, vItf))
 					}
 				}
