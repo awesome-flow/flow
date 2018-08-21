@@ -11,7 +11,7 @@ components:
       listeners:
         - udp://localhost:3101
   fanout:
-    module: link.mpx
+    module: link.fanout
   tcp_sink_7222:
     module: sink.tcp
     params:

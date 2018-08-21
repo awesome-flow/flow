@@ -55,23 +55,9 @@ var (
 	}
 )
 
-func NewPipeline(sysCfg *config.CfgBlockSystem,
+func NewPipeline(
 	compsCfg map[string]config.CfgBlockComponent,
 	pplCfg map[string]config.CfgBlockPipeline) (*Pipeline, error) {
-
-	var admHttp *admin.HTTP
-	if sysCfg != nil {
-		log.Infof("Setting GOMAXPROCS to %d", sysCfg.Maxprocs)
-		runtime.GOMAXPROCS(sysCfg.Maxprocs)
-
-		if sysCfg.Admin.Enabled {
-			var err error
-			admHttp, err = admin.NewHTTP(sysCfg)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 
 	compPool := make(map[string]core.Link)
 	for compName, compParams := range compsCfg {
@@ -142,8 +128,10 @@ func NewPipeline(sysCfg *config.CfgBlockSystem,
 		pplCfg:    pplCfg,
 		compsCfg:  compsCfg,
 		compTree:  buildCompTree(pplCfg, compPool),
-		adminHttp: admHttp,
+		adminHttp: nil,
 	}
+
+	pipeline.applySysCfg()
 
 	return pipeline, nil
 }
@@ -233,6 +221,32 @@ func (ppl *Pipeline) Start() error {
 
 func (ppl *Pipeline) Stop() error {
 	return ppl.ExecCmd(&core.Cmd{Code: core.CmdCodeStop}, core.CmdPpgtTopDwn)
+}
+
+func (ppl *Pipeline) applySysCfg() error {
+	sysCfgItf, ok := config.Get("global.system")
+	if !ok {
+		log.Infof("The pipeline is being initialized with default system settings")
+		return nil
+	}
+	sysCfg, convOk := sysCfgItf.(*config.CfgBlockSystem)
+	if !convOk {
+		err := fmt.Errorf("Failed to convert sysCfg to *config.CfgBlockSystem")
+		return err
+	}
+
+	log.Infof("Setting GOMAXPROCS to %d", sysCfg.Maxprocs)
+	runtime.GOMAXPROCS(sysCfg.Maxprocs)
+
+	if sysCfg.Admin.Enabled {
+		log.Infof("Starting admin interface on %s", sysCfg.Admin.BindAddr)
+		admHttp, err := admin.NewHTTP(sysCfg)
+		if err != nil {
+			return err
+		}
+		ppl.adminHttp = admHttp
+	}
+	return nil
 }
 
 func buildCompTree(ppl map[string]config.CfgBlockPipeline,

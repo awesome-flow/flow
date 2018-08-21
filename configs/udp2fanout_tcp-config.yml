@@ -1,5 +1,8 @@
 system:
   maxprocs: 4
+  admin:
+    enabled: true
+    bind_addr: "localhost:4101"
 
 components:
   udp_rcv:
@@ -7,7 +10,7 @@ components:
     params:
       bind_addr: localhost:3101
   fanout:
-    module: link.mpx
+    module: link.fanout
   tcp_sink_7222:
     module: sink.tcp
     params:
