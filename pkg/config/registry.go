@@ -35,11 +35,6 @@ func Resolve() error {
 	return nil
 }
 
-func Unregister(key string, prov Provider) error {
-	// TODO
-	return fmt.Errorf("NOT IMPLEMENTED")
-}
-
 func Get(key string) (interface{}, bool) {
 	keyHeap, ok := registry.storage.Load(key)
 	if !ok {
