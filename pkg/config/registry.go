@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"sync"
 
 	data "github.com/whiteboxio/flow/pkg/data"
@@ -27,7 +26,11 @@ func Register(key string, prov Provider) error {
 }
 
 func Resolve() error {
-	for _, prov := range traverseProviders() {
+	traversed, err := traverseProviders()
+	if err != nil {
+		return err
+	}
+	for _, prov := range traversed {
 		if err := prov.Resolve(); err != nil {
 			return err
 		}
@@ -60,26 +63,26 @@ func GetAll() map[string]interface{} {
 	return res
 }
 
-func traverseProviders() []Provider {
-	tree := &data.NTree{}
-	for provName, prov := range registry.providers {
-		provNode := tree.FindOrInsert(provName)
-		if depends := prov.DependsOn(); len(depends) > 0 {
-			for _, depName := range depends {
-				_, ok := registry.providers[depName]
-				if !ok {
-					panic(fmt.Sprintf("Provider %s is undefined but %s depends on it",
-						depName, provName))
-				}
-				tree.Detach(depName)
-				provNode.FindOrInsert(depName)
-			}
+func traverseProviders() ([]Provider, error) {
+	provList := make([]data.TopologyNode, len(registry.providers))
+	ix := 0
+	for _, prov := range registry.providers {
+		provList[ix] = prov
+		ix++
+	}
+	top := data.NewTopology(provList...)
+	for name, prov := range registry.providers {
+		for _, dep := range prov.DependsOn() {
+			top.Connect(dep, name)
 		}
 	}
-	trvrsl := tree.PostTraversal()
-	provs := make([]Provider, len(trvrsl))
-	for ix, provName := range trvrsl {
-		provs[ix] = registry.providers[provName.(string)]
+	resolved, err := top.Sort()
+	if err != nil {
+		return []Provider{}, err
 	}
-	return provs
+	res := make([]Provider, len(resolved))
+	for ix, prov := range resolved {
+		res[ix] = prov.(Provider)
+	}
+	return res, nil
 }
