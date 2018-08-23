@@ -77,20 +77,20 @@ func (top *Topology) Sort() ([]TopologyNode, error) {
 		}
 	}
 
-	L := make([]int, 0)
-	visited := make(map[int]bool)
+	ixList := make([]int, 0)
+	visited := make([]bool, lenNodes)
 	for len(ixSet) > 0 {
 		var fromIx int
 		for ix := range ixSet {
 			fromIx = ix
 			break
 		}
-		if _, ok := visited[fromIx]; ok {
+		if visited[fromIx] {
 			return emptyRes, fmt.Errorf("Cycle detected on node %s",
 				top.nodes[fromIx].GetName())
 		}
 		delete(ixSet, fromIx)
-		L = append(L, fromIx)
+		ixList = append(ixList, fromIx)
 		visited[fromIx] = true
 		for toIx := 0; toIx < lenNodes; toIx++ {
 			if adjMx[fromIx][toIx] > 0 {
@@ -109,7 +109,7 @@ func (top *Topology) Sort() ([]TopologyNode, error) {
 					top.nodes[ix].GetName())
 		}
 	}
-	for _, ix := range L {
+	for _, ix := range ixList {
 		res = append(res, top.nodes[ix])
 	}
 
