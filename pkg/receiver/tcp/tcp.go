@@ -19,27 +19,23 @@ import (
 const (
 	MaxTCPBufSize = 65536
 
-	CONN_READ_TIMEOUT  = 1 * time.Second
-	CONN_WRITE_TIMEOUT = 1 * time.Second
-)
-
-const (
-	TCP_RESP_ACPT = "ACCEPTED"
-	TCP_RESP_SENT = "SENT"
-	TCP_RESP_PSNT = "PART_SENT"
-	TCP_RESP_FAIL = "FAILED"
-	TCP_RESP_INVD = "INVALID"
-	TCP_RESP_TIME = "TIMEOUT"
-	TCP_RESP_UNRT = "UNROUTABLE"
-	TCP_RESP_THRT = "THROTTLED"
+	ConnReadTimeout  = 1 * time.Second
+	ConnWriteTimeout = 1 * time.Second
 )
 
 var (
+	TcpRespAcpt  = []byte("ACCEPTED")
+	TcpRespSent  = []byte("SENT")
+	TcpRespPsnt  = []byte("PART_SENT")
+	TcpRespFail  = []byte("FAILED")
+	TcpRespInvd  = []byte("INVALID")
+	TcppRespTime = []byte("TIMEOUT")
+	TcpRespUnrt  = []byte("UNROUTABLE")
+	TcpRespThrt  = []byte("THROTTLED")
+
 	ErrMalformedPacket = fmt.Errorf("Malformed packet")
 	ErrEmptyBody       = fmt.Errorf("Empty message body")
-)
 
-var (
 	TcpMsgSendTimeout = 100 * time.Millisecond
 )
 
@@ -92,7 +88,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 	metrics.GetCounter("receiver.tcp.conn.opened").Inc(1)
 
 	for {
-		conn.SetReadDeadline(time.Now().Add(CONN_READ_TIMEOUT))
+		conn.SetReadDeadline(time.Now().Add(ConnReadTimeout))
 		data, err := reader.ReadBytes('\n')
 
 		if len(data) == 0 {
@@ -104,8 +100,8 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		if err != nil && err != io.EOF {
 			log.Errorf("TCP receiver failed to read data: %s", err)
 			metrics.GetCounter("receiver.tcp.conn.failed").Inc(1)
-			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
-			conn.Write([]byte(TCP_RESP_INVD))
+			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			conn.Write(TcpRespInvd)
 			conn.Close()
 			metrics.GetCounter("receiver.tcp.conn.closed").Inc(1)
 			return
@@ -116,15 +112,15 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		if sendErr := tcp.Send(msg); sendErr != nil {
 			metrics.GetCounter("receiver.tcp.msg.failed").Inc(1)
 			log.Errorf("Failed to send message: %s", sendErr)
-			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
-			conn.Write([]byte(TCP_RESP_FAIL))
+			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			conn.Write(TcpRespFail)
 			continue
 		}
 
 		if !msg.IsSync() {
 			metrics.GetCounter("receiver.tcp.msg.accepted").Inc(1)
-			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
-			conn.Write([]byte(TCP_RESP_ACPT))
+			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			conn.Write(TcpRespAcpt)
 			continue
 		}
 
@@ -132,12 +128,12 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		case s := <-msg.GetAckCh():
 			metrics.GetCounter(
 				"receiver.tcp.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
-			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
+			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
 			conn.Write(status2resp(s))
 		case <-time.After(TcpMsgSendTimeout):
 			metrics.GetCounter("receiver.tcp.msg.timed_out").Inc(1)
-			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
-			conn.Write([]byte(TCP_RESP_TIME))
+			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			conn.Write(TcppRespTime)
 		}
 
 		if err == io.EOF {
@@ -151,20 +147,20 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 func status2resp(s core.MsgStatus) []byte {
 	switch s {
 	case core.MsgStatusDone:
-		return []byte(TCP_RESP_SENT)
+		return TcpRespSent
 	case core.MsgStatusPartialSend:
-		return []byte(TCP_RESP_PSNT)
+		return TcpRespPsnt
 	case core.MsgStatusInvalid:
-		return []byte(TCP_RESP_INVD)
+		return TcpRespInvd
 	case core.MsgStatusFailed:
-		return []byte(TCP_RESP_FAIL)
+		return TcpRespFail
 	case core.MsgStatusTimedOut:
-		return []byte(TCP_RESP_TIME)
+		return TcppRespTime
 	case core.MsgStatusUnroutable:
-		return []byte(TCP_RESP_UNRT)
+		return TcpRespUnrt
 	case core.MsgStatusThrottled:
-		return []byte(TCP_RESP_THRT)
+		return TcpRespThrt
 	default:
-		return []byte("OlegS made a mistake, this should not happen")
+		return []byte("This should not happen")
 	}
 }
