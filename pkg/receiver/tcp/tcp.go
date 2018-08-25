@@ -57,7 +57,9 @@ func New(name string, params core.Params) (core.Link, error) {
 	if backend, ok := params["backend"]; ok {
 		if backend == "evio" {
 			log.Debug("Instantiating Evio backend for TCP receiver")
-			params["bind_addr"] = "tcp://" + params["bind_addr"].(string)
+			params["listeners"] = []interface{}{
+				"tcp://" + params["bind_addr"].(string),
+			}
 			return evio_rcv.New(name, params)
 		}
 	}
@@ -92,11 +94,12 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 	for {
 		conn.SetReadDeadline(time.Now().Add(CONN_READ_TIMEOUT))
 		data, err := reader.ReadBytes('\n')
-		metrics.GetCounter("receiver.tcp.msg.received").Inc(1)
 
 		if len(data) == 0 {
 			break
 		}
+
+		metrics.GetCounter("receiver.tcp.msg.received").Inc(1)
 
 		if err != nil && err != io.EOF {
 			log.Errorf("TCP receiver failed to read data: %s", err)
