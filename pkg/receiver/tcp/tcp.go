@@ -24,14 +24,14 @@ const (
 )
 
 var (
-	TcpRespAcpt  = []byte("ACCEPTED")
-	TcpRespSent  = []byte("SENT")
-	TcpRespPsnt  = []byte("PART_SENT")
-	TcpRespFail  = []byte("FAILED")
-	TcpRespInvd  = []byte("INVALID")
-	TcppRespTime = []byte("TIMEOUT")
-	TcpRespUnrt  = []byte("UNROUTABLE")
-	TcpRespThrt  = []byte("THROTTLED")
+	TcpRespAcpt = []byte("ACCEPTED")
+	TcpRespSent = []byte("SENT")
+	TcpRespPsnt = []byte("PART_SENT")
+	TcpRespFail = []byte("FAILED")
+	TcpRespInvd = []byte("INVALID")
+	TcpRespTime = []byte("TIMEOUT")
+	TcpRespUnrt = []byte("UNROUTABLE")
+	TcpRespThrt = []byte("THROTTLED")
 
 	ErrMalformedPacket = fmt.Errorf("Malformed packet")
 	ErrEmptyBody       = fmt.Errorf("Empty message body")
@@ -133,7 +133,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		case <-time.After(TcpMsgSendTimeout):
 			metrics.GetCounter("receiver.tcp.msg.timed_out").Inc(1)
 			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			conn.Write(TcppRespTime)
+			conn.Write(TcpRespTime)
 		}
 
 		if err == io.EOF {
@@ -155,7 +155,7 @@ func status2resp(s core.MsgStatus) []byte {
 	case core.MsgStatusFailed:
 		return TcpRespFail
 	case core.MsgStatusTimedOut:
-		return TcppRespTime
+		return TcpRespTime
 	case core.MsgStatusUnroutable:
 		return TcpRespUnrt
 	case core.MsgStatusThrottled:

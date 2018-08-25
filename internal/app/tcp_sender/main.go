@@ -59,6 +59,7 @@ func main() {
 				failCnt++
 			}
 		}
+		sentCnt++
 		msgIx++
 		msgIx = msgIx % msgCnt
 	}

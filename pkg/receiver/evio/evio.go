@@ -1,7 +1,10 @@
 package receiver
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -10,19 +13,27 @@ import (
 	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
+var (
+	RespAcpt = []byte("ACCEPTED")
+	RespSent = []byte("SENT")
+	RespPsnt = []byte("PART_SENT")
+	RespFail = []byte("FAILED")
+	RespInvd = []byte("INVALID")
+	RespTime = []byte("TIMEOUT")
+	RespUnrt = []byte("UNROUTABLE")
+	RespThrt = []byte("THROTTLED")
+
+	MsgSendTimeout = time.Second
+)
+
 type Evio struct {
 	Name   string
 	events *evio.Events
 	*core.Connector
 }
 
-//func (ev *Evio) RecvCmd(cmd *core.Cmd) error {
-//	if cmd.Code == core.CmdCodeStop {
-//
-//	}
-//}
-
 func New(name string, params core.Params) (core.Link, error) {
+
 	events := &evio.Events{}
 
 	if numLoops, ok := params["num_loops"]; ok {
@@ -36,20 +47,70 @@ func New(name string, params core.Params) (core.Link, error) {
 		return nil, fmt.Errorf("Failed to initialize evio: missing listeners")
 	}
 
+	log.Infof(
+		"Starting Evio receiver. Listeners: %+v",
+		params["listeners"].([]interface{}),
+	)
+
 	ev := &Evio{
 		name,
 		events,
 		core.NewConnector(),
 	}
 
+	events.Opened = func(ec evio.Conn) (out []byte, opts evio.Options, action evio.Action) {
+		metrics.GetCounter("receiver.evio.conn.opened").Inc(1)
+		ec.SetContext(&evio.InputStream{})
+		return
+	}
+
 	events.Data = func(ec evio.Conn, buf []byte) (out []byte, action evio.Action) {
-		metrics.GetCounter("receiver.evio.received").Inc(1)
-		if err := ev.Send(core.NewMessage(nil, buf)); err != nil {
-			log.Errorf("Failed to send evio message: %s", err)
-			metrics.GetCounter("receiver.evio.failed").Inc(1)
+		is := ec.Context().(*evio.InputStream)
+		data := is.Begin(buf)
+
+		if !bytes.Contains(data, []byte{'\n'}) {
+			is.End(data)
 			return
 		}
-		metrics.GetCounter("receiver.evio.sent").Inc(1)
+
+		chunks := bytes.SplitN(data, []byte{'\n'}, 2)
+
+		payload, leftover := chunks[0], chunks[1]
+
+		if len(payload) > 0 {
+			metrics.GetCounter("receiver.evio.msg.received").Inc(1)
+			msg := core.NewMessage(
+				core.NewMsgMeta(),
+				payload,
+			)
+
+			if err := ev.Send(msg); err != nil {
+				log.Errorf("Evio receiver failed to send message: %s", err)
+				metrics.GetCounter("receiver.evio.msg.failed").Inc(1)
+				out = RespFail
+				return
+			}
+
+			if msg.IsSync() {
+				select {
+				case s := <-msg.GetAckCh():
+					metrics.GetCounter(
+						"receiver.evio.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
+					out = status2resp(s)
+				case <-time.After(MsgSendTimeout):
+					metrics.GetCounter("receiver.evio.msg.timed_out").Inc(1)
+					out = RespTime
+				}
+			} else {
+				metrics.GetCounter("receiver.evio.msg.accepted").Inc(1)
+				out = RespAcpt
+			}
+			return
+		}
+
+		data = leftover
+		is.End(data)
+
 		return
 	}
 
@@ -64,4 +125,25 @@ func New(name string, params core.Params) (core.Link, error) {
 	}()
 
 	return ev, nil
+}
+
+func status2resp(s core.MsgStatus) []byte {
+	switch s {
+	case core.MsgStatusDone:
+		return RespSent
+	case core.MsgStatusPartialSend:
+		return RespPsnt
+	case core.MsgStatusInvalid:
+		return RespInvd
+	case core.MsgStatusFailed:
+		return RespFail
+	case core.MsgStatusTimedOut:
+		return RespTime
+	case core.MsgStatusUnroutable:
+		return RespUnrt
+	case core.MsgStatusThrottled:
+		return RespThrt
+	default:
+		return []byte("This should not happen")
+	}
 }
