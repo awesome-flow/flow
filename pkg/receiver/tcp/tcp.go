@@ -1,7 +1,9 @@
 package receiver
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -9,12 +11,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/metrics"
+	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
 
 	"github.com/facebookgo/grace/gracenet"
 )
 
 const (
 	MaxTCPBufSize = 65536
+
+	CONN_READ_TIMEOUT  = 1 * time.Second
+	CONN_WRITE_TIMEOUT = 1 * time.Second
 )
 
 const (
@@ -43,10 +49,17 @@ type TCP struct {
 	*core.Connector
 }
 
-func NewTCP(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params) (core.Link, error) {
 	tcpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("TCP receiver parameters are missing bind_addr")
+	}
+	if backend, ok := params["backend"]; ok {
+		if backend == "evio" {
+			log.Debug("Instantiating Evio backend for TCP receiver")
+			params["bind_addr"] = "tcp://" + params["bind_addr"].(string)
+			return evio_rcv.New(name, params)
+		}
 	}
 	net := &gracenet.Net{}
 	srv, err := net.Listen("tcp", tcpAddr.(string))
@@ -61,51 +74,75 @@ func NewTCP(name string, params core.Params) (core.Link, error) {
 
 func (tcp *TCP) handleListener() {
 	for {
-		//tell.Info("Waiting for TCP connections")
 		conn, err := tcp.srv.Accept()
-		//tell.Info("Listening from a new TCP connection")
 		if err != nil {
 			log.Errorf("TCP server failed to accept connection: %s", err.Error())
 			continue
 		}
+		log.Infof("Received a new connection from %s", conn.RemoteAddr())
 		go tcp.handleConnection(conn)
 	}
 }
 
 func (tcp *TCP) handleConnection(conn net.Conn) {
-	metrics.GetCounter("receiver.tcp.received").Inc(1)
-	buf := make([]byte, MaxTCPBufSize)
-	len, err := conn.Read(buf)
-	if err != nil {
-		metrics.GetCounter("receiver.tcp.failed").Inc(1)
-		log.Errorf("Failed to read TCP message: %s", err.Error())
-		conn.Write([]byte(TCP_RESP_INVD))
-		return
-	}
+	reader := bufio.NewReader(conn)
 
-	msg := core.NewMessage(nil, buf[:len])
+	metrics.GetCounter("receiver.tcp.conn.opened").Inc(1)
 
-	if sendErr := tcp.Send(msg); sendErr != nil {
-		metrics.GetCounter("receiver.tcp.failed").Inc(1)
-		log.Errorf("Failed to send message: %s", sendErr.Error())
-		conn.Write([]byte(TCP_RESP_FAIL))
-		return
-	}
+	for {
+		conn.SetReadDeadline(time.Now().Add(CONN_READ_TIMEOUT))
+		data, err := reader.ReadBytes('\n')
+		metrics.GetCounter("receiver.tcp.msg.received").Inc(1)
 
-	if !msg.IsSync() {
-		metrics.GetCounter("receiver.tcp.accepted").Inc(1)
-		conn.Write([]byte(TCP_RESP_ACPT))
-		return
-	}
+		if len(data) == 0 {
+			break
+		}
 
-	select {
-	case s := <-msg.GetAckCh():
-		metrics.GetCounter(
-			"receiver.tcp.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
-		conn.Write(status2resp(s))
-	case <-time.After(TcpMsgSendTimeout):
-		conn.Write([]byte(TCP_RESP_TIME))
+		if err != nil && err != io.EOF {
+			log.Errorf("TCP receiver failed to read data: %s", err)
+			metrics.GetCounter("receiver.tcp.conn.failed").Inc(1)
+			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
+			conn.Write([]byte(TCP_RESP_INVD))
+			conn.Close()
+			metrics.GetCounter("receiver.tcp.conn.closed").Inc(1)
+			return
+		}
+
+		msg := core.NewMessage(core.NewMsgMeta(), data)
+
+		if sendErr := tcp.Send(msg); sendErr != nil {
+			metrics.GetCounter("receiver.tcp.msg.failed").Inc(1)
+			log.Errorf("Failed to send message: %s", sendErr)
+			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
+			conn.Write([]byte(TCP_RESP_FAIL))
+			continue
+		}
+
+		if !msg.IsSync() {
+			metrics.GetCounter("receiver.tcp.msg.accepted").Inc(1)
+			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
+			conn.Write([]byte(TCP_RESP_ACPT))
+			continue
+		}
+
+		select {
+		case s := <-msg.GetAckCh():
+			metrics.GetCounter(
+				"receiver.tcp.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
+			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
+			conn.Write(status2resp(s))
+		case <-time.After(TcpMsgSendTimeout):
+			metrics.GetCounter("receiver.tcp.msg.timed_out").Inc(1)
+			conn.SetWriteDeadline(time.Now().Add(CONN_WRITE_TIMEOUT))
+			conn.Write([]byte(TCP_RESP_TIME))
+		}
+
+		if err == io.EOF {
+			break
+		}
 	}
+	metrics.GetCounter("receiver.tcp.conn.closed").Inc(1)
+	conn.Close()
 }
 
 func status2resp(s core.MsgStatus) []byte {

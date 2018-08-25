@@ -26,8 +26,8 @@ func (a *A) Recv(msg *core.Message) error {
 
 func TestTCP_recv(t *testing.T) {
 	tcpAddr := ":7102"
-	payload := "hello world"
-	tcp, err := NewTCP("test_tcp", core.Params{"bind_addr": tcpAddr})
+	payload := "hello world\n"
+	tcp, err := New("test_tcp", core.Params{"bind_addr": tcpAddr})
 	if err != nil {
 		t.Fatalf("Failed to start a TCP listener: %s", err)
 	}

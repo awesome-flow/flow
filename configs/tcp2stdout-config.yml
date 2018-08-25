@@ -1,0 +1,16 @@
+system:
+  max_proc: 4
+
+components:
+  tcp_rcv:
+    module: receiver.tcp
+    params:
+      bind_addr: :3110
+  stdout:
+    module: sink.dumper
+    params:
+      out: STDOUT
+
+pipeline:
+  tcp_rcv:
+    connect: stdout

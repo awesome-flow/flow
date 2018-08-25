@@ -38,11 +38,11 @@ type ConstrFunc func(string, core.Params) (core.Link, error)
 
 var (
 	compBuilders = map[string]ConstrFunc{
-		"receiver.tcp":   tcp_rcv.NewTCP,
+		"receiver.tcp":   tcp_rcv.New,
 		"receiver.udp":   udp_rcv.NewUDP,
 		"receiver.http":  http_rcv.NewHTTP,
 		"receiver.unix":  unix_rcv.NewUnix,
-		"receiver.evio":  evio_rcv.NewEvio,
+		"receiver.evio":  evio_rcv.New,
 		"link.dmx":       dmx.NewDMX,
 		"link.mpx":       mpx.NewMPX,
 		"link.router":    router.NewRouter,

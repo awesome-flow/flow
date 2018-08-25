@@ -16,7 +16,13 @@ type Evio struct {
 	*core.Connector
 }
 
-func NewEvio(name string, params core.Params) (core.Link, error) {
+//func (ev *Evio) RecvCmd(cmd *core.Cmd) error {
+//	if cmd.Code == core.CmdCodeStop {
+//
+//	}
+//}
+
+func New(name string, params core.Params) (core.Link, error) {
 	events := &evio.Events{}
 
 	if numLoops, ok := params["num_loops"]; ok {
