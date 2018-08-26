@@ -38,6 +38,30 @@ func TestMetaParser_Recv(t *testing.T) {
 			expMeta:    core.MsgMeta{},
 			expPayload: []byte{},
 		},
+		{
+			name:       "no space delimiter",
+			payload:    []byte("{\"foo\":\"bar\"}"),
+			expMeta:    core.MsgMeta{},
+			expPayload: []byte("{\"foo\":\"bar\"}"),
+		},
+		{
+			name:       "basic meta with unique values",
+			payload:    []byte("foo=bar&baz=bar {\"foo\":\"bar\"}"),
+			expMeta:    core.MsgMeta{"foo": "bar", "baz": "bar"},
+			expPayload: []byte("{\"foo\":\"bar\"}"),
+		},
+		{
+			name:       "basic meta with repeating values",
+			payload:    []byte("foo=bar&foo=kaboo {\"foo\":\"bar\"}"),
+			expMeta:    core.MsgMeta{"foo": "bar"},
+			expPayload: []byte("{\"foo\":\"bar\"}"),
+		},
+		{
+			name:       "basic meta with malformed meta",
+			payload:    []byte("foo {\"foo\":\"bar\"}"),
+			expMeta:    core.MsgMeta{"foo": ""},
+			expPayload: []byte("{\"foo\":\"bar\"}"),
+		},
 	}
 
 	for _, testCase := range tests {
