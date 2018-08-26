@@ -64,6 +64,11 @@ func New(name string, params core.Params) (core.Link, error) {
 		return
 	}
 
+	events.Closed = func(c evio.Conn, err error) (action evio.Action) {
+		metrics.GetCounter("receiver.evio.conn.closed").Inc(1)
+		return
+	}
+
 	events.Data = func(ec evio.Conn, buf []byte) (out []byte, action evio.Action) {
 		is := ec.Context().(*evio.InputStream)
 		data := is.Begin(buf)
