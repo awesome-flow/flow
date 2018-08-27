@@ -7,6 +7,51 @@ import (
 	"time"
 )
 
+type resFound struct {
+	key   string
+	res   interface{}
+	found bool
+}
+
+func TestMessageGetMeta(t *testing.T) {
+	tests := []struct {
+		name     string
+		meta     map[string]interface{}
+		expected []resFound
+	}{
+		{
+			name: "plain meta",
+			meta: map[string]interface{}{
+				"foo": "bar",
+				"bar": "baz",
+			},
+			expected: []resFound{
+				{"foo", "bar", true},
+				{"bar", "baz", true},
+				{"", "", false},
+				{"foobar", "", false},
+			},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			msg := NewMessageWithMeta(testCase.meta, []byte{})
+			for _, exp := range testCase.expected {
+				v, ok := msg.GetMeta(exp.key)
+				if exp.found != ok {
+					t.Errorf("Found flag does not match: %t, want: %t", ok, exp.found)
+				}
+				if exp.found {
+					if v.(string) != exp.res.(string) {
+						t.Errorf("Unexpected val for key %s: %s, want: %s",
+							exp.key, v, exp.res)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestMessage_Ack(t *testing.T) {
 	NoStatus := uint8(math.MaxUint8)
 	tests := []struct {
