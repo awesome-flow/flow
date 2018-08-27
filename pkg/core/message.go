@@ -84,6 +84,11 @@ func NewMessageWithAckCh(ackCh chan MsgStatus, meta map[string]interface{}, payl
 }
 
 func (m *Message) GetMeta(key string) (interface{}, bool) {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+	if m.meta == nil {
+		return nil, false
+	}
 	return m.meta.Load(key)
 }
 
@@ -98,22 +103,30 @@ func (m *Message) GetMetaAll() map[string]interface{} {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 	res := make(map[string]interface{})
-	m.meta.Range(func(key, val interface{}) bool {
-		res[key.(string)] = val
-		return true
-	})
+	if m.meta != nil {
+		m.meta.Range(func(key, val interface{}) bool {
+			res[key.(string)] = val
+			return true
+		})
+	}
 	return res
 }
 
 func (m *Message) SetMeta(key string, val interface{}) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
+	if m.meta == nil {
+		m.meta = &sync.Map{}
+	}
 	m.meta.Store(key, val)
 }
 
 func (m *Message) SetMetaAll(extMeta map[string]interface{}) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
+	if m.meta == nil {
+		m.meta = &sync.Map{}
+	}
 	for k, v := range extMeta {
 		m.meta.Store(k, v)
 	}
@@ -122,20 +135,25 @@ func (m *Message) SetMetaAll(extMeta map[string]interface{}) {
 func (m *Message) UnsetMeta(key string) (interface{}, bool) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
-	v, ok := m.GetMeta(key)
-	m.meta.Delete(key)
-	return v, ok
+	if m.meta != nil {
+		v, ok := m.meta.Load(key)
+		m.meta.Delete(key)
+		return v, ok
+	}
+	return nil, false
 }
 
 func (m *Message) UnsetMetaAll() map[string]interface{} {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 	res := make(map[string]interface{})
-	m.meta.Range(func(key, val interface{}) bool {
-		res[key.(string)] = val
-		return true
-	})
-	m.meta = &sync.Map{}
+	if m.meta != nil {
+		m.meta.Range(func(key, val interface{}) bool {
+			res[key.(string)] = val
+			return true
+		})
+		m.meta = nil
+	}
 	return res
 }
 

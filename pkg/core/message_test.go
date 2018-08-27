@@ -13,7 +13,79 @@ type resFound struct {
 	found bool
 }
 
-func TestMessageGetMeta(t *testing.T) {
+func TestMessage_NewMessage(t *testing.T) {
+	msg := NewMessage([]byte{})
+	var v interface{}
+	var ok bool
+	v, ok = msg.GetMeta("foo")
+	if ok {
+		t.Errorf("Unexpected presence flag for key foo")
+	}
+	if v != nil {
+		t.Errorf("Unexpected return value from en empty meta")
+	}
+	v, ok = msg.GetMetaOrDef("foo", "bar")
+	if ok {
+		t.Errorf("Unexpected presence flag for key foo")
+	}
+	if v != "bar" {
+		t.Errorf("Unexpected default value for key foo")
+	}
+
+	metaAll := msg.GetMetaAll()
+	if !reflect.DeepEqual(metaAll, map[string]interface{}{}) {
+		t.Errorf("Unexpected contents of message meta: %+v, ecpected: an empty map",
+			metaAll)
+	}
+
+	msg.SetMeta("foo", "bar")
+	metaAll = msg.GetMetaAll()
+	expMeta := map[string]interface{}{"foo": "bar"}
+	if !reflect.DeepEqual(metaAll, expMeta) {
+		t.Errorf("Unexpected contents of message meta: %+v, ecpected: %+v",
+			metaAll, expMeta)
+	}
+
+	msg.SetMetaAll(map[string]interface{}{"foo": "baz", "baz": "bar"})
+	metaAll = msg.GetMetaAll()
+	expMeta = map[string]interface{}{"foo": "baz", "baz": "bar"}
+	if !reflect.DeepEqual(metaAll, expMeta) {
+		t.Errorf("Unexpected contents of message meta: %+v, ecpected: %+v",
+			metaAll, expMeta)
+	}
+
+	v, ok = msg.GetMetaOrDef("baz", "boooo")
+	if !ok {
+		t.Errorf("Unexpected presence flag for key baz")
+	}
+	if v != "bar" {
+		t.Errorf("Unexpected value for key baz")
+	}
+
+	v, ok = msg.UnsetMeta("foo")
+	if !ok {
+		t.Errorf("Unexpected return value from UnsetMeta")
+	}
+	if v != "baz" {
+		t.Errorf("Unexpected value returned by UnsetMeta: %s", v)
+	}
+
+	metaAll = msg.GetMetaAll()
+	expMeta = map[string]interface{}{"baz": "bar"}
+	if !reflect.DeepEqual(metaAll, expMeta) {
+		t.Errorf("Unexpected contents of message meta: %+v, ecpected: %+v",
+			metaAll, expMeta)
+	}
+
+	metaAll = msg.UnsetMetaAll()
+	expMeta = map[string]interface{}{"baz": "bar"}
+	if !reflect.DeepEqual(metaAll, expMeta) {
+		t.Errorf("Unexpected value returned by UnsetMetaAll: %+v, want: %+v",
+			metaAll, expMeta)
+	}
+}
+
+func TestMessage_GetMeta(t *testing.T) {
 	tests := []struct {
 		name     string
 		meta     map[string]interface{}
@@ -47,6 +119,39 @@ func TestMessageGetMeta(t *testing.T) {
 							exp.key, v, exp.res)
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestMessage_GetMetaAll(t *testing.T) {
+	tests := []struct {
+		name         string
+		meta         map[string]interface{}
+		expectedMeta map[string]interface{}
+	}{
+		{
+			"regular map",
+			map[string]interface{}{
+				"foo": "bar",
+			},
+			map[string]interface{}{
+				"foo": "bar",
+			},
+		},
+		{
+			"empty map",
+			map[string]interface{}{},
+			map[string]interface{}{},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			msg := NewMessageWithMeta(testCase.meta, []byte{})
+			msgMeta := msg.GetMetaAll()
+			if !reflect.DeepEqual(msgMeta, testCase.expectedMeta) {
+				t.Errorf("Unexpected message meta: %+v, want: %+v",
+					msgMeta, testCase.expectedMeta)
 			}
 		})
 	}
