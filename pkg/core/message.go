@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
 )
 
@@ -34,17 +35,14 @@ const (
 	CmdCodeStop
 )
 
-type MsgMeta map[string]string
-
-func NewMsgMeta() MsgMeta {
-	return make(map[string]string)
-}
+type MsgMeta sync.Map
 
 type Message struct {
-	Meta     MsgMeta
+	meta     *sync.Map
 	Payload  []byte
 	ackCh    chan MsgStatus
 	attempts uint32
+	mx       sync.Mutex
 }
 
 type Cmd struct {
@@ -59,34 +57,90 @@ const (
 	CmdPpgtTopDwn
 )
 
-func NewMessage(meta MsgMeta, payload []byte) *Message {
-	return NewMessageWithAckCh(meta, payload, nil)
+func NewMessage(payload []byte) *Message {
+	return NewMessageWithMeta(nil, payload)
 }
 
-func NewMessageWithAckCh(meta MsgMeta, payload []byte, ackCh chan MsgStatus) *Message {
+func NewMessageWithMeta(meta map[string]interface{}, payload []byte) *Message {
+	return NewMessageWithAckCh(nil, meta, payload)
+}
+
+func NewMessageWithAckCh(ackCh chan MsgStatus, meta map[string]interface{}, payload []byte) *Message {
+	msg := &Message{
+		Payload: payload,
+	}
+	if meta != nil {
+		syncMeta := &sync.Map{}
+		for k, v := range meta {
+			syncMeta.Store(k, v)
+		}
+		msg.meta = syncMeta
+	}
 	if ackCh == nil {
 		ackCh = make(chan MsgStatus, 1)
 	}
-	return &Message{
-		Meta:     meta,
-		Payload:  payload,
-		ackCh:    ackCh,
-		attempts: 0,
+	msg.ackCh = ackCh
+	return msg
+}
+
+func (m *Message) GetMeta(key string) (interface{}, bool) {
+	return m.meta.Load(key)
+}
+
+func (m *Message) GetMetaOrDef(key string, def interface{}) (interface{}, bool) {
+	if v, ok := m.GetMeta(key); ok {
+		return v, true
 	}
+	return def, false
+}
+
+func (m *Message) GetMetaAll() map[string]interface{} {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+	res := make(map[string]interface{})
+	m.meta.Range(func(key, val interface{}) bool {
+		res[key.(string)] = val
+		return true
+	})
+	return res
+}
+
+func (m *Message) SetMeta(key string, val interface{}) {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+	m.meta.Store(key, val)
+}
+
+func (m *Message) SetMetaAll(extMeta map[string]interface{}) {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+	for k, v := range extMeta {
+		m.meta.Store(k, v)
+	}
+}
+
+func (m *Message) UnsetMeta(key string) (interface{}, bool) {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+	v, ok := m.GetMeta(key)
+	m.meta.Delete(key)
+	return v, ok
+}
+
+func (m *Message) UnsetMetaAll() map[string]interface{} {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+	res := make(map[string]interface{})
+	m.meta.Range(func(key, val interface{}) bool {
+		res[key.(string)] = val
+		return true
+	})
+	m.meta = &sync.Map{}
+	return res
 }
 
 func (m *Message) GetAckCh() chan MsgStatus {
 	return m.ackCh
-}
-
-func (m *Message) IsSync() bool {
-	if v, ok := m.Meta["sync"]; ok {
-		sync := v
-		if sync == "true" || sync == "1" {
-			return true
-		}
-	}
-	return false
 }
 
 func (m *Message) finalize() {
@@ -176,7 +230,7 @@ func (m *Message) GetAttempts() uint32 {
 
 func CpMessage(m *Message) *Message {
 	return &Message{
-		Meta:    m.Meta,
+		meta:    m.meta,
 		Payload: m.Payload,
 		ackCh:   make(chan MsgStatus, 1),
 	}

@@ -67,7 +67,7 @@ func TestMetaParser_Recv(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 
-			mp, err := New("meta_parser", nil)
+			mp, err := New("meta_parser", core.Params{})
 			if err != nil {
 				t.Errorf("Failed to instantiate a meta parser: %s", err)
 			}

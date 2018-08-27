@@ -7,59 +7,6 @@ import (
 	"time"
 )
 
-func TestMessage_IsSync(t *testing.T) {
-	type fields struct {
-		Meta     MsgMeta
-		Payload  []byte
-		ackCh    chan MsgStatus
-		attempts uint32
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   bool
-	}{
-		{
-			"sync, digit",
-			fields{map[string]string{"sync": "1"}, []byte(""), nil, 0},
-			true,
-		},
-		{
-			"sync, bool",
-			fields{map[string]string{"sync": "true"}, []byte(""), nil, 0},
-			true,
-		},
-		{
-			"sync, unknown value",
-			fields{map[string]string{"sync": "unknown_string"}, []byte(""), nil, 0},
-			false,
-		},
-		{
-			"no sync, non-null meta",
-			fields{map[string]string{}, []byte(""), nil, 0},
-			false,
-		},
-		{
-			"no sync, null meta",
-			fields{nil, []byte(""), nil, 0},
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Message{
-				Meta:     tt.fields.Meta,
-				Payload:  tt.fields.Payload,
-				ackCh:    tt.fields.ackCh,
-				attempts: tt.fields.attempts,
-			}
-			if got := m.IsSync(); got != tt.want {
-				t.Errorf("Message.IsSync() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestMessage_Ack(t *testing.T) {
 	NoStatus := uint8(math.MaxUint8)
 	tests := []struct {
@@ -79,7 +26,7 @@ func TestMessage_Ack(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg := NewMessage(nil, []byte(""))
+			msg := NewMessage([]byte(""))
 			ret := reflect.ValueOf(msg).MethodByName(tt.funcName).Call([]reflect.Value{})
 			err := ret[0].Interface()
 			if !reflect.DeepEqual(err, tt.expErr) {
@@ -102,7 +49,7 @@ func TestMessage_Ack(t *testing.T) {
 
 func TestMessage_NewMessageWithAckCh(t *testing.T) {
 	ch := make(chan MsgStatus, 1)
-	msg := NewMessageWithAckCh(nil, []byte(""), ch)
+	msg := NewMessageWithAckCh(ch, nil, []byte(""))
 	msg.AckDone()
 	select {
 	case s := <-ch:
@@ -116,8 +63,8 @@ func TestMessage_NewMessageWithAckCh(t *testing.T) {
 
 func TestMessage_CpMessage(t *testing.T) {
 	pl1 := []byte("payload1")
-	meta1 := map[string]string{"k1": "v1"}
-	msg1 := NewMessage(meta1, pl1)
+	meta1 := map[string]interface{}{"k1": "v1"}
+	msg1 := NewMessageWithMeta(meta1, pl1)
 	msg2 := CpMessage(msg1)
 	msg2.Payload[len(msg2.Payload)-1] = '2'
 	if !reflect.DeepEqual(msg2.Payload, []byte("payload2")) {
@@ -129,7 +76,7 @@ func TestMessage_CpMessage(t *testing.T) {
 }
 
 func TestMessage_BumpAttempts(t *testing.T) {
-	msg := NewMessage(nil, []byte(""))
+	msg := NewMessage([]byte(""))
 	if msg.attempts != 0 {
 		t.Errorf("Unexpected msg attempts: %d, want: %d", msg.attempts, 0)
 	}

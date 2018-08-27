@@ -12,7 +12,7 @@ type MetaParser struct {
 	*core.Connector
 }
 
-func New(name string, params *core.Params) (core.Link, error) {
+func New(name string, params core.Params) (core.Link, error) {
 	return &MetaParser{
 		name,
 		core.NewConnector(),
