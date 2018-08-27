@@ -6,6 +6,8 @@ components:
     module: receiver.tcp
     params:
       bind_addr: :3110
+  meta_parser:
+    module: link.meta_parser
   stdout:
     module: sink.dumper
     params:
@@ -13,4 +15,6 @@ components:
 
 pipeline:
   tcp_rcv:
+    connect: meta_parser
+  meta_parser:
     connect: stdout

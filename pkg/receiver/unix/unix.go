@@ -79,7 +79,7 @@ func unixRecv(ux *Unix, conn net.Conn) {
 		if n == 0 {
 			return
 		}
-		msg := core.NewMessage(nil, buf[:n])
+		msg := core.NewMessage(buf[:n])
 
 		if sendErr := ux.Send(msg); sendErr != nil {
 			log.Errorf("Unix socket failed to send message: %s", sendErr.Error())

@@ -107,7 +107,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 			return
 		}
 
-		msg := core.NewMessage(core.NewMsgMeta(), data)
+		msg := core.NewMessage(data)
 
 		if sendErr := tcp.Send(msg); sendErr != nil {
 			metrics.GetCounter("receiver.tcp.msg.failed").Inc(1)
@@ -117,7 +117,9 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 			continue
 		}
 
-		if !msg.IsSync() {
+		sync, ok := msg.GetMeta("sync")
+		isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
+		if !isSync {
 			metrics.GetCounter("receiver.tcp.msg.accepted").Inc(1)
 			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
 			conn.Write(TcpRespAcpt)

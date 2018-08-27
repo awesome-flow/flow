@@ -84,10 +84,7 @@ func New(name string, params core.Params) (core.Link, error) {
 
 		if len(payload) > 0 {
 			metrics.GetCounter("receiver.evio.msg.received").Inc(1)
-			msg := core.NewMessage(
-				core.NewMsgMeta(),
-				payload,
-			)
+			msg := core.NewMessage(payload)
 
 			if err := ev.Send(msg); err != nil {
 				log.Errorf("Evio receiver failed to send message: %s", err)
@@ -95,8 +92,9 @@ func New(name string, params core.Params) (core.Link, error) {
 				out = RespFail
 				return
 			}
-
-			if msg.IsSync() {
+			sync, ok := msg.GetMeta("sync")
+			isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
+			if isSync {
 				select {
 				case s := <-msg.GetAckCh():
 					metrics.GetCounter(

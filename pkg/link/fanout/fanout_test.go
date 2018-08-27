@@ -43,7 +43,7 @@ func TestFanout_Send(t *testing.T) {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
 	for i := 0; i < 3; i++ {
-		ft.Send(core.NewMessage(nil, []byte("")))
+		ft.Send(core.NewMessage([]byte{}))
 	}
 	if a1.rcvd != 1 && a2.rcvd != 1 && a3.rcvd != 1 {
 		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.rcvd, a2.rcvd, a3.rcvd)
@@ -60,7 +60,7 @@ func TestFanout_Recv(t *testing.T) {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
 	for i := 0; i < 3; i++ {
-		ft.Recv(core.NewMessage(nil, []byte("")))
+		ft.Recv(core.NewMessage([]byte{}))
 	}
 	if a1.rcvd != 1 && a2.rcvd != 1 && a3.rcvd != 1 {
 		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.rcvd, a2.rcvd, a3.rcvd)

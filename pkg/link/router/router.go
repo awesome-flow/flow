@@ -25,11 +25,11 @@ func NewRouter(name string, params core.Params) (core.Link, error) {
 	if strKey, ok := routingKey.(string); ok {
 		errNoKey := fmt.Errorf("Message is missing routing key %s", strKey)
 		routingFunc = func(msg *core.Message) (string, error) {
-			k, ok := msg.Meta[strKey]
+			k, ok := msg.GetMeta(strKey)
 			if !ok {
 				return "", errNoKey
 			}
-			return k, nil
+			return k.(string), nil
 		}
 	} else if funcKey, ok := routingKey.(func(*core.Message) (string, error)); ok {
 		routingFunc = funcKey

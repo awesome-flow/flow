@@ -12,6 +12,7 @@ import (
 	buffer "github.com/whiteboxio/flow/pkg/link/buffer"
 	dmx "github.com/whiteboxio/flow/pkg/link/dmx"
 	fanout "github.com/whiteboxio/flow/pkg/link/fanout"
+	meta_parser "github.com/whiteboxio/flow/pkg/link/meta_parser"
 	mpx "github.com/whiteboxio/flow/pkg/link/mpx"
 	router "github.com/whiteboxio/flow/pkg/link/router"
 	throttler "github.com/whiteboxio/flow/pkg/link/throttler"
@@ -38,20 +39,21 @@ type ConstrFunc func(string, core.Params) (core.Link, error)
 
 var (
 	compBuilders = map[string]ConstrFunc{
-		"receiver.tcp":   tcp_rcv.New,
-		"receiver.udp":   udp_rcv.NewUDP,
-		"receiver.http":  http_rcv.NewHTTP,
-		"receiver.unix":  unix_rcv.NewUnix,
-		"receiver.evio":  evio_rcv.New,
-		"link.dmx":       dmx.NewDMX,
-		"link.mpx":       mpx.NewMPX,
-		"link.router":    router.NewRouter,
-		"link.throttler": throttler.NewThrottler,
-		"link.fanout":    fanout.NewFanout,
-		"link.buffer":    buffer.NewBuffer,
-		"sink.dumper":    dumper_sink.NewDumper,
-		"sink.tcp":       tcp_sink.NewTCP,
-		"sink.udp":       udp_sink.NewUDP,
+		"receiver.tcp":     tcp_rcv.New,
+		"receiver.udp":     udp_rcv.NewUDP,
+		"receiver.http":    http_rcv.NewHTTP,
+		"receiver.unix":    unix_rcv.NewUnix,
+		"receiver.evio":    evio_rcv.New,
+		"link.dmx":         dmx.NewDMX,
+		"link.mpx":         mpx.NewMPX,
+		"link.router":      router.NewRouter,
+		"link.throttler":   throttler.NewThrottler,
+		"link.fanout":      fanout.NewFanout,
+		"link.buffer":      buffer.NewBuffer,
+		"link.meta_parser": meta_parser.New,
+		"sink.dumper":      dumper_sink.NewDumper,
+		"sink.tcp":         tcp_sink.NewTCP,
+		"sink.udp":         udp_sink.NewUDP,
 	}
 )
 

@@ -7,6 +7,8 @@ components:
     params:
       bind_addr: :3110
       backend: evio
+  meta_parser:
+    module: link.meta_parser
   mpx:
     module: link.mpx
   tcp_sink_7222:
@@ -36,6 +38,8 @@ components:
 
 pipeline:
   tcp_rcv:
+    connect: meta_parser
+  meta_parser:
     connect: mpx
   mpx:
     links:

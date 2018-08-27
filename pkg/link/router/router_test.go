@@ -33,7 +33,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	if linkErr := r.RouteTo(map[string]core.Link{"a1": a1, "a2": a2}); linkErr != nil {
 		t.Errorf("Failed to link router: %s", linkErr.Error())
 	}
-	m1 := core.NewMessage(map[string]string{"sender": "a1"}, []byte(""))
+	m1 := core.NewMessageWithMeta(map[string]interface{}{"sender": "a1"}, []byte(""))
 	r.Send(m1)
 	select {
 	case <-m1.GetAckCh():
@@ -46,7 +46,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	if a2.rcvCnt != 0 {
 		t.Errorf("Unexpected counter value in a2: %d", a2.rcvCnt)
 	}
-	m2 := core.NewMessage(map[string]string{"sender": "a2"}, []byte(""))
+	m2 := core.NewMessageWithMeta(map[string]interface{}{"sender": "a2"}, []byte(""))
 	r.Send(m2)
 	select {
 	case <-m2.GetAckCh():
@@ -59,7 +59,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	if a2.rcvCnt != 1 {
 		t.Errorf("Unexpected counter value in a2: %d", a2.rcvCnt)
 	}
-	m3 := core.NewMessage(map[string]string{"sender": "a3"}, []byte(""))
+	m3 := core.NewMessageWithMeta(map[string]interface{}{"sender": "a3"}, []byte(""))
 	r.Send(m3)
 
 	select {

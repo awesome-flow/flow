@@ -42,9 +42,11 @@ func (mpx *MPX) multiplex() {
 		linksLen := len(mpx.links)
 		acks := make(chan core.MsgStatus, linksLen)
 		ackChClosed := false
+		msgMeta := msg.GetMetaAll()
+		msgPayload := msg.Payload
 		for _, link := range mpx.links {
 			go func(l core.Link) {
-				msgCp := core.NewMessage(msg.Meta, msg.Payload)
+				msgCp := core.NewMessageWithMeta(msgMeta, msgPayload)
 				if sendErr := l.Recv(msgCp); sendErr != nil {
 					acks <- core.MsgStatusFailed
 					return

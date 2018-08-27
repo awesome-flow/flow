@@ -62,7 +62,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		extra              string
 		expectedStatusCode int
 		expectedPayload    []byte
-		expectedMeta       core.MsgMeta
+		expectedMeta       map[string]interface{}
 	}{
 		{
 			"sync empty",
@@ -72,7 +72,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"",
 			http.StatusBadRequest,
 			[]byte{},
-			core.MsgMeta{},
+			nil,
 		},
 		{
 			"async successful",
@@ -82,7 +82,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"",
 			http.StatusAccepted,
 			[]byte("hello world"),
-			core.MsgMeta{},
+			nil,
 		},
 		{
 			"sync successful",
@@ -92,7 +92,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"?sync=true",
 			http.StatusOK,
 			[]byte("hello world"),
-			core.MsgMeta{"sync": "true"},
+			map[string]interface{}{"sync": "true"},
 		},
 		{
 			"sync partial",
@@ -102,7 +102,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"?sync=true",
 			http.StatusConflict,
 			[]byte("hello world"),
-			core.MsgMeta{"sync": "true"},
+			map[string]interface{}{"sync": "true"},
 		},
 		{
 			"sync invalid",
@@ -112,7 +112,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"?sync=true",
 			http.StatusBadRequest,
 			[]byte("hello world"),
-			core.MsgMeta{"sync": "true"},
+			map[string]interface{}{"sync": "true"},
 		},
 		{
 			"sync failed",
@@ -122,7 +122,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"?sync=true",
 			http.StatusInternalServerError,
 			[]byte("hello world"),
-			core.MsgMeta{"sync": "true"},
+			map[string]interface{}{"sync": "true"},
 		},
 		{
 			"sync timeout",
@@ -132,7 +132,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"?sync=true",
 			http.StatusGatewayTimeout,
 			[]byte("hello world"),
-			core.MsgMeta{"sync": "true"},
+			map[string]interface{}{"sync": "true"},
 		},
 		{
 			"sync unroutable",
@@ -142,7 +142,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"?sync=true",
 			http.StatusNotAcceptable,
 			[]byte("hello world"),
-			core.MsgMeta{"sync": "true"},
+			map[string]interface{}{"sync": "true"},
 		},
 		{
 			"sync throttled",
@@ -152,7 +152,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			"?sync=true",
 			http.StatusTooManyRequests,
 			[]byte("hello world"),
-			core.MsgMeta{"sync": "true"},
+			map[string]interface{}{"sync": "true"},
 		},
 	}
 

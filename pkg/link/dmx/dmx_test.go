@@ -41,7 +41,7 @@ func TestDMX_Demultiplex(t *testing.T) {
 	}
 	dmx.ConnectTo(cntr)
 
-	msg1 := core.NewMessage(nil, []byte(""))
+	msg1 := core.NewMessage([]byte{})
 	if sendErr1 := a1.Send(msg1); sendErr1 != nil {
 		t.Errorf("Unexpected a1 send error: %s", sendErr1.Error())
 	}
@@ -57,7 +57,7 @@ func TestDMX_Demultiplex(t *testing.T) {
 		t.Errorf("Unexpected received counter value: %d", cntr.rcvCnt)
 	}
 
-	msg2 := core.NewMessage(nil, []byte(""))
+	msg2 := core.NewMessage([]byte{})
 	if sendErr2 := a2.Send(msg2); sendErr2 != nil {
 		t.Errorf("Unexpected a2 send error: %s", sendErr2.Error())
 	}
