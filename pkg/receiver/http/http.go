@@ -78,7 +78,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, "Zero-size request size", http.StatusBadRequest)
 		return
 	}
-	msgMeta := core.NewMsgMeta()
+	msgMeta := make(map[string]interface{})
 	for k, v := range req.URL.Query() {
 		msgMeta[k] = v[0]
 	}
@@ -91,7 +91,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	msg := core.NewMessage(msgMeta, body)
+	msg := core.NewMessageWithMeta(msgMeta, body)
 
 	if sendErr := h.Send(msg); sendErr != nil {
 		metrics.GetCounter("receiver.http.send_error").Inc(1)
@@ -99,7 +99,9 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !msg.IsSync() {
+	sync, ok := msg.GetMeta("sync")
+	isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
+	if !isSync {
 		metrics.GetCounter("receiver.http.accepted").Inc(1)
 		rw.WriteHeader(http.StatusAccepted)
 		rw.Write([]byte("Accepted"))

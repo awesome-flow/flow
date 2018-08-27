@@ -29,37 +29,37 @@ func TestMetaParser_Recv(t *testing.T) {
 	tests := []struct {
 		name       string
 		payload    []byte
-		expMeta    core.MsgMeta
+		expMeta    map[string]interface{}
 		expPayload []byte
 	}{
 		{
 			name:       "empty payload",
 			payload:    []byte{},
-			expMeta:    core.MsgMeta{},
+			expMeta:    map[string]interface{}{},
 			expPayload: []byte{},
 		},
 		{
 			name:       "no space delimiter",
 			payload:    []byte("{\"foo\":\"bar\"}"),
-			expMeta:    core.MsgMeta{},
+			expMeta:    map[string]interface{}{},
 			expPayload: []byte("{\"foo\":\"bar\"}"),
 		},
 		{
 			name:       "basic meta with unique values",
 			payload:    []byte("foo=bar&baz=bar {\"foo\":\"bar\"}"),
-			expMeta:    core.MsgMeta{"foo": "bar", "baz": "bar"},
+			expMeta:    map[string]interface{}{"foo": "bar", "baz": "bar"},
 			expPayload: []byte("{\"foo\":\"bar\"}"),
 		},
 		{
 			name:       "basic meta with repeating values",
 			payload:    []byte("foo=bar&foo=kaboo {\"foo\":\"bar\"}"),
-			expMeta:    core.MsgMeta{"foo": "bar"},
+			expMeta:    map[string]interface{}{"foo": "bar"},
 			expPayload: []byte("{\"foo\":\"bar\"}"),
 		},
 		{
 			name:       "basic meta with malformed meta",
 			payload:    []byte("foo {\"foo\":\"bar\"}"),
-			expMeta:    core.MsgMeta{"foo": ""},
+			expMeta:    map[string]interface{}{"foo": ""},
 			expPayload: []byte("{\"foo\":\"bar\"}"),
 		},
 	}
@@ -74,7 +74,7 @@ func TestMetaParser_Recv(t *testing.T) {
 			testRcv := NewA()
 			mp.ConnectTo(testRcv)
 
-			msg := core.NewMessage(nil, testCase.payload)
+			msg := core.NewMessage(testCase.payload)
 
 			sendErr := mp.Recv(msg)
 
@@ -90,9 +90,10 @@ func TestMetaParser_Recv(t *testing.T) {
 				t.Errorf("Timed out to send message")
 			}
 
-			if !reflect.DeepEqual(testRcv.lastMsg.Meta, testCase.expMeta) {
+			msgMeta := testRcv.lastMsg.GetMetaAll()
+			if !reflect.DeepEqual(msgMeta, testCase.expMeta) {
 				t.Errorf("Unexpected message meta: %+v, want: %+v",
-					testRcv.lastMsg.Meta, testCase.expMeta)
+					msgMeta, testCase.expMeta)
 			}
 
 			if bytes.Compare(testRcv.lastMsg.Payload, testCase.expPayload) != 0 {

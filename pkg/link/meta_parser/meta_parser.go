@@ -20,11 +20,6 @@ func New(name string, params core.Params) (core.Link, error) {
 }
 
 func (mp *MetaParser) Recv(msg *core.Message) error {
-
-	if msg.Meta == nil {
-		msg.Meta = core.NewMsgMeta()
-	}
-
 	if bytes.ContainsRune(msg.Payload, ' ') {
 		chunks := bytes.SplitN(msg.Payload, []byte{' '}, 2)
 		query, payload := chunks[0], chunks[1]
@@ -34,13 +29,11 @@ func (mp *MetaParser) Recv(msg *core.Message) error {
 		if err != nil {
 			return err
 		}
-
-		meta := msg.Meta
-
+		msgMeta := make(map[string]interface{})
 		for k, vals := range queryPairs {
-			meta[k] = vals[0]
+			msgMeta[k] = vals[0]
 		}
-		msg.Meta = meta
+		msg.SetMetaAll(msgMeta)
 		msg.Payload = payload
 	}
 

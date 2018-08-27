@@ -68,7 +68,7 @@ func TestMPX_multiplex(t *testing.T) {
 			if linkErr != nil {
 				t.Errorf("Failed to connect links to mpx: %s", linkErr.Error())
 			}
-			msg := core.NewMessage(nil, []byte(""))
+			msg := core.NewMessage([]byte(""))
 			if rcvErr := mpx.Recv(msg); rcvErr != nil {
 				t.Errorf("Unexpected rcv error: %s", rcvErr.Error())
 			}

@@ -46,8 +46,8 @@ func NewThrottler(name string, params core.Params) (core.Link, error) {
 func (th *Throttler) Recv(msg *core.Message) error {
 	msgKey := ""
 	if len(th.key) > 0 {
-		if _, ok := msg.Meta[th.key]; ok {
-			msgKey = msg.Meta[th.key]
+		if v, ok := msg.GetMeta(th.key); ok {
+			msgKey = v.(string)
 		}
 	}
 	bucket, _ := th.buckets.LoadOrStore(msgKey, &stts{

@@ -61,7 +61,7 @@ func (udp *UDP) recv() {
 			return
 		}
 
-		msg := core.NewMessage(nil, buf[:n])
+		msg := core.NewMessage(buf[:n])
 
 		if sendErr := udp.Send(msg); sendErr != nil {
 			log.Errorf("UDP failed to accept message: %s", sendErr.Error())

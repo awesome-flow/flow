@@ -34,7 +34,7 @@ func TestThrottler_Recv(t *testing.T) {
 			cnt := 0
 			var err error
 			for {
-				if err = th.Recv(core.NewMessage(core.MsgMeta{}, []byte(""))); err != nil {
+				if err = th.Recv(core.NewMessage([]byte(""))); err != nil {
 					break
 				}
 				cnt++
