@@ -15,6 +15,7 @@ func main() {
 	srcFile := flag.String("source", "", "Data source file")
 	sendTo := flag.String("send-to", "", "TCP receiver address")
 	num := flag.Uint64("n", 0, "Send up to N messages (0 for no limit)")
+	proto := flag.String("proto", "tcp", "Network protocol (tcp, udp, unix)")
 
 	flag.Parse()
 
@@ -25,7 +26,7 @@ func main() {
 	}
 
 	log.Infof("Creating a new connection to %s", *sendTo)
-	conn, err := net.Dial("tcp", *sendTo)
+	conn, err := net.Dial(*proto, *sendTo)
 	if err != nil {
 		log.Fatalf("Failed to open a connection to %s: %s", *sendTo, err)
 	}
@@ -49,14 +50,16 @@ func main() {
 			failCnt++
 			continue
 		} else {
-			n, err := conn.Read(respBuf)
-			if err != nil {
-				log.Errorf("Failed to read data: %s", err)
-				failCnt++
-			}
-			if n == 0 {
-				log.Errorf("No response received from the server")
-				failCnt++
+			if *proto != "udp" {
+				n, err := conn.Read(respBuf)
+				if err != nil {
+					log.Errorf("Failed to read data: %s", err)
+					failCnt++
+				}
+				if n == 0 {
+					log.Errorf("No response received from the server")
+					failCnt++
+				}
 			}
 		}
 		sentCnt++

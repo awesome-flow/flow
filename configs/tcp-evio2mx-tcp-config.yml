@@ -1,5 +1,8 @@
 system:
-  max_proc: 4
+  maxprocs: 4
+#  admin:
+#    enabled: true
+#    bind_addr: "localhost:4101"
 
 components:
   tcp_rcv:

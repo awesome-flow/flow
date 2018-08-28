@@ -1,0 +1,17 @@
+system:
+  maxprocs: 4
+
+components:
+  udp_rcv:
+    module: receiver.udp
+    params:
+      backend: std
+      bind_addr: :3101
+  udp_sink:
+    module: sink.udp
+    params:
+      bind_addr: :7722
+
+pipeline:
+  udp_rcv:
+    connect: udp_sink

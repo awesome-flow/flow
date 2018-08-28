@@ -70,7 +70,10 @@ func New(name string, params core.Params) (core.Link, error) {
 	}
 
 	events.Data = func(ec evio.Conn, buf []byte) (out []byte, action evio.Action) {
-		is := ec.Context().(*evio.InputStream)
+		is, ok := ec.Context().(*evio.InputStream)
+		if !ok {
+			is = &evio.InputStream{}
+		}
 		data := is.Begin(buf)
 
 		if !bytes.Contains(data, []byte{'\n'}) {
@@ -93,7 +96,8 @@ func New(name string, params core.Params) (core.Link, error) {
 				return
 			}
 			sync, ok := msg.GetMeta("sync")
-			isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
+			isSync := ok && (sync.(string) == "true" || sync.(string) == "1") &&
+				ec.LocalAddr().Network() != "udp"
 			if isSync {
 				select {
 				case s := <-msg.GetAckCh():

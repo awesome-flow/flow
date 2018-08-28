@@ -8,8 +8,8 @@ components:
   udp_rcv:
     module: receiver.udp
     params:
-      bind_addr: localhost:3101
-      lib: evio
+      backend: evio
+      bind_addr: :3101
   stdout:
     module: sink.dumper
     params:

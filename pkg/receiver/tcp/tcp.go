@@ -51,12 +51,17 @@ func New(name string, params core.Params) (core.Link, error) {
 		return nil, fmt.Errorf("TCP receiver parameters are missing bind_addr")
 	}
 	if backend, ok := params["backend"]; ok {
-		if backend == "evio" {
-			log.Debug("Instantiating Evio backend for TCP receiver")
+		switch backend {
+		case "evio":
+			log.Info("Instantiating Evio backend for TCP receiver")
 			params["listeners"] = []interface{}{
 				"tcp://" + params["bind_addr"].(string),
 			}
 			return evio_rcv.New(name, params)
+		case "std":
+			log.Info("Instantiating standard backend for TCP receiver")
+		default:
+			return nil, fmt.Errorf("Unknown backend: %s", backend)
 		}
 	}
 	net := &gracenet.Net{}

@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/metrics"
+	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
 )
 
 const (
@@ -29,6 +30,22 @@ func NewUDP(name string, params core.Params) (core.Link, error) {
 	if !ok {
 		return nil, fmt.Errorf("UDP receiver parameters are missing bind_addr")
 	}
+
+	if backend, ok := params["backend"]; ok {
+		switch backend {
+		case "evio":
+			log.Info("Instantiating Evio backend for UDP receiver")
+			params["listeners"] = []interface{}{
+				"udp://" + params["bind_addr"].(string),
+			}
+			return evio_rcv.New(name, params)
+		case "std":
+			log.Info("Instantiating standard backend for UDP receiver")
+		default:
+			return nil, fmt.Errorf("Unknown backend: %s", backend)
+		}
+	}
+
 	udp := &UDP{name, nil, core.NewConnector()}
 
 	addr, addrErr := net.ResolveUDPAddr("udp", udpAddr.(string))
