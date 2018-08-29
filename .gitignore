@@ -2,4 +2,4 @@ vendor/*
 _vendor-*/*
 flowd
 tmp
-internal/app/tcp_sender/tcp_sender
+internal/app/net_sender/net_sender

@@ -13,7 +13,7 @@ import (
 
 func main() {
 	srcFile := flag.String("source", "", "Data source file")
-	sendTo := flag.String("send-to", "", "TCP receiver address")
+	sendTo := flag.String("send-to", "", "Receiver net address")
 	num := flag.Uint64("n", 0, "Send up to N messages (0 for no limit)")
 	proto := flag.String("proto", "tcp", "Network protocol (tcp, udp, unix)")
 
