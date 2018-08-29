@@ -40,11 +40,12 @@ func NewUDP(name string, params core.Params) (core.Link, error) {
 			}
 			return evio_rcv.New(name, params)
 		case "std":
-			log.Info("Instantiating standard backend for UDP receiver")
 		default:
 			return nil, fmt.Errorf("Unknown backend: %s", backend)
 		}
 	}
+
+	log.Info("Instantiating standard backend for UDP receiver")
 
 	udp := &UDP{name, nil, core.NewConnector()}
 

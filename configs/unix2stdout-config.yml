@@ -1,0 +1,16 @@
+system:
+  maxprocs: 4
+
+components:
+  unix_rcv:
+    module: receiver.unix
+    params:
+      bind_addr: /tmp/flow.sock
+  stdout:
+    module: sink.dumper
+    params:
+      out: STDOUT
+
+pipeline:
+  unix_rcv:
+    connect: stdout

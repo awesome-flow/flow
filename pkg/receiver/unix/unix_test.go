@@ -27,7 +27,7 @@ func TestUnix_unixRecv(t *testing.T) {
 	path := "/tmp/flow.sock"
 	defer os.Remove(path)
 	testRcv := NewA()
-	payload := "hello world"
+	payload := "hello world" + "\n"
 	unix, err := NewUnix("test_unix", core.Params{"path": path})
 	if err != nil {
 		t.Fatalf("Failed to initialize unix receiver: %s", err.Error())

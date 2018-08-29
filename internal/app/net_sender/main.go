@@ -50,7 +50,7 @@ func main() {
 			failCnt++
 			continue
 		} else {
-			if *proto != "udp" {
+			if *proto != "udp" && *proto != "unix" {
 				n, err := conn.Read(respBuf)
 				if err != nil {
 					log.Errorf("Failed to read data: %s", err)

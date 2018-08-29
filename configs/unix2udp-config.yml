@@ -1,0 +1,16 @@
+system:
+  maxprocs: 4
+
+components:
+  unix_rcv:
+    module: receiver.unix
+    params:
+      bind_addr: /tmp/flow.sock
+  udp_sink:
+    module: sink.udp
+    params:
+      bind_addr: :7722
+
+pipeline:
+  unix_rcv:
+    connect: udp_sink

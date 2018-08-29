@@ -59,11 +59,13 @@ func New(name string, params core.Params) (core.Link, error) {
 			}
 			return evio_rcv.New(name, params)
 		case "std":
-			log.Info("Instantiating standard backend for TCP receiver")
 		default:
 			return nil, fmt.Errorf("Unknown backend: %s", backend)
 		}
 	}
+
+	log.Info("Instantiating standard backend for TCP receiver")
+
 	net := &gracenet.Net{}
 	srv, err := net.Listen("tcp", tcpAddr.(string))
 	if err != nil {

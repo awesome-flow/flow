@@ -1,6 +1,7 @@
 package receiver
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -9,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/metrics"
+	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
 )
 
 const (
@@ -27,10 +29,26 @@ type Unix struct {
 }
 
 func NewUnix(name string, params core.Params) (core.Link, error) {
-	path, ok := params["path"]
+	path, ok := params["bind_addr"]
 	if !ok {
 		path = "/tmp/flow.sock"
 	}
+
+	if backend, ok := params["backend"]; ok {
+		switch backend {
+		case "evio":
+			log.Info("Instantiating Evio backend for UNIX receiver")
+			params["listeners"] = []interface{}{
+				"unix://" + path.(string),
+			}
+			return evio_rcv.New(name, params)
+		case "std":
+		default:
+			return nil, fmt.Errorf("Unknown backend: %s", backend)
+		}
+	}
+
+	log.Info("Instantiating standard backend for UNIX receiver")
 
 	net := &gracenet.Net{}
 	lstnr, err := net.Listen("unix", path.(string))
@@ -62,29 +80,33 @@ func (ux *Unix) ExecCmd(cmd *core.Cmd) error {
 }
 
 func unixRecv(ux *Unix, conn net.Conn) {
-	buf := make([]byte, MaxUnixPayloadSize)
+	metrics.GetCounter("receiver.unix.conn.opened").Inc(1)
+	reader := bufio.NewReader(conn)
 	for {
-		n, err := conn.Read(buf)
-		metrics.GetCounter("receiver.unix.received").Inc(1)
-
-		if err == io.EOF {
-			log.Infof("Met EOF")
-			return
-		}
+		data, err := reader.ReadBytes('\n')
+		metrics.GetCounter("receiver.unix.msg.received").Inc(1)
 
 		if err != nil {
-			log.Warnf("Unix conn Read failed: %s %+v", err.Error(), err)
-			return
+			if err == io.EOF {
+				break
+			}
+			log.Warnf("Unix conn Read failed: %s", err)
+			metrics.GetCounter("receiver.unix.msg.failed").Inc(1)
 		}
-		if n == 0 {
-			return
+
+		if len(data) == 0 {
+			continue
 		}
-		msg := core.NewMessage(buf[:n])
+		msg := core.NewMessage(data)
 
 		if sendErr := ux.Send(msg); sendErr != nil {
-			log.Errorf("Unix socket failed to send message: %s", sendErr.Error())
+			log.Errorf("Unix socket failed to send message: %s", sendErr)
 		} else {
-			metrics.GetCounter("receiver.unix.sent").Inc(1)
+			metrics.GetCounter("receiver.unix.msg.sent").Inc(1)
 		}
 	}
+	if err := conn.Close(); err != nil {
+		log.Errorf("Unix socket connection failed to close: %s", err)
+	}
+	metrics.GetCounter("receiver.unix.conn.closed").Inc(1)
 }
