@@ -1,6 +1,7 @@
 package receiver
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 
@@ -67,9 +68,10 @@ func NewUDP(name string, params core.Params) (core.Link, error) {
 }
 
 func (udp *UDP) recv() {
-	buf := make([]byte, MaxDatagramPayloadSize)
+	// buf := make([]byte, MaxDatagramPayloadSize)
+	buf := bufio.NewReader(udp.conn)
 	for {
-		n, _, err := udp.conn.ReadFromUDP(buf)
+		data, _, err := buf.ReadLine()
 		metrics.GetCounter("receiver.udp.received").Inc(1)
 		if err != nil {
 			if nerr, ok := err.(net.Error); ok && (nerr.Temporary() || nerr.Timeout()) {
@@ -79,7 +81,7 @@ func (udp *UDP) recv() {
 			return
 		}
 
-		msg := core.NewMessage(buf[:n])
+		msg := core.NewMessage(data)
 
 		if sendErr := udp.Send(msg); sendErr != nil {
 			log.Errorf("UDP failed to accept message: %s", sendErr.Error())

@@ -76,12 +76,12 @@ func New(name string, params core.Params) (core.Link, error) {
 		}
 		data := is.Begin(buf)
 
-		if !bytes.Contains(data, []byte{'\n'}) {
+		if !bytes.Contains(data, []byte{'\r', '\n'}) {
 			is.End(data)
 			return
 		}
 
-		chunks := bytes.SplitN(data, []byte{'\n'}, 2)
+		chunks := bytes.SplitN(data, []byte{'\r', '\n'}, 2)
 
 		payload, leftover := chunks[0], chunks[1]
 
@@ -96,8 +96,9 @@ func New(name string, params core.Params) (core.Link, error) {
 				return
 			}
 			sync, ok := msg.GetMeta("sync")
+			network := ec.LocalAddr().Network()
 			isSync := ok && (sync.(string) == "true" || sync.(string) == "1") &&
-				ec.LocalAddr().Network() != "udp"
+				!(network == "udp" || network == "unix")
 			if isSync {
 				select {
 				case s := <-msg.GetAckCh():

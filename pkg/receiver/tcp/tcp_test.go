@@ -3,6 +3,7 @@ package receiver
 import (
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,7 +27,7 @@ func (a *A) Recv(msg *core.Message) error {
 
 func TestTCP_recv(t *testing.T) {
 	tcpAddr := ":7102"
-	payload := "hello world\n"
+	payload := "hello world\r\n"
 	tcp, err := New("test_tcp", core.Params{"bind_addr": tcpAddr})
 	if err != nil {
 		t.Fatalf("Failed to start a TCP listener: %s", err)
@@ -43,7 +44,7 @@ func TestTCP_recv(t *testing.T) {
 	}
 	t.Logf("Sent %d bytes over the network", n)
 	time.Sleep(10 * time.Millisecond)
-	if string(rcvLink.lastMsg) != payload {
+	if string(rcvLink.lastMsg) != strings.Trim(payload, "\n\r") {
 		t.Fatalf("Unexpected receiver last message: %s", rcvLink.lastMsg)
 	}
 }

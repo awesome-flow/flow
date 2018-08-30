@@ -6,6 +6,7 @@ components:
     module: receiver.unix
     params:
       bind_addr: /tmp/flow.sock
+      backend: evio
   udp_sink:
     module: sink.udp
     params:

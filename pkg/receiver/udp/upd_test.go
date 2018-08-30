@@ -3,6 +3,7 @@ package receiver
 import (
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,7 +27,7 @@ func (a *A) Recv(msg *core.Message) error {
 
 func TestUDP_recv(t *testing.T) {
 	udpAddr := ":7001"
-	payload := "hello world"
+	payload := "hello world\r\n"
 	udp, err := NewUDP("test_udp", core.Params{"bind_addr": udpAddr})
 	if err != nil {
 		t.Fatalf("Failed to start a UDP listener: %s", err.Error())
@@ -44,7 +45,7 @@ func TestUDP_recv(t *testing.T) {
 	}
 	t.Logf("Sent %d bytes over the network", n)
 	time.Sleep(10 * time.Millisecond)
-	if string(rcvLink.lastMsg) != payload {
+	if string(rcvLink.lastMsg) != strings.Trim(payload, "\r\n") {
 		t.Fatalf("Unexpected receiver last message: %s", rcvLink.lastMsg)
 	}
 }

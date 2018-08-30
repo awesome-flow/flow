@@ -45,7 +45,7 @@ func main() {
 			}
 		}
 		conn.SetWriteDeadline(time.Now().Add(100 * time.Millisecond))
-		if _, err := conn.Write(append(dataMsgs[msgIx], '\n')); err != nil {
+		if _, err := conn.Write(append(dataMsgs[msgIx], '\r', '\n')); err != nil {
 			log.Errorf("Failed to send data [%s]: %s", dataMsgs[msgIx], err)
 			failCnt++
 			continue
