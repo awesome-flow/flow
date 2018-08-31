@@ -7,6 +7,6 @@ clean:
 	rm -f $(BIN_NAME)
 	rm -f $(BIN_NAME)_linux
 build-docker:
-	@GOOS=linux go build -a -installsuffix cgo -o $(BIN_NAME)_linux .
+	@GOOS=linux GOARCH=386 go build -a -o $(BIN_NAME)_linux .
 build-docker-image:
 	@docker build -t $(DOCKER_IMAGE_NAME) .

@@ -5,7 +5,7 @@ import (
 	"plugin"
 	"runtime"
 
-	"github.com/whiteboxio/flow/internal/pkg/admin"
+	"github.com/whiteboxio/flow/pkg/admin"
 	"github.com/whiteboxio/flow/pkg/config"
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/data"

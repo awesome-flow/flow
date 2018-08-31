@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteboxio/flow/internal/pkg/admin/agent"
+	"github.com/whiteboxio/flow/pkg/admin/agent"
 	"github.com/whiteboxio/flow/pkg/config"
 )
 

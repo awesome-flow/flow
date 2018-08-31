@@ -18,12 +18,12 @@
   revision = "75cf19382434e82df4dd84953f566b8ad23d6e9e"
 
 [[projects]]
-  digest = "1:e196a48176f7a091097baa89631b044e29afbb94e6c1c2e60ec37d3a8a3512e5"
+  digest = "1:eb8e331384779e87648f6dd6551e5d7f72fb48ff5372193f7ecbd75d8675c4a0"
   name = "github.com/kavu/go_reuseport"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2943cf5bd5f8b178905122d93c73f5b773945efb"
-  version = "v1.3.0"
+  revision = "ffa96de2479e10ecd06aca8069bf9c55a86701b5"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
@@ -58,7 +58,7 @@
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "UT"
-  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
+  revision = "182538f80094b6a8efaade63a8fd8e0d9d5843dd"
 
 [[projects]]
   branch = "master"
@@ -66,18 +66,18 @@
   name = "golang.org/x/net"
   packages = ["context"]
   pruneopts = "UT"
-  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
+  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
 
 [[projects]]
   branch = "master"
-  digest = "1:a60cae5be8993938498243605b120290533a5208fd5cac81c932afbad3642fb0"
+  digest = "1:9c99029818a3d4f53bcfd6c0158ca068aeacfecb29283f82a1f9c79b8d2a7da4"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
+  revision = "49385e6e15226593f68b26af201feec29d5bba22"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
