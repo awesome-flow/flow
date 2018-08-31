@@ -1,5 +1,5 @@
 vendor/*
 _vendor-*/*
-flowd
+./flowd
 tmp
 internal/app/net_sender/net_sender
