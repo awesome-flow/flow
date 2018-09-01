@@ -60,12 +60,14 @@ func New(name string, params core.Params) (core.Link, error) {
 	}
 
 	events.Opened = func(ec evio.Conn) (out []byte, opts evio.Options, action evio.Action) {
+		log.Infof("Opened a new connection: %s", ec.RemoteAddr().Network())
 		metrics.GetCounter("receiver.evio.conn.opened").Inc(1)
 		ec.SetContext(&evio.InputStream{})
 		return
 	}
 
 	events.Closed = func(c evio.Conn, err error) (action evio.Action) {
+		log.Infof("Closed connection: %s", c.RemoteAddr().Network())
 		metrics.GetCounter("receiver.evio.conn.closed").Inc(1)
 		return
 	}
@@ -75,48 +77,56 @@ func New(name string, params core.Params) (core.Link, error) {
 		if !ok {
 			is = &evio.InputStream{}
 		}
+
 		data := is.Begin(buf)
 
 		if !bytes.Contains(data, []byte{'\r', '\n'}) {
 			is.End(data)
 			return
 		}
-		syncAllowed, err := regexp.Match("^tcp*", []byte(ec.LocalAddr().Network()))
+
+		replySupported, err := regexp.Match("^tcp*", []byte(ec.LocalAddr().Network()))
 		if err != nil {
 			log.Errorf("Failed to match connection network against regex: %s", err)
 		}
 
-		chunks := bytes.SplitN(data, []byte{'\r', '\n'}, 2)
+		chunks := bytes.Split(data, []byte{'\r', '\n'})
+		// The last chank will contain either an empty array or a leftover from
+		// the next packet.
+		chunks, leftover := chunks[:len(chunks)-1], chunks[len(chunks)-1]
 
-		payload, leftover := chunks[0], chunks[1]
+		for _, payload := range chunks {
+			if len(payload) > 0 {
+				metrics.GetCounter("receiver.evio.msg.received").Inc(1)
+				msg := core.NewMessage(payload)
 
-		if len(payload) > 0 {
-			metrics.GetCounter("receiver.evio.msg.received").Inc(1)
-			msg := core.NewMessage(payload)
-
-			if err := ev.Send(msg); err != nil {
-				log.Errorf("Evio receiver failed to send message: %s", err)
-				metrics.GetCounter("receiver.evio.msg.failed").Inc(1)
-				out = RespFail
-				return
-			}
-			sync, ok := msg.GetMeta("sync")
-			isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
-			if isSync && syncAllowed {
-				select {
-				case s := <-msg.GetAckCh():
-					metrics.GetCounter(
-						"receiver.evio.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
-					out = status2resp(s)
-				case <-time.After(MsgSendTimeout):
-					metrics.GetCounter("receiver.evio.msg.timed_out").Inc(1)
-					out = RespTime
+				if err := ev.Send(msg); err != nil {
+					log.Errorf("Evio receiver failed to send message: %s", err)
+					metrics.GetCounter("receiver.evio.msg.failed").Inc(1)
+					if replySupported {
+						out = RespFail
+					}
+					continue
 				}
-			} else {
-				metrics.GetCounter("receiver.evio.msg.accepted").Inc(1)
-				out = RespAcpt
+				sync, ok := msg.GetMeta("sync")
+				isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
+				if isSync && replySupported {
+					select {
+					case s := <-msg.GetAckCh():
+						metrics.GetCounter(
+							"receiver.evio.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
+						out = status2resp(s)
+					case <-time.After(MsgSendTimeout):
+						metrics.GetCounter("receiver.evio.msg.timed_out").Inc(1)
+						out = RespTime
+					}
+				} else {
+					metrics.GetCounter("receiver.evio.msg.accepted").Inc(1)
+					if replySupported {
+						out = RespAcpt
+					}
+				}
 			}
-			return
 		}
 
 		data = leftover

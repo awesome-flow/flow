@@ -6,6 +6,7 @@ components:
     module: receiver.unix
     params:
       bind_addr: /tmp/flow.sock
+      backend: evio
   stdout:
     module: sink.dumper
     params:

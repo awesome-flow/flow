@@ -43,6 +43,11 @@ func main() {
 	msgIx := 0
 	msgCnt := len(dataMsgs)
 	respBuf := make([]byte, 1024)
+	if connExpResp {
+		log.Infof("Expected response from connection")
+	} else {
+		log.Infof("A response from connection is not expected")
+	}
 	for {
 		if *num > 0 {
 			if sentCnt >= *num {
