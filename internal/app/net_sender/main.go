@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"regexp"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -23,6 +24,10 @@ func main() {
 	data, err := ioutil.ReadFile(*srcFile)
 	if err != nil {
 		log.Fatalf("Failed to read data from source file: %s", err)
+	}
+	connExpResp, err := regexp.Match("^tcp*", []byte(*proto))
+	if err != nil {
+		log.Errorf("Unexpected error: %s", err)
 	}
 
 	log.Infof("Creating a new connection to %s", *sendTo)
@@ -50,7 +55,7 @@ func main() {
 			failCnt++
 			continue
 		} else {
-			if *proto != "udp" && *proto != "unix" {
+			if connExpResp {
 				n, err := conn.Read(respBuf)
 				if err != nil {
 					log.Errorf("Failed to read data: %s", err)

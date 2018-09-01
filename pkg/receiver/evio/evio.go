@@ -3,6 +3,7 @@ package receiver
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -80,6 +81,10 @@ func New(name string, params core.Params) (core.Link, error) {
 			is.End(data)
 			return
 		}
+		syncAllowed, err := regexp.Match("^tcp*", []byte(ec.LocalAddr().Network()))
+		if err != nil {
+			log.Errorf("Failed to match connection network against regex: %s", err)
+		}
 
 		chunks := bytes.SplitN(data, []byte{'\r', '\n'}, 2)
 
@@ -96,10 +101,8 @@ func New(name string, params core.Params) (core.Link, error) {
 				return
 			}
 			sync, ok := msg.GetMeta("sync")
-			network := ec.LocalAddr().Network()
-			isSync := ok && (sync.(string) == "true" || sync.(string) == "1") &&
-				!(network == "udp" || network == "unix")
-			if isSync {
+			isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
+			if isSync && syncAllowed {
 				select {
 				case s := <-msg.GetAckCh():
 					metrics.GetCounter(
