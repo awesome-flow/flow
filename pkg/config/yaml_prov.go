@@ -74,10 +74,19 @@ func (y *yamlProv) GetOptions() ProviderOptions {
 func (y *yamlProv) GetValue(key string) (interface{}, bool) {
 	switch key {
 	case YML_CFG_KEY_SYS:
+		if y.cfg.System == nil {
+			return nil, false
+		}
 		return y.cfg.System, true
 	case YML_CFG_KEY_COMP:
+		if y.cfg.Components == nil {
+			return nil, false
+		}
 		return y.cfg.Components, true
 	case YML_CFG_KEY_PPL:
+		if y.cfg.Pipeline == nil {
+			return nil, false
+		}
 		return y.cfg.Pipeline, true
 	default:
 		return nil, false
