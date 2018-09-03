@@ -1,0 +1,23 @@
+system:
+  maxprocs: 4
+
+components:
+  unix_rcv:
+    module: receiver.unix
+    params:
+      bind_addr: /tmp/flowd.sock
+      backend: evio
+  throttler:
+    module: link.throttler
+    params:
+      rps: 10000
+  tcp_sink:
+    module: sink.tcp
+    params:
+      bind_addr: :7222
+
+pipeline:
+  unix_rcv:
+    connect: throttler
+  throttler:
+    connect: tcp_sink

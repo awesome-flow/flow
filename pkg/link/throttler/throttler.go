@@ -78,12 +78,12 @@ func (th *Throttler) Recv(msg *core.Message) error {
 			// TODO: Race condition here
 			atomic.StoreInt64(&(bucket.(*stts)).budget, newBudget)
 			metrics.GetCounter(
-				"links.throttler." + th.Name + "_pass").Inc(1)
+				"links.throttler.msg." + th.Name + "_pass").Inc(1)
 			return th.Send(msg)
 		}
 		loopBreaker--
 	}
 
-	metrics.GetCounter("links.throttler." + th.Name + "_reject").Inc(1)
+	metrics.GetCounter("links.throttler.msg." + th.Name + "_reject").Inc(1)
 	return msg.AckThrottled()
 }
