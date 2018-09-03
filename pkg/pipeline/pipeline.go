@@ -52,7 +52,7 @@ var (
 		"link.buffer":      buffer.NewBuffer,
 		"link.meta_parser": meta_parser.New,
 		"sink.dumper":      dumper_sink.NewDumper,
-		"sink.tcp":         tcp_sink.NewTCP,
+		"sink.tcp":         tcp_sink.New,
 		"sink.udp":         udp_sink.NewUDP,
 	}
 )

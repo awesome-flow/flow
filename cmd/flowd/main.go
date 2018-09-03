@@ -14,7 +14,7 @@ import (
 
 const (
 	MajVersion  = 1
-	ProgramName = "msgrelay"
+	ProgramName = "flowd"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 
 	log.Infof("Starting %s version %d", ProgramName, MajVersion)
 
-	metrics.Initialize("msgrelay")
+	metrics.Initialize("flowd")
 
 	log.Infof("Initializing the pipeline")
 

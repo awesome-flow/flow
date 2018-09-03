@@ -2,101 +2,68 @@
 
 
 [[projects]]
-  digest = "1:2209584c0f7c9b68c23374e659357ab546e1b70eec2761f03280f69a8fd23d77"
   name = "github.com/cenk/backoff"
   packages = ["."]
-  pruneopts = "UT"
   revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
   version = "v2.0.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:433763f10d88dba9b533a7ea2fe9f5ee11e57e00306eb97a1f6090fd978e8fa1"
   name = "github.com/facebookgo/grace"
   packages = ["gracenet"]
-  pruneopts = "UT"
   revision = "75cf19382434e82df4dd84953f566b8ad23d6e9e"
 
 [[projects]]
-  digest = "1:eb8e331384779e87648f6dd6551e5d7f72fb48ff5372193f7ecbd75d8675c4a0"
   name = "github.com/kavu/go_reuseport"
   packages = ["."]
-  pruneopts = "UT"
   revision = "ffa96de2479e10ecd06aca8069bf9c55a86701b5"
   version = "v1.4.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:cdfb6a1ee9eb93168259c765ac2ce6f2c1ab5a9258c5bc70da46a1e1337f19ae"
   name = "github.com/marpaia/graphite-golang"
   packages = ["."]
-  pruneopts = "UT"
   revision = "134b9af18cf31f936ebddbd11c03eead4d501601"
 
 [[projects]]
-  digest = "1:d867dfa6751c8d7a435821ad3b736310c2ed68945d05b50fb9d23aee0540c8cc"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  pruneopts = "UT"
   revision = "3e01752db0189b9157070a0e1668a620f9a85da2"
   version = "v1.0.6"
 
 [[projects]]
   branch = "master"
-  digest = "1:61e813d1c0128153ee9eeb065be2948889913e3cd1479ee8b969a60fdecead2f"
   name = "github.com/tidwall/evio"
-  packages = [
-    ".",
-    "internal",
-  ]
-  pruneopts = "UT"
+  packages = [".","internal"]
   revision = "3db0020933b5ae6646c7d06f3f1e2a012f4969f8"
 
 [[projects]]
   branch = "master"
-  digest = "1:3f3a05ae0b95893d90b9b3b5afdb79a9b3d96e4e36e099d841ae602e4aca0da8"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  pruneopts = "UT"
   revision = "182538f80094b6a8efaade63a8fd8e0d9d5843dd"
 
 [[projects]]
   branch = "master"
-  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
   name = "golang.org/x/net"
   packages = ["context"]
-  pruneopts = "UT"
   revision = "8a410e7b638dca158bf9e766925842f6651ff828"
 
 [[projects]]
   branch = "master"
-  digest = "1:9c99029818a3d4f53bcfd6c0158ca068aeacfecb29283f82a1f9c79b8d2a7da4"
   name = "golang.org/x/sys"
-  packages = [
-    "unix",
-    "windows",
-  ]
-  pruneopts = "UT"
+  packages = ["unix","windows"]
   revision = "49385e6e15226593f68b26af201feec29d5bba22"
 
 [[projects]]
-  digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  pruneopts = "UT"
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = [
-    "github.com/cenk/backoff",
-    "github.com/facebookgo/grace/gracenet",
-    "github.com/marpaia/graphite-golang",
-    "github.com/sirupsen/logrus",
-    "github.com/tidwall/evio",
-    "gopkg.in/yaml.v2",
-  ]
+  inputs-digest = "fb6aab503d78dbc8ee5b8d92bc19012f3299d9af6101d25fb3c9039c5b504873"
   solver-name = "gps-cdcl"
   solver-version = 1

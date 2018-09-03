@@ -26,7 +26,7 @@ type TCP struct {
 	*sync.Mutex
 }
 
-func NewTCP(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params) (core.Link, error) {
 	tcpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("TCP sink parameters are missing bind_addr")
@@ -61,21 +61,21 @@ func (tcp *TCP) connect() {
 }
 
 func (tcp *TCP) Recv(msg *core.Message) error {
-	metrics.GetCounter("sink.tcp.received").Inc(1)
+	metrics.GetCounter("sink.tcp.msg.received").Inc(1)
 	if tcp.conn == nil {
-		metrics.GetCounter("sink.tcp.no_connection").Inc(1)
+		metrics.GetCounter("sink.tcp.msg.no_connection").Inc(1)
 		return msg.AckFailed()
 	}
 	tcp.Lock()
 	defer tcp.Unlock()
 	tcp.conn.SetDeadline(time.Now().Add(TcpWriteDeadline))
-	if _, err := tcp.conn.Write(msg.Payload); err != nil {
-		metrics.GetCounter("sink.tcp.failed").Inc(1)
+	if _, err := tcp.conn.Write(append(msg.Payload, '\r', '\n')); err != nil {
+		metrics.GetCounter("sink.tcp.msg.failed").Inc(1)
 		log.Warnf("Failed to send TCP packet to %s: %s", tcp.addr, err.Error())
 		go tcp.connect()
 		return msg.AckFailed()
 	} else {
-		metrics.GetCounter("sink.tcp.sent").Inc(1)
+		metrics.GetCounter("sink.tcp.msg.sent").Inc(1)
 	}
 
 	return msg.AckDone()
