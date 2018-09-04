@@ -90,6 +90,5 @@ func (f *CacheFile) IsValid() (bool, error) {
 }
 
 func (f *CacheFile) Invalidate() error {
-	//TODO
-	return nil
+	return os.Remove(f.path)
 }

@@ -226,3 +226,43 @@ func TestCacheFile_Consolidate(t *testing.T) {
 		})
 	}
 }
+
+func TestCacheFile_Invalidate(t *testing.T) {
+	tests := []struct {
+		name string
+		ttl  time.Duration
+	}{
+		{
+			"Regular file",
+			time.Hour,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			tmpFile, err := ioutil.TempFile(TmpFileFolder, TmpFilePreffix)
+			if err != nil {
+				t.Fatalf("Failed to create a tmp file: %s", err)
+			}
+			defer os.Remove(tmpFile.Name())
+			f, err := New(tmpFile.Name(), testCase.ttl)
+			if err != nil {
+				t.Fatalf("Failed to instantiate a new CacheFile: %s", err)
+			}
+			if valid, _ := f.IsValid(); !valid {
+				t.Fatalf("Expected the file to be valid, returned invalid")
+			}
+			if rmErr := f.Invalidate(); rmErr != nil {
+				t.Fatalf("Failed to invalidate file: %s", rmErr)
+			}
+			_, statErr := os.Stat(tmpFile.Name())
+			if statErr == nil {
+				t.Fatalf("Invalidate was supposed to remove the file but stat " +
+					"returned no error")
+			}
+			if !os.IsNotExist(statErr) {
+				t.Fatalf("Unexpected error on stat call: %s", statErr)
+			}
+		})
+	}
+}
