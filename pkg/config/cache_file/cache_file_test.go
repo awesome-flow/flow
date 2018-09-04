@@ -170,3 +170,7 @@ func TestCacheFile_IsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestCacheFile_Consolidate(t *testing.T) {
+	//TODO
+}

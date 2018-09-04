@@ -9,6 +9,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	TmpFileFolder  = "/tmp"
+	TmpFilePreffix = "flow-cache-file"
+	TmpFilePerm    = 0444
+)
+
 type CacheFile struct {
 	path string
 	ttl  time.Duration
@@ -35,13 +41,24 @@ func (f *CacheFile) Read() ([]byte, error) {
 	return data, nil
 }
 
-func (f *CacheFile) LastModified() time.Time {
-	//TODO
-	return time.Now()
-}
-
 func (f *CacheFile) Consolidate(data []byte) error {
-	//TODO
+	tmpFile, err := ioutil.TempFile(TmpFileFolder, TmpFileFolder)
+	if err != nil {
+		return err
+	}
+
+	writeErr := ioutil.WriteFile(tmpFile.Name(), data, TmpFilePerm)
+	if writeErr != nil {
+		defer os.Remove(tmpFile.Name())
+		return writeErr
+	}
+
+	renameErr := os.Rename(tmpFile.Name(), f.path)
+	if err != nil {
+		defer os.Remove(tmpFile.Name())
+		return renameErr
+	}
+
 	return nil
 }
 
