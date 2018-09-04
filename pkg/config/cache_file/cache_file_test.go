@@ -80,7 +80,7 @@ func TestCacheFile_Read(t *testing.T) {
 				}
 
 				errMsg := err.Error()
-				match, err := regexp.Match(testCase.expErrMsg, []byte(errMsg))
+				match, err := regexp.MatchString(testCase.expErrMsg, errMsg)
 				if err != nil {
 					t.Fatalf("Failed to compile a regex: %s", err)
 				}
@@ -158,7 +158,7 @@ func TestCacheFile_IsValid(t *testing.T) {
 			}
 
 			if testCase.reasonWhy != "" {
-				match, err := regexp.Match(testCase.reasonWhy, []byte(why.Error()))
+				match, err := regexp.MatchString(testCase.reasonWhy, why.Error())
 				if err != nil {
 					t.Fatalf("Failed to compile a regex: %s", err)
 				}
@@ -172,5 +172,57 @@ func TestCacheFile_IsValid(t *testing.T) {
 }
 
 func TestCacheFile_Consolidate(t *testing.T) {
-	//TODO
+	tests := []struct {
+		name    string
+		payload []byte
+		errMsg  string
+	}{
+		{
+			name:    "Regular file",
+			payload: []byte("foo:bar"),
+			errMsg:  "",
+		},
+		{
+			name:    "Empty file",
+			payload: []byte{},
+			errMsg:  "^Data is empty.*",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			tmpFile, err := ioutil.TempFile(TmpFileFolder, TmpFilePreffix)
+			if err != nil {
+				t.Fatalf("Failed to create a new tmp file: %s", err)
+			}
+			defer os.Remove(tmpFile.Name())
+			f, err := New(tmpFile.Name(), time.Hour)
+			if err != nil {
+				t.Fatalf("Failed to instantiate a new CacheFile: %s", err)
+			}
+			if writeErr := f.Consolidate(testCase.payload); writeErr != nil {
+				if testCase.errMsg != "" {
+					match, err := regexp.MatchString(testCase.errMsg, writeErr.Error())
+					if err != nil {
+						t.Fatalf("Failed to match against regex: %s", err)
+					}
+					if !match {
+						t.Fatalf("Failed to assert error message similarity: got %s, want %s",
+							writeErr.Error(), testCase.errMsg)
+					}
+				} else {
+					t.Fatalf("Failed to consolidate data: %s", writeErr)
+				}
+			}
+
+			data, err := ioutil.ReadFile(tmpFile.Name())
+			if err != nil {
+				t.Fatalf("Failed to read data from the file: %s", err)
+			}
+			if bytes.Compare(data, testCase.payload) != 0 {
+				t.Fatalf("The payload doesn't match: got %s, want %s",
+					data, testCase.payload)
+			}
+		})
+	}
 }

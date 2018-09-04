@@ -42,6 +42,11 @@ func (f *CacheFile) Read() ([]byte, error) {
 }
 
 func (f *CacheFile) Consolidate(data []byte) error {
+
+	if len(data) == 0 {
+		return fmt.Errorf("Data is empty, nothing to do")
+	}
+
 	tmpFile, err := ioutil.TempFile(TmpFileFolder, TmpFileFolder)
 	if err != nil {
 		return err
