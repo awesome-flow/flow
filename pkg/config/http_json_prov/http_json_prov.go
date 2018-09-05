@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
+
+	registry "github.com/whiteboxio/flow/pkg/config"
 )
 
 type HttpJsonOpt uint32
@@ -34,15 +36,15 @@ func RegisterHttpJsonProv(cfgPath string, fetchUrl string,
 		lastErr:   &atomic.Value{},
 		container: container,
 	}
-	return hjp, Register(cfgPath, hjp)
+	return hjp, registry.Register(cfgPath, hjp)
 }
 
 func (hjp *HttpJsonProv) Setup() error {
 	return nil
 }
 
-func (hjp *HttpJsonProv) GetOptions() ProviderOptions {
-	return ProviderOptionsFileCache | ProviderOptionsTrustOldCache
+func (hjp *HttpJsonProv) GetOptions() registry.ProviderOptions {
+	return registry.ProviderOptionsFileCache | registry.ProviderOptionsTrustOldCache
 }
 
 func (hjp *HttpJsonProv) GetValue(key string) (interface{}, bool) {

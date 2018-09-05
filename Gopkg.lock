@@ -14,6 +14,12 @@
   revision = "75cf19382434e82df4dd84953f566b8ad23d6e9e"
 
 [[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
   name = "github.com/kavu/go_reuseport"
   packages = ["."]
   revision = "ffa96de2479e10ecd06aca8069bf9c55a86701b5"
@@ -64,6 +70,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fb6aab503d78dbc8ee5b8d92bc19012f3299d9af6101d25fb3c9039c5b504873"
+  inputs-digest = "0b95ae07fc810a88160189fe9686b827e7e137bc282023bb40843620ce94e2fa"
   solver-name = "gps-cdcl"
   solver-version = 1

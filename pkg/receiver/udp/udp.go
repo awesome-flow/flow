@@ -68,7 +68,6 @@ func NewUDP(name string, params core.Params) (core.Link, error) {
 }
 
 func (udp *UDP) recv() {
-	// buf := make([]byte, MaxDatagramPayloadSize)
 	buf := bufio.NewReader(udp.conn)
 	for {
 		data, _, err := buf.ReadLine()

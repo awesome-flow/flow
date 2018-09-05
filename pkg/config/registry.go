@@ -3,7 +3,7 @@ package config
 import (
 	"sync"
 
-	data "github.com/whiteboxio/flow/pkg/data"
+	data "github.com/whiteboxio/flow/pkg/util/data"
 )
 
 type Registry struct {

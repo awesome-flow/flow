@@ -8,7 +8,6 @@ import (
 	"github.com/whiteboxio/flow/pkg/admin"
 	"github.com/whiteboxio/flow/pkg/config"
 	"github.com/whiteboxio/flow/pkg/core"
-	"github.com/whiteboxio/flow/pkg/data"
 	buffer "github.com/whiteboxio/flow/pkg/link/buffer"
 	dmx "github.com/whiteboxio/flow/pkg/link/dmx"
 	fanout "github.com/whiteboxio/flow/pkg/link/fanout"
@@ -24,6 +23,7 @@ import (
 	dumper_sink "github.com/whiteboxio/flow/pkg/sink/dumper"
 	tcp_sink "github.com/whiteboxio/flow/pkg/sink/tcp"
 	udp_sink "github.com/whiteboxio/flow/pkg/sink/udp"
+	"github.com/whiteboxio/flow/pkg/util/data"
 
 	log "github.com/sirupsen/logrus"
 )
