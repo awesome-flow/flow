@@ -1,6 +1,7 @@
 package file
 
 import (
+	"fmt"
 	"io/ioutil"
 	"sync"
 
@@ -9,12 +10,15 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+const (
+	VFPermDefault = 0644
+)
+
 type VolatileFile struct {
-	path       string
-	once       *sync.Once
-	watcher    *fsnotify.Watcher
-	lock       *sync.Mutex
-	notifyChan chan bool
+	path    string
+	once    *sync.Once
+	watcher *fsnotify.Watcher
+	lock    *sync.Mutex
 }
 
 func New(path string) (*VolatileFile, error) {
@@ -24,11 +28,10 @@ func New(path string) (*VolatileFile, error) {
 	}
 
 	vf := &VolatileFile{
-		path:       path,
-		once:       &sync.Once{},
-		lock:       &sync.Mutex{},
-		notifyChan: make(chan bool, 1),
-		watcher:    w,
+		path:    path,
+		once:    &sync.Once{},
+		lock:    &sync.Mutex{},
+		watcher: w,
 	}
 
 	if err := vf.Deploy(); err != nil {
@@ -40,30 +43,7 @@ func New(path string) (*VolatileFile, error) {
 
 func (vf *VolatileFile) Deploy() error {
 	log.Infof("Deploying a watcher for path: %s", vf.path)
-	vf.once.Do(func() {
-		go func() {
-			for event := range vf.watcher.Events {
-				log.Infof("Received a new FS event: %s", event.String())
-				switch event.Op {
-				case fsnotify.Create, fsnotify.Write, fsnotify.Remove:
-					vf.notify()
-				default:
-					log.Infof("Ingoring FS event")
-				}
-			}
-		}()
-
-	})
 	return vf.watcher.Add(vf.path)
-}
-
-func (vf *VolatileFile) notify() {
-	vf.lock.Lock()
-	defer vf.lock.Unlock()
-	for len(vf.notifyChan) > 0 {
-		<-vf.notifyChan
-	}
-	vf.notifyChan <- true
 }
 
 func (vf *VolatileFile) TearDown() error {
@@ -76,18 +56,32 @@ func (vf *VolatileFile) ReadData() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return vf.InterpretData(rawData)
+	return vf.DecodeData(rawData)
+}
+
+func (vf *VolatileFile) WriteData(data interface{}) error {
+	rawData, err := vf.EncodeData(data)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(vf.path, rawData, VFPermDefault)
 }
 
 func (vf *VolatileFile) GetPath() string {
 	return vf.path
 }
 
-func (vf *VolatileFile) GetNotifyChan() chan bool {
-	return vf.notifyChan
+func (vf *VolatileFile) GetNotifyChan() chan fsnotify.Event {
+	return vf.watcher.Events
 }
 
-// InterpretData is expected to be overriden by structs embedding VolatileFile
-func (vf *VolatileFile) InterpretData(rawData []byte) (interface{}, error) {
+func (vf *VolatileFile) DecodeData(rawData []byte) (interface{}, error) {
 	return rawData, nil
+}
+
+func (vf *VolatileFile) EncodeData(data interface{}) ([]byte, error) {
+	if byteData, ok := data.([]byte); ok {
+		return byteData, nil
+	}
+	return nil, fmt.Errorf("Failed to convert data to []byte")
 }
