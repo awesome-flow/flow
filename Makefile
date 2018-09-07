@@ -11,7 +11,7 @@ test:
 	@$(GOTEST) -v ./...
 
 build:
-	@cd cmd/flowd; $(GOBUILD) -o ../../$(BINARY_NAME) -v
+	@cd cmd/flowd; $(GOBUILD) -o ../../builds/$(BINARY_NAME) -v
 
 build-docker-images:
 	@cd internal/app/tcp_server/ && $(MAKE) -f Makefile build-docker && $(MAKE) -f Makefile build-docker-image && $(MAKE) -f Makefile clean

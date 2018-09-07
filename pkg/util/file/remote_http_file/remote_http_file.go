@@ -15,31 +15,48 @@ import (
 )
 
 type RemoteHttpFile struct {
+	ttl         time.Duration
 	shouldStop  bool
 	fetchedData []byte
 	lastErr     error
 	lastMod     string
-	lock        sync.Mutex
+	once        *sync.Once
+	deployOnce  *sync.Once
 	*vf.VolatileFile
 }
 
 func New(path string) (*RemoteHttpFile, error) {
+	return NewWithInterval(path, time.Minute)
+}
+
+func NewWithInterval(path string, ttl time.Duration) (*RemoteHttpFile, error) {
 	vol, err := vf.New(path)
 	if err != nil {
 		return nil, err
 	}
 	rhf := &RemoteHttpFile{
+		ttl,
 		false,
 		nil,
 		nil,
 		"",
-		sync.Mutex{},
+		&sync.Once{},
+		&sync.Once{},
 		vol,
 	}
 	return rhf, nil
 }
 
 func (rhf *RemoteHttpFile) Deploy() error {
+	rhf.deployOnce.Do(func() {
+		rhf.once.Do(rhf.DoFetch)
+		go func() {
+			for {
+				time.Sleep(rhf.ttl)
+				rhf.DoFetch()
+			}
+		}()
+	})
 
 	return nil
 }
@@ -50,21 +67,20 @@ func (rhf *RemoteHttpFile) TearDown() error {
 }
 
 func (rhf *RemoteHttpFile) DoFetch() {
-	rhf.lock.Lock()
-	defer rhf.lock.Unlock()
 
 	resp, err := http.Get(rhf.GetPath())
-	defer resp.Body.Close()
-
 	if err != nil {
 		rhf.lastErr = err
 		return
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode < http.StatusOK ||
 		resp.StatusCode >= http.StatusMultipleChoices {
 		rhf.lastErr = fmt.Errorf("Bad response status: %d", resp.StatusCode)
 	}
+	rhf.lastErr = nil
 	lms := resp.Header.Get("Last-Modified")
 	var tRemote, tLocal time.Time
 	if rhf.lastMod != "" {
@@ -94,15 +110,15 @@ func (rhf *RemoteHttpFile) DoFetch() {
 		} else {
 			log.Infof("No effective change detected")
 		}
-		return
 	} else {
 		log.Infof("No changes detected since the recent update")
 	}
+	return
 }
 
 func (rhf *RemoteHttpFile) ReadData() (interface{}, error) {
-
-	return nil, nil
+	rhf.once.Do(rhf.DoFetch)
+	return rhf.fetchedData, rhf.lastErr
 }
 
 func (rhf *RemoteHttpFile) WrieData(data interface{}) error {
