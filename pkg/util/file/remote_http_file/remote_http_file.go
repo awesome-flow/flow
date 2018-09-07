@@ -8,15 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/fsnotify/fsnotify"
 	vf "github.com/whiteboxio/flow/pkg/util/file/volatile_file"
 )
 
 type RemoteHttpFile struct {
 	ttl         time.Duration
-	shouldStop  bool
 	fetchedData []byte
 	lastErr     error
 	lastMod     string
@@ -36,7 +35,6 @@ func NewWithInterval(path string, ttl time.Duration) (*RemoteHttpFile, error) {
 	}
 	rhf := &RemoteHttpFile{
 		ttl,
-		false,
 		nil,
 		nil,
 		"",
@@ -51,7 +49,9 @@ func (rhf *RemoteHttpFile) Deploy() error {
 	rhf.deployOnce.Do(func() {
 		rhf.once.Do(rhf.DoFetch)
 		go func() {
+			log.Infof("running a loop")
 			for {
+				log.Infof("Starting a new upd loop")
 				time.Sleep(rhf.ttl)
 				rhf.DoFetch()
 			}
@@ -62,7 +62,7 @@ func (rhf *RemoteHttpFile) Deploy() error {
 }
 
 func (rhf *RemoteHttpFile) TearDown() error {
-	//TODO
+	close(rhf.GetNotifyChan())
 	return nil
 }
 
@@ -71,6 +71,7 @@ func (rhf *RemoteHttpFile) DoFetch() {
 	resp, err := http.Get(rhf.GetPath())
 	if err != nil {
 		rhf.lastErr = err
+		log.Errorf("Failed to fetch data from %s: %s", rhf.GetPath(), err)
 		return
 	}
 
@@ -79,6 +80,8 @@ func (rhf *RemoteHttpFile) DoFetch() {
 	if resp.StatusCode < http.StatusOK ||
 		resp.StatusCode >= http.StatusMultipleChoices {
 		rhf.lastErr = fmt.Errorf("Bad response status: %d", resp.StatusCode)
+		log.Errorf("Bad response status: %d", resp.StatusCode)
+		return
 	}
 	rhf.lastErr = nil
 	lms := resp.Header.Get("Last-Modified")
@@ -106,7 +109,11 @@ func (rhf *RemoteHttpFile) DoFetch() {
 		if bytes.Compare(rhf.fetchedData, body) != 0 {
 			log.Info("Received an updated response")
 			rhf.fetchedData = body
-			rhf.GetNotifyChan() <- fsnotify.Event{Op: fsnotify.Write}
+			if !tRemote.IsZero() {
+				log.Info("Sending a new notification")
+				rhf.GetNotifyChan() <- fsnotify.Event{Op: fsnotify.Write}
+				log.Info("Sent a notification")
+			}
 		} else {
 			log.Infof("No effective change detected")
 		}
@@ -118,14 +125,9 @@ func (rhf *RemoteHttpFile) DoFetch() {
 
 func (rhf *RemoteHttpFile) ReadData() (interface{}, error) {
 	rhf.once.Do(rhf.DoFetch)
-	return rhf.fetchedData, rhf.lastErr
+	return rhf.DecodeData(rhf.fetchedData)
 }
 
 func (rhf *RemoteHttpFile) WrieData(data interface{}) error {
 	return fmt.Errorf("Remote HTTP file is read-only")
-}
-
-func (rfh *RemoteHttpFile) GetNotifyChan() chan fsnotify.Event {
-	//TODO
-	return nil
 }

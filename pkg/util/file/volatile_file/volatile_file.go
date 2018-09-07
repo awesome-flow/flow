@@ -23,10 +23,16 @@ type VolatileFile struct {
 
 func New(path string) (*VolatileFile, error) {
 
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
 	vf := &VolatileFile{
-		path: path,
-		once: &sync.Once{},
-		lock: &sync.Mutex{},
+		path:    path,
+		once:    &sync.Once{},
+		lock:    &sync.Mutex{},
+		watcher: w,
 	}
 
 	return vf, nil
@@ -35,11 +41,6 @@ func New(path string) (*VolatileFile, error) {
 func (vf *VolatileFile) Deploy() error {
 	log.Infof("Deploying a watcher for path: %s", vf.path)
 	vf.once.Do(func() {
-		w, err := fsnotify.NewWatcher()
-		if err != nil {
-			return
-		}
-		vf.watcher = w
 		vf.watcher.Add(vf.path)
 	})
 	return nil
