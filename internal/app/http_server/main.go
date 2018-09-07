@@ -41,11 +41,18 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
-		strBody := "<html><h4>Servable files:</h4><ul>"
+		strBody := "<html>" +
+			"<h4>Servable files:</h4>" +
+			"<ul>"
 		for srcName := range srcNames {
-			strBody += fmt.Sprintf("<li><a href=\"/%s\">%s</a></li>", srcName, srcName)
+			strBody += fmt.Sprintf(
+				"<li>"+
+					"<a href=\"/%s\">%s</a>"+
+					"</li>",
+				srcName, srcName)
 		}
-		strBody += "</ul></html>"
+		strBody += "</ul>" +
+			"</html>"
 		w.Write([]byte(strBody))
 	})
 
