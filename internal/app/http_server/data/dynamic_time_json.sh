@@ -1,0 +1,1 @@
+while true; do echo "{\"time\":$(date +%s)}" > time.json; echo "updated"; sleep 5; done

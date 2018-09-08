@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
+	file_event "github.com/whiteboxio/flow/pkg/util/file/event"
 )
 
 func TestVolatileFile_Deploy(t *testing.T) {
@@ -30,7 +30,7 @@ func TestVolatileFile_Deploy(t *testing.T) {
 	}
 	select {
 	case event := <-eventChan:
-		if event.Op != fsnotify.Write {
+		if event.Type != file_event.Update {
 			t.Fatalf("Unexpected file event: %s, want: Write", event.String())
 		}
 	case <-time.After(100 * time.Millisecond):

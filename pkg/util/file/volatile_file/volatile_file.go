@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/fsnotify/fsnotify"
+	event "github.com/whiteboxio/flow/pkg/util/file/event"
 )
 
 const (
@@ -18,7 +19,7 @@ type VolatileFile struct {
 	path    string
 	once    *sync.Once
 	watcher *fsnotify.Watcher
-	lock    *sync.Mutex
+	notify  chan *event.Event
 }
 
 func New(path string) (*VolatileFile, error) {
@@ -31,8 +32,8 @@ func New(path string) (*VolatileFile, error) {
 	vf := &VolatileFile{
 		path:    path,
 		once:    &sync.Once{},
-		lock:    &sync.Mutex{},
 		watcher: w,
+		notify:  make(chan *event.Event),
 	}
 
 	return vf, nil
@@ -41,6 +42,21 @@ func New(path string) (*VolatileFile, error) {
 func (vf *VolatileFile) Deploy() error {
 	log.Infof("Deploying a watcher for path: %s", vf.path)
 	vf.once.Do(func() {
+		go func() {
+			for ntf := range vf.watcher.Events {
+				log.Infof("Received a new fsnotify notification: %s", ntf)
+				switch ntf.Op {
+				case fsnotify.Create:
+					vf.notify <- event.New(event.Create)
+				case fsnotify.Write:
+					vf.notify <- event.New(event.Update)
+				case fsnotify.Remove:
+					vf.notify <- event.New(event.Delete)
+				default:
+					log.Infof("Ignored event: %s", ntf.String())
+				}
+			}
+		}()
 		vf.watcher.Add(vf.path)
 	})
 	return nil
@@ -51,12 +67,16 @@ func (vf *VolatileFile) TearDown() error {
 	return vf.watcher.Remove(vf.path)
 }
 
-func (vf *VolatileFile) ReadData() (interface{}, error) {
+func (vf *VolatileFile) ReadRawData() ([]byte, error) {
 	rawData, err := ioutil.ReadFile(vf.path)
 	if err != nil {
 		return nil, err
 	}
-	return vf.DecodeData(rawData)
+	return rawData, nil
+}
+
+func (vf *VolatileFile) ReadData() (interface{}, error) {
+	return vf.ReadRawData()
 }
 
 func (vf *VolatileFile) WriteData(data interface{}) error {
@@ -71,12 +91,8 @@ func (vf *VolatileFile) GetPath() string {
 	return vf.path
 }
 
-func (vf *VolatileFile) GetNotifyChan() chan fsnotify.Event {
-	return vf.watcher.Events
-}
-
-func (vf *VolatileFile) DecodeData(rawData []byte) (interface{}, error) {
-	return rawData, nil
+func (vf *VolatileFile) GetNotifyChan() chan *event.Event {
+	return vf.notify
 }
 
 func (vf *VolatileFile) EncodeData(data interface{}) ([]byte, error) {

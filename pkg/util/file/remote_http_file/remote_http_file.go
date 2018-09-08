@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 
+	event "github.com/whiteboxio/flow/pkg/util/file/event"
 	vf "github.com/whiteboxio/flow/pkg/util/file/volatile_file"
 )
 
@@ -106,14 +106,23 @@ func (rhf *RemoteHttpFile) DoFetch() {
 		if err != nil {
 			log.Warnf("Failed to read response body: %s", err)
 		}
+		// To prevent the update event from triggering on cold start and
+		// dead-locking the channel
+		if rhf.fetchedData == nil {
+			rhf.fetchedData = body
+		}
 		if bytes.Compare(rhf.fetchedData, body) != 0 {
 			log.Info("Received an updated response")
 			rhf.fetchedData = body
-			if !tRemote.IsZero() {
-				log.Info("Sending a new notification")
-				rhf.GetNotifyChan() <- fsnotify.Event{Op: fsnotify.Write}
-				log.Info("Sent a notification")
+			log.Infof("Remote time: %s", tRemote)
+
+			log.Info("Sending a new notification")
+			for len(rhf.GetNotifyChan()) > 0 {
+				<-rhf.GetNotifyChan()
 			}
+			log.Infof("Notification channel length: %d", len(rhf.GetNotifyChan()))
+			rhf.GetNotifyChan() <- event.New(event.Update)
+			log.Info("Sent a notification")
 		} else {
 			log.Infof("No effective change detected")
 		}
@@ -123,9 +132,13 @@ func (rhf *RemoteHttpFile) DoFetch() {
 	return
 }
 
-func (rhf *RemoteHttpFile) ReadData() (interface{}, error) {
+func (rhf *RemoteHttpFile) ReadRawData() ([]byte, error) {
 	rhf.once.Do(rhf.DoFetch)
-	return rhf.DecodeData(rhf.fetchedData)
+	return rhf.fetchedData, rhf.lastErr
+}
+
+func (rhf *RemoteHttpFile) ReadData() (interface{}, error) {
+	return rhf.ReadRawData()
 }
 
 func (rhf *RemoteHttpFile) WrieData(data interface{}) error {
