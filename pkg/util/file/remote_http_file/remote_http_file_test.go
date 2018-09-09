@@ -32,6 +32,7 @@ func TestRemoteHttpFile_DoFetch(t *testing.T) {
 			responder: func() ([]byte, map[string]string) {
 				return []byte(fmt.Sprintf("{\"time\":%d}", time.Now().Unix())), nil
 			},
+			expectedData: nil,
 		},
 
 		{
@@ -44,6 +45,7 @@ func TestRemoteHttpFile_DoFetch(t *testing.T) {
 				}
 				return []byte(fmt.Sprintf("{\"time\":%d}", memorizedNow.Unix())), headers
 			},
+			expectedData: []byte(fmt.Sprintf("{\"time\":%d}", memorizedNow.Unix())),
 		},
 
 		{
@@ -56,33 +58,39 @@ func TestRemoteHttpFile_DoFetch(t *testing.T) {
 				}
 				return []byte(fmt.Sprintf("{\"time\":%d}", memorizedNow.Unix())), headers
 			},
+			expectedData: []byte(fmt.Sprintf("{\"time\":%d}", memorizedNow.Unix())),
 		},
 
 		{
-			name:      "With not modified",
-			path:      "/with_not_modified",
-			status:    http.StatusNotModified,
-			responder: nil,
+			name:        "With not modified",
+			path:        "/with_not_modified",
+			status:      http.StatusNotModified,
+			responder:   nil,
+			expectedErr: "there is no previous result yet",
 		},
 
 		{
-			name:      "With not found",
-			path:      "/with_not_found",
-			status:    http.StatusNotFound,
-			responder: nil,
+			name:         "With not found",
+			path:         "/with_not_found",
+			status:       http.StatusNotFound,
+			responder:    nil,
+			expectedData: nil,
+			expectedErr:  "Bad response status: 404",
 		},
 
 		{
-			name:   "With failure",
-			path:   "/with_failure",
-			status: http.StatusInternalServerError,
-			responder: func() ([]byte, map[string]string) {
-				return []byte("Planned failure"), nil
-			},
+			name:         "With failure",
+			path:         "/with_failure",
+			status:       http.StatusInternalServerError,
+			responder:    nil,
+			expectedData: nil,
+			expectedErr:  "Bad response status: 500",
 		},
 	}
 
 	mux := http.NewServeMux()
+
+	generatedData := make(map[string][]byte)
 
 	for _, tt := range tests {
 		func(testCase TestCase) {
@@ -96,6 +104,7 @@ func TestRemoteHttpFile_DoFetch(t *testing.T) {
 						}
 					}
 					if body != nil {
+						generatedData[testCase.name] = body
 						w.Write(body)
 					}
 				}
@@ -118,17 +127,28 @@ func TestRemoteHttpFile_DoFetch(t *testing.T) {
 			if err := rhf.Deploy(); err != nil {
 				t.Fatalf("Failed to deploy a RemoteHttpFile: %s", err)
 			}
+			defer rhf.TearDown()
 
-			data, err := rhf.ReadRawData()
+			gotData, err := rhf.ReadRawData()
 
-			if bytes.Compare(data, tt.expectedData) != 0 {
+			var wantData []byte
+			if tt.expectedData != nil {
+				wantData = tt.expectedData
+			} else if v, ok := generatedData[tt.name]; ok {
+				wantData = v
+			}
+			t.Logf("Expected response: %s", wantData)
+
+			if bytes.Compare(gotData, wantData) != 0 {
 				t.Errorf("Unexpected content was returned by the file: %s, want: %s",
-					data, tt.expectedData)
+					gotData, wantData)
 			}
 
-			if err != nil {
+			if err != nil || tt.expectedErr != "" {
 				if tt.expectedErr != "" {
-					if match, err := regexp.Match(tt.expectedErr, []byte(err.Error())); err != nil {
+					if err == nil {
+						t.Errorf("Expected error like \"%s\", but got none", tt.expectedErr)
+					} else if match, err := regexp.Match(tt.expectedErr, []byte(err.Error())); err != nil {
 						t.Fatalf("Failed to match regex using pattern: %s: %s",
 							tt.expectedErr, err)
 					} else if !match {

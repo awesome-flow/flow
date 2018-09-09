@@ -21,6 +21,7 @@ type RemoteHttpFile struct {
 	lastMod     string
 	once        *sync.Once
 	deployOnce  *sync.Once
+	shouldStop  bool
 	*vf.VolatileFile
 }
 
@@ -40,6 +41,7 @@ func NewWithInterval(path string, ttl time.Duration) (*RemoteHttpFile, error) {
 		"",
 		&sync.Once{},
 		&sync.Once{},
+		false,
 		vol,
 	}
 	return rhf, nil
@@ -51,6 +53,9 @@ func (rhf *RemoteHttpFile) Deploy() error {
 		go func() {
 			log.Infof("running a loop")
 			for {
+				if rhf.shouldStop {
+					break
+				}
 				log.Infof("Starting a new upd loop")
 				time.Sleep(rhf.ttl)
 				rhf.DoFetch()
@@ -77,12 +82,28 @@ func (rhf *RemoteHttpFile) DoFetch() {
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode < http.StatusOK ||
-		resp.StatusCode >= http.StatusMultipleChoices {
-		rhf.lastErr = fmt.Errorf("Bad response status: %d", resp.StatusCode)
-		log.Errorf("Bad response status: %d", resp.StatusCode)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Warnf("Failed to read response body: %s", err)
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotModified:
+		log.Infof("Got server not modified branch")
+		if rhf.fetchedData == nil {
+			rhf.lastErr = fmt.Errorf("Server returned http.StatusNotModified" +
+				" but there is no previous result yet")
+			log.Errorf(rhf.lastErr.Error())
+			return
+		}
+	default:
+		rhf.lastErr = fmt.Errorf("Bad response status: %d. Reason: %s",
+			resp.StatusCode, body)
+		log.Errorf(rhf.lastErr.Error())
 		return
 	}
+
 	rhf.lastErr = nil
 	lms := resp.Header.Get("Last-Modified")
 	var tRemote, tLocal time.Time
@@ -102,10 +123,6 @@ func (rhf *RemoteHttpFile) DoFetch() {
 		rhf.lastMod = lms
 	}
 	if tRemote.IsZero() || tRemote.After(tLocal) {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Warnf("Failed to read response body: %s", err)
-		}
 		// To prevent the update event from triggering on cold start and
 		// dead-locking the channel
 		if rhf.fetchedData == nil {
