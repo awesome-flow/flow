@@ -1,4 +1,4 @@
-package data
+package hash
 
 // <3 Damian
 // https://medium.com/@dgryski/consistent-hashing-algorithmic-tradeoffs-ef6b8e2fcae8
