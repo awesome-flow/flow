@@ -13,6 +13,7 @@ import (
 	fanout "github.com/whiteboxio/flow/pkg/link/fanout"
 	meta_parser "github.com/whiteboxio/flow/pkg/link/meta_parser"
 	mpx "github.com/whiteboxio/flow/pkg/link/mpx"
+	replicator "github.com/whiteboxio/flow/pkg/link/replicator"
 	router "github.com/whiteboxio/flow/pkg/link/router"
 	throttler "github.com/whiteboxio/flow/pkg/link/throttler"
 	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
@@ -49,6 +50,7 @@ var (
 		"link.router":      router.NewRouter,
 		"link.throttler":   throttler.NewThrottler,
 		"link.fanout":      fanout.NewFanout,
+		"link.replicator":  replicator.New,
 		"link.buffer":      buffer.NewBuffer,
 		"link.meta_parser": meta_parser.New,
 		"sink.dumper":      dumper_sink.NewDumper,

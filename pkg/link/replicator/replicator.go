@@ -3,6 +3,7 @@ package link
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -38,13 +39,15 @@ func New(name string, params core.Params) (core.Link, error) {
 		repl.nBuckets = uint32(nBuckets.(int))
 	}
 
-	if replFactor, ok := params["repl_factor"]; ok {
+	if replFactor, ok := params["replicas"]; ok {
 		repl.replFactor = replFactor.(int)
 	}
 
 	if hashKey, ok := params["hash_key"]; ok {
 		repl.hashKey = hashKey.(string)
 	}
+
+	go repl.replicate()
 
 	return repl, nil
 }
@@ -81,8 +84,8 @@ func (repl *Replicator) replicate() {
 				if vConv, convOk := v.([]byte); convOk {
 					msgKey = vConv
 				} else {
-					logrus.Errorf("Msg key %s found: %+v, but could not be converted"+
-						" to []byte", repl.hashKey, v)
+					logrus.Errorf("Msg key %s found: %+v, but could not be"+
+						" converted to []byte", repl.hashKey, v)
 					continue
 				}
 			} else {
@@ -91,12 +94,60 @@ func (repl *Replicator) replicate() {
 				continue
 			}
 		}
-		logrus.Infof("A new message received: %+v, msg key: ", msg, msgKey)
-		//TODO
+
+		links, err := repl.linksForKey(msgKey)
+		if err != nil {
+			logrus.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
+		}
+		acks := make(chan core.MsgStatus, len(links))
+		ackChClosed := false
+		for _, link := range links {
+			go func(l core.Link) {
+				msgCp := core.CpMessage(msg)
+				if sendErr := l.Recv(msgCp); sendErr != nil {
+					acks <- core.MsgStatusFailed
+					return
+				}
+				for ack := range msgCp.GetAckCh() {
+					if !ackChClosed {
+						acks <- ack
+					}
+				}
+			}(link)
+		}
+		ackCnt := 0
+		failedCnt := 0
+		for {
+			if ackCnt == len(links) {
+				break
+			}
+			select {
+			case s := <-acks:
+				ackCnt++
+				if s != core.MsgStatusDone {
+					failedCnt++
+				}
+			case <-time.After(100 * time.Millisecond):
+				ackCnt++
+				failedCnt++
+			}
+		}
+		if failedCnt == 0 {
+			msg.AckDone()
+		} else if failedCnt == len(links) {
+			msg.AckFailed()
+		} else {
+			msg.AckPartialSend()
+		}
+		ackChClosed = true
+		for len(acks) > 0 {
+			<-acks
+		}
+		close(acks)
 	}
 }
 
-func (repl *Replicator) linksForKey(key string) ([]core.Link, error) {
+func (repl *Replicator) linksForKey(key []byte) ([]core.Link, error) {
 	if repl.replFactor > len(repl.links) {
 		return nil, fmt.Errorf("The number of replicas exceeds the number" +
 			" of active nodes")
@@ -114,6 +165,9 @@ func (repl *Replicator) linksForKey(key string) ([]core.Link, error) {
 		j := hash.JumpHash(h, i)
 		res[cnt] = localLinks[j]
 		cnt++
+		if cnt >= repl.replFactor {
+			break
+		}
 		h ^= h >> 12
 		h ^= h << 25
 		h ^= h >> 27

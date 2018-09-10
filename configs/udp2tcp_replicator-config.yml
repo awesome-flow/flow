@@ -1,0 +1,48 @@
+system:
+  maxprocs: 4
+
+components:
+  udp_rcv:
+    module: receiver.udp
+    params:
+      bind_addr: :3101
+  replicator:
+    module: link.replicator
+    params:
+      replicas: 3
+  tcp_sink_7222:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7222
+  tcp_sink_7223:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7223
+  tcp_sink_7224:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7224
+  tcp_sink_7225:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7225
+  tcp_sink_7226:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7226
+  tcp_sink_7227:
+    module: sink.tcp
+    params:
+      bind_addr: localhost:7227
+
+pipeline:
+  udp_rcv:
+    connect: replicator
+  replicator:
+    links:
+      - tcp_sink_7222
+      - tcp_sink_7223
+      - tcp_sink_7224
+      - tcp_sink_7225
+      - tcp_sink_7226
+      - tcp_sink_7227
