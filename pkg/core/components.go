@@ -5,6 +5,7 @@ type Params map[string]interface{}
 type RoutingFunc func(*Message) (string, error)
 
 type Link interface {
+	String() string
 	Recv(*Message) error
 	Send(*Message) error
 	ConnectTo(Link) error
@@ -59,4 +60,8 @@ func (cn *Connector) RouteTo(map[string]Link) error {
 
 func (cn *Connector) GetMsgCh() chan *Message {
 	return cn.msgCh
+}
+
+func (cn *Connector) String() string {
+	return "A connector"
 }

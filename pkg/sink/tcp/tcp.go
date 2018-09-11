@@ -84,3 +84,7 @@ func (tcp *TCP) Recv(msg *core.Message) error {
 func (tcp *TCP) ConnectTo(core.Link) error {
 	panic("TCP sink is not supposed to be connnected")
 }
+
+func (tcp *TCP) String() string {
+	return tcp.Name
+}

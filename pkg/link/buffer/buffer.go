@@ -135,3 +135,7 @@ func (buf *Buffer) RouteTo(map[string]core.Link) error {
 func (buf *Buffer) ExecCmd(cmd *core.Cmd) error {
 	return nil
 }
+
+func (buf *Buffer) String() string {
+	return buf.Name
+}
