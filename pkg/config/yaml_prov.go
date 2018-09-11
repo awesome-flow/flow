@@ -104,9 +104,9 @@ func (y *yamlProv) Resolve() error {
 			"Provide as a cli argument -config_file=... or env variable CONFIG_FILE=...")
 	}
 
-	path := pathIntf.(*string)
+	path := pathIntf.(string)
 
-	data, readErr := ioutil.ReadFile(*path)
+	data, readErr := ioutil.ReadFile(path)
 	if readErr != nil {
 		return readErr
 	}

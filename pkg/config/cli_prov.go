@@ -62,8 +62,17 @@ func (c *cliProv) GetOptions() ProviderOptions {
 
 func (c *cliProv) GetValue(key string) (interface{}, bool) {
 	s := c.settings.Load().(map[string]interface{})
-	v, ok := s[key]
-	return v, ok
+	if v, ok := s[key]; ok {
+		if vConv, convOk := v.(*string); convOk {
+			return *vConv, true
+		} else if vConv, convOk := v.(*int); convOk {
+			return *vConv, true
+		} else if vConv, convOk := v.(*bool); convOk {
+			return *vConv, true
+		}
+	}
+
+	return nil, false
 }
 
 func (c *cliProv) GetWeight() uint32 {
