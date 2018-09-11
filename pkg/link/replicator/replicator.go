@@ -21,6 +21,10 @@ type Replicator struct {
 	*core.Connector
 }
 
+const (
+	ReplMsgSendTimeout = 50 * time.Millisecond
+)
+
 func New(name string, params core.Params) (core.Link, error) {
 
 	nBuckets := uint32(2 ^ 32 - 1)
@@ -99,51 +103,29 @@ func (repl *Replicator) replicate() {
 		if err != nil {
 			logrus.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
 		}
-		acks := make(chan core.MsgStatus, len(links))
-		ackChClosed := false
+		wg := &sync.WaitGroup{}
 		for _, link := range links {
+			wg.Add(1)
 			go func(l core.Link) {
 				msgCp := core.CpMessage(msg)
+				defer wg.Done()
 				if sendErr := l.Recv(msgCp); sendErr != nil {
-					acks <- core.MsgStatusFailed
 					return
-				}
-				for ack := range msgCp.GetAckCh() {
-					if !ackChClosed {
-						acks <- ack
-					}
 				}
 			}(link)
 		}
-		ackCnt := 0
-		failedCnt := 0
-		for {
-			if ackCnt == len(links) {
-				break
-			}
-			select {
-			case s := <-acks:
-				ackCnt++
-				if s != core.MsgStatusDone {
-					failedCnt++
-				}
-			case <-time.After(100 * time.Millisecond):
-				ackCnt++
-				failedCnt++
-			}
-		}
-		if failedCnt == 0 {
+		ack := make(chan bool, 1)
+		defer close(ack)
+		go func() {
+			wg.Wait()
+			ack <- true
+		}()
+		select {
+		case <-ack:
 			msg.AckDone()
-		} else if failedCnt == len(links) {
-			msg.AckFailed()
-		} else {
-			msg.AckPartialSend()
+		case <-time.After(ReplMsgSendTimeout):
+			msg.AckTimedOut()
 		}
-		ackChClosed = true
-		for len(acks) > 0 {
-			<-acks
-		}
-		close(acks)
 	}
 }
 
