@@ -41,21 +41,21 @@ type ConstrFunc func(string, core.Params) (core.Link, error)
 var (
 	compBuilders = map[string]ConstrFunc{
 		"receiver.tcp":     tcp_rcv.New,
-		"receiver.udp":     udp_rcv.NewUDP,
-		"receiver.http":    http_rcv.NewHTTP,
-		"receiver.unix":    unix_rcv.NewUnix,
+		"receiver.udp":     udp_rcv.New,
+		"receiver.http":    http_rcv.New,
+		"receiver.unix":    unix_rcv.New,
 		"receiver.evio":    evio_rcv.New,
-		"link.dmx":         dmx.NewDMX,
-		"link.mpx":         mpx.NewMPX,
-		"link.router":      router.NewRouter,
-		"link.throttler":   throttler.NewThrottler,
-		"link.fanout":      fanout.NewFanout,
+		"link.dmx":         dmx.New,
+		"link.mpx":         mpx.New,
+		"link.router":      router.New,
+		"link.throttler":   throttler.New,
+		"link.fanout":      fanout.New,
 		"link.replicator":  replicator.New,
-		"link.buffer":      buffer.NewBuffer,
+		"link.buffer":      buffer.New,
 		"link.meta_parser": meta_parser.New,
-		"sink.dumper":      dumper_sink.NewDumper,
+		"sink.dumper":      dumper_sink.New,
 		"sink.tcp":         tcp_sink.New,
-		"sink.udp":         udp_sink.NewUDP,
+		"sink.udp":         udp_sink.New,
 	}
 )
 

@@ -28,7 +28,7 @@ func (a *A) Recv(msg *core.Message) error {
 func TestUDP_recv(t *testing.T) {
 	udpAddr := ":7001"
 	payload := "hello world\r\n"
-	udp, err := NewUDP("test_udp", core.Params{"bind_addr": udpAddr})
+	udp, err := New("test_udp", core.Params{"bind_addr": udpAddr})
 	if err != nil {
 		t.Fatalf("Failed to start a UDP listener: %s", err.Error())
 	}

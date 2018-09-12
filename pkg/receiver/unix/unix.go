@@ -28,7 +28,7 @@ type Unix struct {
 	*core.Connector
 }
 
-func NewUnix(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params) (core.Link, error) {
 	path, ok := params["bind_addr"]
 	if !ok {
 		path = "/tmp/flow.sock"

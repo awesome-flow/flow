@@ -23,7 +23,7 @@ func (a *A) Recv(msg *core.Message) error {
 
 func TestRouter_Dispatch(t *testing.T) {
 	a1, a2 := NewA(), NewA()
-	r, rErr := NewRouter(
+	r, rErr := New(
 		"router",
 		core.Params{"routing_key": "sender"},
 	)

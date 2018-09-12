@@ -6,7 +6,7 @@ import (
 	"github.com/whiteboxio/flow/pkg/core"
 )
 
-func TestBuffer_TestNewBuffer(t *testing.T) {
+func TestBuffer_TestNew(t *testing.T) {
 	tests := []struct {
 		name     string
 		params   core.Params
@@ -24,7 +24,7 @@ func TestBuffer_TestNewBuffer(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			b, err := NewBuffer("buffer", test.params)
+			b, err := New("buffer", test.params)
 			if err != nil {
 				t.Errorf("Failed to initialize buffer: %s", err.Error())
 			}

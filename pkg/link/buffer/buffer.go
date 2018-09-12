@@ -28,7 +28,7 @@ type Buffer struct {
 	msgChan  chan *core.Message
 }
 
-func NewBuffer(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params) (core.Link, error) {
 	capacity := 65536
 	if v, ok := params["capacity"]; ok {
 		capacity = v.(int)

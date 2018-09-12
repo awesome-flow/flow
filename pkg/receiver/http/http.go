@@ -22,7 +22,7 @@ type HTTP struct {
 	*core.Connector
 }
 
-func NewHTTP(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params) (core.Link, error) {
 
 	httpAddr, ok := params["bind_addr"]
 	if !ok {

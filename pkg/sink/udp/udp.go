@@ -26,7 +26,7 @@ type UDP struct {
 	*sync.Mutex
 }
 
-func NewUDP(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params) (core.Link, error) {
 	udpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("UDP sink parameters are missing bind_addr")

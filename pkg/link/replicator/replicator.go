@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/whiteboxio/flow/pkg/core"
 	hash "github.com/whiteboxio/flow/pkg/util/hash"
@@ -88,12 +88,12 @@ func (repl *Replicator) replicate() {
 				if vConv, convOk := v.([]byte); convOk {
 					msgKey = vConv
 				} else {
-					logrus.Errorf("Msg key %s found: %+v, but could not be"+
+					log.Errorf("Msg key %s found: %+v, but could not be"+
 						" converted to []byte", repl.hashKey, v)
 					continue
 				}
 			} else {
-				logrus.Errorf("Msg key %s could not be found in message %+v",
+				log.Errorf("Msg key %s could not be found in message %+v",
 					repl.hashKey, msg)
 				continue
 			}
@@ -101,7 +101,7 @@ func (repl *Replicator) replicate() {
 
 		links, err := repl.linksForKey(msgKey)
 		if err != nil {
-			logrus.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
+			log.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
 		}
 		wg := &sync.WaitGroup{}
 		for _, link := range links {
