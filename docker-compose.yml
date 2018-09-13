@@ -22,6 +22,18 @@ services:
       - "8125/udp"
       - "8126:8126"
       - "32774:32774"
+  eventlog_tcp_7220:
+    image: flow/tcp_server
+    ports:
+      - "7220:7220"
+    environment:
+      TCP_SERVER_PORT: 7220
+  eventlog_tcp_7221:
+    image: flow/tcp_server
+    ports:
+      - "7221:7221"
+    environment:
+      TCP_SERVER_PORT: 7221
   eventlog_tcp_7222:
     image: flow/tcp_server
     ports:
@@ -58,6 +70,30 @@ services:
       - "7227:7227"
     environment:
       TCP_SERVER_PORT: 7227
+  eventlog_tcp_7228:
+    image: flow/tcp_server
+    ports:
+      - "7228:7228"
+    environment:
+      TCP_SERVER_PORT: 7228
+  eventlog_tcp_7229:
+    image: flow/tcp_server
+    ports:
+      - "7229:7229"
+    environment:
+      TCP_SERVER_PORT: 7229
+  eventlog_tcp_7230:
+    image: flow/tcp_server
+    ports:
+      - "7230:7230"
+    environment:
+      TCP_SERVER_PORT: 7230
+  eventlog_tcp_7231:
+    image: flow/tcp_server
+    ports:
+      - "7231:7231"
+    environment:
+      TCP_SERVER_PORT: 7231
   eventlog_udp_7722:
     image: flow/udp_server
     ports:

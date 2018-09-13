@@ -107,6 +107,8 @@ func (repl *Replicator) replicate() {
 		for _, link := range links {
 			wg.Add(1)
 			go func(l core.Link) {
+				log.Infof("Routing the message identified by: %s to %s",
+					string(msgKey), l.String())
 				msgCp := core.CpMessage(msg)
 				defer wg.Done()
 				if sendErr := l.Recv(msgCp); sendErr != nil {
@@ -115,7 +117,6 @@ func (repl *Replicator) replicate() {
 			}(link)
 		}
 		ack := make(chan bool, 1)
-		defer close(ack)
 		go func() {
 			wg.Wait()
 			ack <- true
@@ -126,6 +127,7 @@ func (repl *Replicator) replicate() {
 		case <-time.After(ReplMsgSendTimeout):
 			msg.AckTimedOut()
 		}
+		close(ack)
 	}
 }
 
