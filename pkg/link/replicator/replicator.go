@@ -138,31 +138,37 @@ func (repl *Replicator) linksForKey(key []byte) ([]core.Link, error) {
 			" of active nodes")
 	}
 
-	localLinks := make([]core.Link, len(repl.links))
-	res := make([]core.Link, repl.replFactor)
+	linksCp := make([]core.Link, len(repl.links))
 	for ix, link := range repl.links {
-		localLinks[ix] = link
+		log.Infof("Link at pos %d: %s", ix, link)
+		linksCp[ix] = link
 	}
 
 	hObj := fnv.New64a()
 	if _, err := hObj.Write(key); err != nil {
 		return nil, err
 	}
-	h := hObj.Sum64()
 
-	cnt := 0
-	for i := len(localLinks); i > 0; i-- {
+	h := hObj.Sum64()
+	i := len(linksCp)
+
+	res := make([]core.Link, repl.replFactor)
+	resIx := 0
+	for i > 0 {
 		j := hash.JumpHash(h, i)
-		res[cnt] = localLinks[j]
-		cnt++
-		if cnt >= repl.replFactor {
+		res[resIx] = linksCp[j]
+		resIx++
+
+		if resIx >= repl.replFactor {
 			break
 		}
+
 		h ^= h >> 12
 		h ^= h << 25
 		h ^= h >> 27
 		h *= uint64(2685821657736338717)
-		localLinks[j] = localLinks[i-1]
+		i--
+		linksCp[j] = linksCp[i]
 	}
 
 	return res, nil
