@@ -70,6 +70,8 @@ func (c *C) ExecCmd(cmd *Cmd) error {
 	return nil
 }
 
+func (c *C) String() string { return "a C instance" }
+
 func Test2ConnectedLinks(t *testing.T) {
 	a := NewA()
 	c := NewC()

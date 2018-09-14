@@ -2,6 +2,7 @@ package link
 
 import (
 	"fmt"
+	"hash/fnv"
 	"sync"
 	"time"
 
@@ -143,7 +144,12 @@ func (repl *Replicator) linksForKey(key []byte) ([]core.Link, error) {
 		localLinks[ix] = link
 	}
 
-	h := hash.Fnv1a64(key)
+	hObj := fnv.New64a()
+	if _, err := hObj.Write(key); err != nil {
+		return nil, err
+	}
+	h := hObj.Sum64()
+
 	cnt := 0
 	for i := len(localLinks); i > 0; i-- {
 		j := hash.JumpHash(h, i)
