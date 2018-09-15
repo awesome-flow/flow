@@ -21,9 +21,9 @@ var (
 		dflt  interface{}
 		descr string
 	}{
-		{"string", "config.file", "config", "/etc/flowd/flow-config.yml",
+		{"string", "config.file", "config", "",
 			"Location of the config file"},
-		{"string", "flow.plugin.path", "flow-plugin-path", "/etc/flowd/plugins",
+		{"string", "flow.plugin.path", "flow-plugin-path", "",
 			"Flow plugin path"},
 	}
 )
@@ -47,7 +47,7 @@ func (c *cliProv) Setup() error {
 			settings[flg.name] = flag.Bool(flg.param, flg.dflt.(bool), flg.descr)
 			// add more types if needed
 		}
-		if err := Register(flg.name, cliInst); err != nil {
+		if err := Register(flg.name, c); err != nil {
 			return err
 		}
 	}
@@ -64,6 +64,9 @@ func (c *cliProv) GetValue(key string) (interface{}, bool) {
 	s := c.settings.Load().(map[string]interface{})
 	if v, ok := s[key]; ok {
 		if vConv, convOk := v.(*string); convOk {
+			if *vConv == "" {
+				return nil, false
+			}
 			return *vConv, true
 		} else if vConv, convOk := v.(*int); convOk {
 			return *vConv, true

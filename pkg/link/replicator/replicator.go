@@ -108,8 +108,8 @@ func (repl *Replicator) replicate() {
 		for _, link := range links {
 			wg.Add(1)
 			go func(l core.Link) {
-				log.Infof("Routing the message identified by: %s to %s",
-					string(msgKey), l.String())
+				// log.Infof("Routing the message identified by: %s to %s",
+				// 	string(msgKey), l.String())
 				msgCp := core.CpMessage(msg)
 				defer wg.Done()
 				if sendErr := l.Recv(msgCp); sendErr != nil {
@@ -140,7 +140,6 @@ func (repl *Replicator) linksForKey(key []byte) ([]core.Link, error) {
 
 	linksCp := make([]core.Link, len(repl.links))
 	for ix, link := range repl.links {
-		log.Infof("Link at pos %d: %s", ix, link)
 		linksCp[ix] = link
 	}
 

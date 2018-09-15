@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"sort"
+	"strings"
 	"sync"
 
 	data "github.com/whiteboxio/flow/pkg/util/data"
@@ -9,23 +12,37 @@ import (
 type Registry struct {
 	storage   *sync.Map
 	providers map[string]Provider
+	lock      *sync.Mutex
 }
 
 var (
 	registry = &Registry{
 		storage:   &sync.Map{},
 		providers: make(map[string]Provider),
+		lock:      &sync.Mutex{},
 	}
 )
 
 func Register(key string, prov Provider) error {
-	keyHeap, _ := registry.storage.LoadOrStore(key, data.NewBinHeap())
-	keyHeap.(*data.BinHeap).Insert(prov.GetWeight(), prov)
+	registry.lock.Lock()
+	defer registry.lock.Unlock()
+	keyProvs, _ := registry.storage.LoadOrStore(key, make([]Provider, 0))
+	v := append(keyProvs.([]Provider), prov)
+	registry.storage.Store(key, v)
 	registry.providers[prov.GetName()] = prov
+
 	return nil
 }
 
 func Resolve() error {
+	registry.lock.Lock()
+	defer registry.lock.Unlock()
+
+	registry.storage.Range(func(key interface{}, value interface{}) bool {
+		sort.Sort(sort.Reverse(ProviderList(value.([]Provider))))
+		return true
+	})
+
 	traversed, err := traverseProviders()
 	if err != nil {
 		return err
@@ -35,15 +52,24 @@ func Resolve() error {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func Get(key string) (interface{}, bool) {
-	keyHeap, ok := registry.storage.Load(key)
+	provChain, ok := registry.storage.Load(key)
 	if !ok {
-		return nil, ok
+		return nil, false
 	}
-	return keyHeap.(*data.BinHeap).GetMax().(Provider).GetValue(key)
+	chain := make([]string, 0)
+	for _, prov := range provChain.([]Provider) {
+		chain = append(chain, prov.GetName())
+		if v, ok := prov.GetValue(key); ok {
+			fmt.Printf("Lookup for key %s: %s\n", key, strings.Join(chain, ", "))
+			return v, ok
+		}
+	}
+	return nil, false
 }
 
 func GetOrDefault(key string, def interface{}) (interface{}, bool) {
@@ -57,7 +83,9 @@ func GetOrDefault(key string, def interface{}) (interface{}, bool) {
 func GetAll() map[string]interface{} {
 	res := make(map[string]interface{})
 	registry.storage.Range(func(k interface{}, v interface{}) bool {
-		res[k.(string)], _ = v.(*data.BinHeap).GetMax().(Provider).GetValue(k.(string))
+		if v, ok := Get(k.(string)); ok {
+			res[k.(string)] = v
+		}
 		return true
 	})
 	return res

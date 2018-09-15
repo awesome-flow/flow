@@ -143,9 +143,6 @@ func NewPipeline(
 func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error) {
 	if cfg.Plugin != "" {
 		pluginPath, _ := config.Get("flow.plugin.path")
-		if pluginPath.(string) == "" {
-			pluginPath = "/etc/flowd/plugins"
-		}
 		p, pErr := plugin.Open(fmt.Sprintf("%s/%s/%s.so",
 			pluginPath.(string), cfg.Plugin, cfg.Plugin))
 		if pErr != nil {

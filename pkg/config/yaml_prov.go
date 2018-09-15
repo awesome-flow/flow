@@ -121,7 +121,7 @@ func (y *yamlProv) Resolve() error {
 }
 
 func (y *yamlProv) DependsOn() []string {
-	return []string{"cli", "env"}
+	return []string{"cli", "env", "default"}
 }
 
 func (y *yamlProv) GetName() string {
