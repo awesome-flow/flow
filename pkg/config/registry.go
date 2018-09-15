@@ -1,9 +1,7 @@
 package config
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 	"sync"
 
 	data "github.com/whiteboxio/flow/pkg/util/data"
@@ -61,11 +59,8 @@ func Get(key string) (interface{}, bool) {
 	if !ok {
 		return nil, false
 	}
-	chain := make([]string, 0)
 	for _, prov := range provChain.([]Provider) {
-		chain = append(chain, prov.GetName())
 		if v, ok := prov.GetValue(key); ok {
-			fmt.Printf("Lookup for key %s: %s\n", key, strings.Join(chain, ", "))
 			return v, ok
 		}
 	}

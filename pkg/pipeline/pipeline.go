@@ -159,7 +159,6 @@ func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error)
 		if comp == nil {
 			panic("Component is nil")
 		}
-		fmt.Printf("Pipeline sees the link as: %+v\n", comp)
 		return comp, err
 	} else {
 		if builder, ok := compBuilders[cfg.Module]; ok {

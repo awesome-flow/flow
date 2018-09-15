@@ -21,9 +21,11 @@ var (
 		dflt  interface{}
 		descr string
 	}{
-		{"string", "config.file", "config", "",
+		// tp, stands for type can be either value or flag.
+		// The cast is expected to be performed by the client.
+		{"value", "config.file", "config", "",
 			"Location of the config file"},
-		{"string", "flow.plugin.path", "flow-plugin-path", "",
+		{"value", "flow.plugin.path", "flow-plugin-path", "",
 			"Flow plugin path"},
 	}
 )
@@ -39,11 +41,9 @@ func (c *cliProv) Setup() error {
 	settings := make(map[string]interface{})
 	for _, flg := range knownFlags {
 		switch flg.tp {
-		case "string":
+		case "value":
 			settings[flg.name] = flag.String(flg.param, flg.dflt.(string), flg.descr)
-		case "int":
-			settings[flg.name] = flag.Int(flg.param, flg.dflt.(int), flg.descr)
-		case "bool":
+		case "flag":
 			settings[flg.name] = flag.Bool(flg.param, flg.dflt.(bool), flg.descr)
 			// add more types if needed
 		}
