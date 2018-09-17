@@ -27,9 +27,19 @@ type CfgBlockSystemAdmin struct {
 	Enabled  bool
 	BindAddr string `yaml:"bind_addr"`
 }
+type CfgBlockSystemMetricsReceiver struct {
+	Type   string
+	Params map[string]string
+}
+type CfgBlockSystemMetrics struct {
+	Enabled  bool
+	Interval int
+	Receiver CfgBlockSystemMetricsReceiver
+}
 type CfgBlockSystem struct {
 	Maxprocs int
 	Admin    CfgBlockSystemAdmin
+	Metrics  CfgBlockSystemMetrics
 }
 
 type YAMLConfig struct {

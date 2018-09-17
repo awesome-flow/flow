@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -27,17 +28,30 @@ var (
 	grph *graphite.Graphite = nil
 )
 
-func Initialize(nmspc string) error {
-	namespace = nmspc
+func Initialize(sysCfg *config.CfgBlockSystem) error {
 
-	grphHost, _ := config.GetOrDefault("metrics.graphite.host", "localhost")
-	grphPortStr, _ := config.GetOrDefault("metrics.graphite.port", "2003")
-	grphPort, err := strconv.Atoi(grphPortStr.(string))
+	if !sysCfg.Metrics.Enabled {
+		return fmt.Errorf("Metrics module is disabled")
+	}
+
+	if t := sysCfg.Metrics.Receiver.Type; t != "graphite" {
+		return fmt.Errorf("Metrics backend %s is not implemented", t)
+	}
+
+	// TODO: refactor this module and make it backend-agnostic
+	// TODO: Initialization should happen exactly once
+
+	grphHost, _ := sysCfg.Metrics.Receiver.Params["host"]
+	grphPortStr, _ := sysCfg.Metrics.Receiver.Params["port"]
+	grphPort, err := strconv.Atoi(grphPortStr)
 	if err != nil {
 		return err
 	}
 
-	grph, err = graphite.NewGraphite(grphHost.(string), grphPort)
+	namespace = sysCfg.Metrics.Receiver.Params["namespace"]
+	sendInterval = time.Duration(sysCfg.Metrics.Interval) * time.Second
+
+	grph, err = graphite.NewGraphite(grphHost, grphPort)
 	if err != nil {
 		return err
 	}
@@ -64,7 +78,7 @@ func sendMetrics() error {
 	now := time.Now().Unix()
 	counters.Range(func(key interface{}, value interface{}) bool {
 		metrics = append(metrics, graphite.NewMetric(
-			key.(string),
+			namespace+"."+key.(string),
 			strconv.FormatInt(value.(*Counter).v, 10),
 			now))
 		return true

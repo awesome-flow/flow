@@ -24,9 +24,15 @@ func main() {
 
 	log.Infof("Starting %s version %d", ProgramName, MajVersion)
 
-	metrics.Initialize("flowd")
-
 	log.Infof("Initializing the pipeline")
+
+	sysCfg, err := config_mapper.GetSystemCfg()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to get system config: %s", err))
+	}
+	if err := metrics.Initialize(sysCfg); err != nil {
+		fmt.Printf("Failed to initialize metrics module: %s\n", err)
+	}
 
 	compsCfg, err := config_mapper.GetComponentsCfg()
 	if err != nil {
