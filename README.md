@@ -4,19 +4,61 @@
 
 ## Intro
 
-The Flow is a modular highly configurable framework for creating sidecars and
-message relays.
+The Flow framework is a comprehensive library of primitive building blocks
+and tools that lets one design and build data relays of any comlexity. Highly
+inspired by electrical circuit elements design, it provides a clear and
+well-defined approach to building message pipelines of any nature. One can think
+of Flow as LEGO in the world of data: a set of primitive reusable building
+bricks which are gathered together in a sophisticated assembly.
 
-This software provides an extendable library which allows one to build data
-pipelines, fan-outs, proxies, multiplexers and so on.
+Flow can be a great fit in a SOA environment. It's primitives can be combined
+with a service discovery solution, external config provider etc; it can plug a
+set of security checks and obfuscation rules, perform an in-flight dispatching,
+implement a complex aggregation logic and so on. It can also be a good
+replacement for existing sidecars: it's high performance, modularity and the
+plugin system allows one to solve nearly any domain-specific messaging problem.
 
-In the heart of this software there is a concept of interconnected reusable
-links with a well-defined purpose. Links are building blocks for the pipeline.
-Links have in- and out- connectors. Distinct types of connectors are described
-in #Connectors paragraph.
+The ultimate goal of Flow is to turn a pretty complex low-level software problem
+into a logical map of data transition and transformation elements. There exists
+an extensive list of narrow-scoped relays, each one of them is dedicated to
+solve it's very own problem. In a bigger infrastructure it normally turns into a
+necessity of supporting a huge variety of daemons and sidecars, their custom
+orchestration recipes and a limitation of knowledge sharing. Flow is solving
+these problems by unifying the approach, making the knowledge base generic
+and transferable  and by shifting developer's minds from low-level engineering
+and/or system administration problem towards a pure business-logic decision
+making process.
 
-A single sidecar runs and controls exactly one pipeline. We call this framework
-"Flow".
+## Concepts
+
+Flow comes with a very compact dictionary or terms which are widely used in this
+documentation.
+
+First of all, Flow is here to pass some data around. A unit of data is a *message*.
+Every Flow program is a singular *pipeline*, which is built of primitives: we call
+them *links*. An example of a link: UDP receiver, router, multiplexer, etc. Links
+are connectable to each other, and the connecting elements are called *connectors*.
+Connectors are mono-directional: they pass messages in one direction from
+link A to link B. In this case we say that A has an *outcoming connector*, an B
+has an *incoming connector*.
+
+Links come with the semantics of connectability: some of them can have outcoming
+connectors only: we call them out-links, or *receivers*, and some can hve
+incoming connectors only: in-links, or *sinks*. A receiver is a link that
+receives internal messages: a network listener, pub-sub client etc. They ingest
+messages into the pipeline. A sink has the opposite purpose: to send messages
+somewhere else. This is where the lifecycle of the message ends. An example
+of a sink: an HTTP sender, Kafka ingestor, log file dumper, etc. A pipeline
+is supposed to start with one or more receivers and end up with one or more
+sinks. Generic in-out links are supposed to be placed in the middle of the
+pipeline.
+
+Links are gathered in a chain of isolated self-contained elements. Every link
+has a set of methods to receive and pass messages. The custom logic is
+implemented inside a link body. A link knows nothing about it's neighbours and
+should avoid any neighbour-specific logic.
+
+===== The text below this line is unedited and might contain outdated info =====
 
 ## Building a Pipeline
 
