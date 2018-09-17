@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/whiteboxio/flow/pkg/metrics"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/whiteboxio/flow/pkg/core"
@@ -113,8 +115,12 @@ func (repl *Replicator) replicate() {
 				msgCp := core.CpMessage(msg)
 				defer wg.Done()
 				if sendErr := l.Recv(msgCp); sendErr != nil {
+					metrics.GetCounter(
+						fmt.Sprintf("link.replicator.%s.msg.failed", link)).Inc(1)
 					return
 				}
+				metrics.GetCounter(
+					fmt.Sprintf("link.replicator.%s.msg.sent", link)).Inc(1)
 			}(link)
 		}
 		ack := make(chan bool, 1)

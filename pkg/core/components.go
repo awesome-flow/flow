@@ -22,9 +22,9 @@ type Connector struct {
 
 func NewConnector() *Connector {
 	return &Connector{
-		msgCh:  make(chan *Message, 1),
-		cmdIn:  make(chan *Cmd, 1),
-		cmdOut: make(chan *Cmd, 1),
+		msgCh:  make(chan *Message),
+		cmdIn:  make(chan *Cmd),
+		cmdOut: make(chan *Cmd),
 	}
 }
 
