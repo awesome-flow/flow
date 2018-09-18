@@ -29,6 +29,23 @@ and transferable  and by shifting developer's minds from low-level engineering
 and/or system administration problem towards a pure business-logic decision
 making process.
 
+## Status of the project
+
+This project is in active development. It means some parts of it would look
+totally different in the future. Some ideas still need validation and battle
+testing. The changes come pretty rapidly.
+
+This also means the project is looking for any kind of contribution. Ideas,
+suggestions, critics, bugfixing, general interest, development: it all would be
+a tremendous help to Flow. The very first version was implemented for fun, to
+see how far the ultimate modularity idea can go. It went quite far :-) The
+project went public on the very early stage in hope to attract ome attention and
+gather people who might be interested in it, so the right direction would be
+defined as early as possible.
+
+So, if you have any interest in Flow, please do join the project. Don't hesitate
+to reach out to us if you have any questions or feedback. And enjoy hacking!
+
 ## Concepts
 
 Flow comes with a very compact dictionary or terms which are widely used in this
@@ -58,7 +75,11 @@ has a set of methods to receive and pass messages. The custom logic is
 implemented inside a link body. A link knows nothing about it's neighbours and
 should avoid any neighbour-specific logic.
 
-===== The text below this line is unedited and might contain outdated info =====
+---
+
+The text below this line is unedited and might contain outdated info
+
+---
 
 ## Building a Pipeline
 
