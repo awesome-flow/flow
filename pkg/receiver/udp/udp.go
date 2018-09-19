@@ -48,7 +48,11 @@ func New(name string, params core.Params) (core.Link, error) {
 
 	log.Info("Instantiating standard backend for UDP receiver")
 
-	udp := &UDP{name, nil, core.NewConnector()}
+	udp := &UDP{
+		name,
+		nil,
+		core.NewConnector(),
+	}
 
 	addr, addrErr := net.ResolveUDPAddr("udp", udpAddr.(string))
 	if addrErr != nil {
@@ -79,7 +83,6 @@ func (udp *UDP) recv() {
 			}
 			return
 		}
-
 		msg := core.NewMessage(data)
 
 		if sendErr := udp.Send(msg); sendErr != nil {
@@ -87,5 +90,6 @@ func (udp *UDP) recv() {
 		} else {
 			metrics.GetCounter("receiver.udp.sent").Inc(1)
 		}
+
 	}
 }

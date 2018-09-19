@@ -96,7 +96,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(ConnReadTimeout))
-		data, _, err := reader.ReadLine()
+		data, err := reader.ReadBytes('\n')
 
 		if len(data) == 0 {
 			break

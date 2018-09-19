@@ -84,8 +84,6 @@ func NewMessageWithAckCh(ackCh chan MsgStatus, meta map[string]interface{}, payl
 }
 
 func (m *Message) GetMeta(key string) (interface{}, bool) {
-	//m.mx.Lock()
-	//defer m.mx.Unlock()
 	if m.meta == nil {
 		return nil, false
 	}
