@@ -160,12 +160,11 @@ func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error)
 			panic("Component is nil")
 		}
 		return comp, err
-	} else {
-		if builder, ok := compBuilders[cfg.Module]; ok {
-			return builder(compName, cfg.Params)
-		}
-		return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
 	}
+	if builder, ok := compBuilders[cfg.Module]; ok {
+		return builder(compName, cfg.Params)
+	}
+	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
 }
 
 func (ppl *Pipeline) Explain() string {

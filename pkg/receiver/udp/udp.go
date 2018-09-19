@@ -70,7 +70,7 @@ func New(name string, params core.Params) (core.Link, error) {
 func (udp *UDP) recv() {
 	buf := bufio.NewReader(udp.conn)
 	for {
-		data, _, err := buf.ReadLine()
+		data, err := buf.ReadBytes('\n')
 		metrics.GetCounter("receiver.udp.received").Inc(1)
 		if err != nil {
 			if nerr, ok := err.(net.Error); ok && (nerr.Temporary() || nerr.Timeout()) {

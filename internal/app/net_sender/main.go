@@ -31,12 +31,13 @@ func main() {
 	}
 
 	log.Infof("Creating a new connection to %s", *sendTo)
+
 	conn, err := net.Dial(*proto, *sendTo)
 	if err != nil {
 		log.Fatalf("Failed to open a connection to %s: %s", *sendTo, err)
 	}
 
-	dataMsgs := bytes.Split(data, []byte{'\n'})
+	dataMsgs := bytes.Split(bytes.TrimRight(data, "\r\n"), []byte{'\n'})
 
 	var sentCnt uint64
 	var failCnt uint64
@@ -48,6 +49,7 @@ func main() {
 	} else {
 		log.Infof("A response from connection is not expected")
 	}
+
 	for {
 		if *num > 0 {
 			if sentCnt >= *num {
@@ -55,6 +57,7 @@ func main() {
 			}
 		}
 		conn.SetWriteDeadline(time.Now().Add(100 * time.Millisecond))
+
 		if _, err := conn.Write(append(dataMsgs[msgIx], '\r', '\n')); err != nil {
 			log.Errorf("Failed to send data [%s]: %s", dataMsgs[msgIx], err)
 			failCnt++
