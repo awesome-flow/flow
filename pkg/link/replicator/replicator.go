@@ -102,6 +102,8 @@ func (repl *Replicator) replicate() {
 			}
 		}
 
+		//log.Infof("Sending a message: %s", msg.Payload)
+
 		links, err := repl.linksForKey(msgKey)
 		if err != nil {
 			log.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
@@ -113,7 +115,6 @@ func (repl *Replicator) replicate() {
 				// log.Infof("Routing the message identified by: %s to %s",
 				// 	string(msgKey), l.String())
 				msgCp := core.CpMessage(msg)
-				defer wg.Done()
 				if sendErr := l.Recv(msgCp); sendErr != nil {
 					metrics.GetCounter(
 						fmt.Sprintf("link.replicator.%s.msg.failed", link)).Inc(1)
@@ -121,17 +122,24 @@ func (repl *Replicator) replicate() {
 				}
 				metrics.GetCounter(
 					fmt.Sprintf("link.replicator.%s.msg.sent", link)).Inc(1)
+
+				<-msgCp.GetAckCh()
+				wg.Done()
 			}(link)
 		}
 		ack := make(chan bool, 1)
+		timeout := false
 		go func() {
 			wg.Wait()
-			ack <- true
+			if !timeout {
+				ack <- true
+			}
 		}()
 		select {
 		case <-ack:
 			msg.AckDone()
 		case <-time.After(ReplMsgSendTimeout):
+			timeout = true
 			msg.AckTimedOut()
 		}
 		close(ack)
