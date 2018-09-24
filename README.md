@@ -29,7 +29,7 @@ and transferable  and by shifting developer's minds from low-level engineering
 and/or system administration problem towards a pure business-logic decision
 making process.
 
-## Status of the project
+## Status of the Project
 
 This project is in active development. It means some parts of it would look
 totally different in the future. Some ideas still need validation and battle
@@ -45,6 +45,27 @@ defined as early as possible.
 
 So, if you have any interest in Flow, please do join the project. Don't hesitate
 to reach out to us if you have any questions or feedback. And enjoy hacking!
+
+## Milestones and a Bigger Picture
+
+The short-term plans are defined as milestones. Milestones are described on
+Github and represent some sensible amount of work and progress. For now, the
+project milestones have no time constraints. A milestone is delivered and closed
+onse all enlisted features are done. Each successfuly finished milestone
+initiates a minor release version bump.
+
+Regarding a bigger picture, the ambitions of the project is to become a generic
+mature framework for building sidecars. This might be a long-long road. In the
+meantime, the project would be focusing on 2 primary directions: core direction
+and plugin direction.
+
+The core activity would be focusing on general system performance, bugfixing,
+common library interface enhancements, and some missing generic features.
+
+The plugin direction would be aiming to implement as many 3rd party integration
+connectors as needed. Among the nearest goals: Graphite, Redis, Kafka, Pulsar,
+Bookkeeper, etc. Connectors that will end up in flow-plugins repo should be
+reliable, configurable and easily reusable.
 
 ## Concepts
 
@@ -75,52 +96,74 @@ has a set of methods to receive and pass messages. The custom logic is
 implemented inside a link body. A link knows nothing about it's neighbours and
 should avoid any neighbour-specific logic.
 
----
+## Links and Connectors
 
-The text below this line is unedited and might contain outdated info
+The link connectability is polymorphic. Depending on what a link implements,
+it might have 0, 1 or more incoming connectors and 0, 1 and more outcoming.
 
----
-
-## Building a Pipeline
-
-The framework provides a set of primitive building blocks (e.g.: http-receiver,
-udp-sink, router, multiplexer). It all starts with the definition of the
-pipeline components. One-by-one, the `components` block of a yaml config file
-defines main properties and settings for the components.
-
-Once the components are defined, `pipeline` block defines relationships between
-these components and determines the flow of the data.
-
-## Connectors
-
-The idea of links and connectors comes from engineering programming software
-and is mostly inspired by LabView.
-
-Links might be of 3 major types:
-  * one-to-one
-  * one-to-many
-  * many-to-one
+Links might be of 5 major types:
+  * Receiver (none-to-one)
+  * One-to-one
+  * One-to-many
+  * Many-to-one
+  * Sink (one-to-none)
 
 ```
-  One-to-one    One-to-many    Many-to-one
-      |              |             \|/ 
-      O              O              O
-      |             /|\             |
+  Receiver    One-to-one    One-to-many    Many-to-one    Sink
+      O           |              |             \|/          |
+      |           O              O              O           O
+                  |             /|\             |
 ```
 
-Links that receive messages from the outer world are called receivers (e.g.:
-http, udp, tcp servers) They initiate message lifecycle. The ones that send
-messages to outerworld are called sinks (kafka, tcp, udp). Sink stage denotes
-message lifecycle termination. Message lifecycle stages are explained in 
-Messages part.
-
-We call them none-to-one and one-to-none links.
+This might give an idea about a trivial pipeline:
 
 ```
-  Receiver    Sink
-     O         |
-     |         O
+   R (Receiver)
+   |
+   S (Sink)
 ```
+
+In this configuration, the receiver gets messages from the outer world and
+forwards it to the sink. The latter one takes care of sending them over, and
+this is effectively a trivial message lifecycle.
+
+Some more examples of pipelines:
+
+```
+  Aggregator            Multiplexer                Multi-stage Router
+
+  R  R  R (Receivers)     R     (Receiver)                R (Receiver)
+   \ | /                  |                               |
+     D    (DMX)           M     (MPX)                     R (Router)
+     |                  / | \                           /   \
+     S    (Sink)       S  S  S  (Sinks)       (Buffer) B     M (MPX)
+                                                       |     | \
+                                               (Sinks) S     S   \
+                                                                  R (Router)
+                                                                / | \
+                                                               S  S  S (Sinks)
+```
+
+In the examples above:
+
+Aggregator is a set of receivers: it might encounter different transports,
+multiple endpoints, etc. All messages are piped into a single DMX link, and
+are collected by a sink.
+
+A multiplexer is the opposite: a single receiver gets all messages from the
+outer world, proxies it to a multiplexer link and sends several times to
+distinct endpoints.
+
+The last one might be interesting as it's way closer to the real-life
+configuration: A single receiver gets messages and passes them to a router.
+Router decides where the message should be directed and chooses one of the
+branches. The left branch is quite simple, but it contains an extra link: a
+buffer. If a message submission fails somewhere down the pipe (no matter where),
+it would be retried by the buffer.The right branch starts with a multiplexer,
+where one of the directions is a trivial sink, and the other one is another
+router, which might be using some routing key, which is different from the one
+used by the upper router. And this ends up with a sophisticated setup of 3
+other sinks.
 
 A pipeline is defined using these 3 basic types of links. Links define
 corresponding methods in order to expose connectors:
@@ -134,15 +177,11 @@ are named using keys, but the message is never replicated). `LinkTo`, on the
 opposite size, defines AND logic: a message is being dispatched to 0 or more
 links (message is replicated).
 
-## Connector API
-
-TODO
-
 ## Links
 
 Flow core comes with a set of primitive links which might be a use in the
-majority of basic pipelines. More complex links are being built using these
-blocks and enreaching the standard ones.
+majority of basic pipelines. These links can be used for building extremely
+complex pipelines.
 
 ### Core Links:
 
@@ -155,17 +194,27 @@ blocks and enreaching the standard ones.
 
 #### Intermediate Links:
 
-  * `links.demultiplexer`: a many-to-one link, collects messages from N(>=1)
-    links and pipes them in a single channel
-  * `links.multiplexer`: a one-to-many link, multiplexes copies of messages
-    to N(>=0) links and reports the composite status back.
-  * `links.buffer`: a one-to-one link, implements an intermediate buffer with
+  * `link.buffer`: a one-to-one link, implements an intermediate buffer with
     lightweight retry logic.
-  * `links.router`: a one-to-many link, sends messages to at most 1 link based
-    on the message meta attributes (this attribute is configurable).
-  * `links.fanout`: a one-to-many link, sends messages to exactly 1 link,
+  * `link.dmx`: demultiplexer, a many-to-one link, collects messages from N(>=1)
+    links and pipes them in a single channel
+  * `link.fanout`: a one-to-many link, sends messages to exactly 1 link,
     changing destination after every submission like a roller.
-  * `links.throttler`: a one-to-one link, implements rate limiting
+  * `link.meta_perser`: a one-to-one link, parses a prepending meta in URL
+    format. To be more specific: for messages in format:
+    `foo=bar&bar=baz <binary payload here>`
+    meta_parser link will extract key-value pairs [foo=bar, bar=baz] and trim
+    the payload accordingly. This might be useful in combination with router:
+    a client provides k/v URL-encoded attributes, and router performs some
+    routing logic.
+  * `link.mpx`: a one-to-many link, multiplexes copies of messages
+    to N(>=0) links and reports the composite status back.
+  * `link.replicator`: a one-to-many link, implements a consistent hash
+    replication logic. Accepts the number of replicas and the hashing key to be
+    used. If no key provided, it will hash the entire message body.
+  * `link.router`: a one-to-many link, sends messages to at most 1 link based
+    on the message meta attributes (this attribute is configurable).
+  * `link.throttler`: a one-to-one link, implements rate limiting
     functionality.
 
 #### Sinks:
@@ -174,8 +223,6 @@ blocks and enreaching the standard ones.
     STDOUT and STDERR).
   * `sink.tcp`: a one-to-none link, sends messages to a TCP endpoint
   * `sink.udp`: a one-to-none link, sends messages to a UDP endpoint
-  * `sink.kafka`: a one-to-none link, sends messages to kafka (currently using
-    Sarama library).
 
 ## Messages
 
