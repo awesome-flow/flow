@@ -2,6 +2,7 @@ package link
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/whiteboxio/flow/pkg/core"
@@ -89,4 +90,51 @@ func (mpx *MPX) multiplex() {
 		}
 		close(acks)
 	}
+}
+
+func Multiplex(msg *core.Message, links []core.Link, timeout time.Duration) error {
+	var totalCnt, succCnt, failCnt uint32 = uint32(len(links)), 0, 0
+	done := make(chan core.MsgStatus, totalCnt)
+	doneClosed := false
+	defer close(done)
+
+	for _, l := range links {
+		go func(link core.Link) {
+			msgCp := core.CpMessage(msg)
+			if err := link.Recv(msgCp); err != nil {
+				atomic.AddUint32(&failCnt, 1)
+				if !doneClosed {
+					done <- core.MsgStatusFailed
+				}
+			}
+			status := <-msgCp.GetAckCh()
+			if !doneClosed {
+				done <- status
+			}
+		}(l)
+	}
+	brk := time.After(MpxMsgSendTimeout)
+	for i := 0; uint32(i) < totalCnt; i++ {
+		select {
+		case status := <-done:
+			if status == core.MsgStatusDone {
+				atomic.AddUint32(&succCnt, 1)
+			} else {
+				atomic.AddUint32(&failCnt, 1)
+			}
+		case <-brk:
+			doneClosed = true
+			close(done)
+			break
+		}
+	}
+
+	if failCnt > 0 {
+		if succCnt == 0 {
+			return msg.AckFailed()
+		}
+		return msg.AckPartialSend()
+	}
+
+	return msg.AckDone()
 }
