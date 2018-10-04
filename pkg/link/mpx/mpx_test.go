@@ -1,11 +1,16 @@
 package link
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/whiteboxio/flow/pkg/core"
 )
+
+type CntRcvd interface {
+	GetRcvCnt() int
+}
 
 type A struct {
 	rcvCnt int
@@ -20,6 +25,8 @@ func (a *A) Recv(msg *core.Message) error {
 	return msg.AckDone()
 }
 
+func (a *A) GetRcvCnt() int { return a.rcvCnt }
+
 type B struct {
 	rcvCnt int
 	*core.Connector
@@ -33,6 +40,8 @@ func (b *B) Recv(msg *core.Message) error {
 	return msg.AckFailed()
 }
 
+func (b *B) GetRcvCnt() int { return b.rcvCnt }
+
 type C struct {
 	rcvCnt int
 	*core.Connector
@@ -45,6 +54,8 @@ func (c *C) Recv(msg *core.Message) error {
 	c.rcvCnt++
 	return nil
 }
+
+func (c *C) GetRcvCnt() int { return c.rcvCnt }
 
 func TestMPX_multiplex(t *testing.T) {
 	tests := []struct {
@@ -79,6 +90,75 @@ func TestMPX_multiplex(t *testing.T) {
 				}
 			case <-time.After(100 * time.Millisecond):
 				t.Error("Timed out to receive ack")
+			}
+		})
+	}
+}
+
+func Test_Multiplex(t *testing.T) {
+	tests := []struct {
+		name           string
+		links          []core.Link
+		expectedCnts   []int
+		expectedStatus core.MsgStatus
+		expectedErr    error
+	}{
+		{
+			name:           "succ send",
+			links:          []core.Link{NewA(), NewA(), NewA()},
+			expectedCnts:   []int{1, 1, 1},
+			expectedStatus: core.MsgStatusDone,
+			expectedErr:    nil,
+		},
+		{
+			name:           "part send",
+			links:          []core.Link{NewA(), NewA(), NewB()},
+			expectedCnts:   []int{1, 1, 1},
+			expectedStatus: core.MsgStatusPartialSend,
+			expectedErr:    core.ErrMsgPartialSend,
+		},
+		{
+			name:           "fail send",
+			links:          []core.Link{NewB(), NewB(), NewB()},
+			expectedCnts:   []int{1, 1, 1},
+			expectedStatus: core.MsgStatusFailed,
+			expectedErr:    core.ErrMsgFailed,
+		},
+		{
+			name:           "time out",
+			links:          []core.Link{NewA(), NewA(), NewC()},
+			expectedCnts:   []int{1, 1, 1},
+			expectedStatus: core.MsgStatusTimedOut,
+			expectedErr:    core.ErrMsgTimedOut,
+		},
+	}
+
+	t.Parallel()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			msg := core.NewMessage([]byte("hello world"))
+			err := Multiplex(msg, testCase.links, 50*time.Millisecond)
+			if !reflect.DeepEqual(err, testCase.expectedErr) {
+				t.Errorf("Got an unexpected error: %q, want: %q",
+					err, testCase.expectedErr)
+			}
+			var status core.MsgStatus
+			select {
+			case status = <-msg.GetAckCh():
+				if status != testCase.expectedStatus {
+					t.Errorf("Unexpected status from message: %d, want: %d",
+						status, testCase.expectedStatus)
+				}
+			case <-time.After(100 * time.Millisecond):
+				t.Errorf("Timed out to receive an ack from message")
+			}
+			for ix, link := range testCase.links {
+				linkRcvCnt := link.(CntRcvd).GetRcvCnt()
+				if linkRcvCnt != testCase.expectedCnts[ix] {
+					t.Errorf("Unexpected rcv count: %d, want: %d",
+						linkRcvCnt, testCase.expectedCnts[ix])
+				}
 			}
 		})
 	}

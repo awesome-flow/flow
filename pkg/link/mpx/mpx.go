@@ -96,12 +96,19 @@ func Multiplex(msg *core.Message, links []core.Link, timeout time.Duration) erro
 	var totalCnt, succCnt, failCnt uint32 = uint32(len(links)), 0, 0
 	done := make(chan core.MsgStatus, totalCnt)
 	doneClosed := false
-	defer close(done)
+	defer func() {
+		doneClosed = true
+		close(done)
+	}()
 
+	wg := sync.WaitGroup{}
 	for _, l := range links {
+		wg.Add(1)
 		go func(link core.Link) {
 			msgCp := core.CpMessage(msg)
-			if err := link.Recv(msgCp); err != nil {
+			err := link.Recv(msgCp)
+			wg.Done()
+			if err != nil {
 				atomic.AddUint32(&failCnt, 1)
 				if !doneClosed {
 					done <- core.MsgStatusFailed
@@ -113,7 +120,7 @@ func Multiplex(msg *core.Message, links []core.Link, timeout time.Duration) erro
 			}
 		}(l)
 	}
-	brk := time.After(MpxMsgSendTimeout)
+	wg.Wait()
 	for i := 0; uint32(i) < totalCnt; i++ {
 		select {
 		case status := <-done:
@@ -122,10 +129,8 @@ func Multiplex(msg *core.Message, links []core.Link, timeout time.Duration) erro
 			} else {
 				atomic.AddUint32(&failCnt, 1)
 			}
-		case <-brk:
-			doneClosed = true
-			close(done)
-			break
+		case <-time.After(timeout):
+			return msg.AckTimedOut()
 		}
 	}
 
