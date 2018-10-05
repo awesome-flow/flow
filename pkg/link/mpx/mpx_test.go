@@ -66,7 +66,7 @@ func TestMPX_multiplex(t *testing.T) {
 		{"succ send", []core.Link{NewA(), NewA(), NewA()}, core.MsgStatusDone},
 		{"part send", []core.Link{NewB(), NewA(), NewA()}, core.MsgStatusPartialSend},
 		{"fail send", []core.Link{NewB(), NewB(), NewB()}, core.MsgStatusFailed},
-		{"time out", []core.Link{NewA(), NewA(), NewC()}, core.MsgStatusPartialSend},
+		{"time out", []core.Link{NewA(), NewA(), NewC()}, core.MsgStatusTimedOut},
 	}
 
 	for _, tstCase := range tests {
