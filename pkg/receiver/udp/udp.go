@@ -11,10 +11,6 @@ import (
 	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
 )
 
-const (
-	MaxDatagramPayloadSize = 65536
-)
-
 var (
 	ErrMalformedDgram = fmt.Errorf("Malformed datagram")
 	ErrEmptyBody      = fmt.Errorf("Empty message body")
