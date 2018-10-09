@@ -1,8 +1,42 @@
 package core
 
+import (
+	"sync"
+)
+
 type Params map[string]interface{}
 
 type RoutingFunc func(*Message) (string, error)
+
+// LinkContent is there to provide a current state of the link.
+// Anything but linkContent should remain stateless.
+type LinkContext struct {
+	msgCh  chan *Message
+	cmdIn  chan *Cmd
+	cmdOut chan *Cmd
+	state  *sync.Map
+}
+
+func (lc *LinkContext) GetMsgCh() chan *Message {
+	return lc.msgCh
+}
+
+func (lc *LinkContext) GetCmdIn() chan *Cmd {
+	return lc.cmdIn
+}
+
+func (lc *LinkContext) GetCmdOut() chan *Cmd {
+	return lc.cmdOut
+}
+
+func (lc *LinkContext) GetVal(key string) (interface{}, bool) {
+	val, ok := lc.state.Load(key)
+	return val, ok
+}
+
+func (lc *LinkContext) SetVal(key string, value interface{}) {
+	lc.state.Store(key, value)
+}
 
 type Link interface {
 	String() string
@@ -12,12 +46,14 @@ type Link interface {
 	LinkTo([]Link) error
 	RouteTo(map[string]Link) error
 	ExecCmd(*Cmd) error
+	GetContext() *LinkContext
 }
 
 type Connector struct {
-	msgCh  chan *Message
-	cmdIn  chan *Cmd
-	cmdOut chan *Cmd
+	context *LinkContext
+	msgCh   chan *Message
+	cmdIn   chan *Cmd
+	cmdOut  chan *Cmd
 }
 
 func NewConnector() *Connector {
