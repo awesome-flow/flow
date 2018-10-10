@@ -8,34 +8,53 @@ type Params map[string]interface{}
 
 type RoutingFunc func(*Message) (string, error)
 
-// LinkContent is there to provide a current state of the link.
+// Context is there to provide a current state of the link.
 // Anything but linkContent should remain stateless.
-type LinkContext struct {
-	msgCh  chan *Message
-	cmdIn  chan *Cmd
-	cmdOut chan *Cmd
-	state  *sync.Map
+type Context struct {
+	msgCh   chan *Message
+	cmdIn   chan *Cmd
+	cmdOut  chan *Cmd
+	storage *sync.Map
 }
 
-func (lc *LinkContext) GetMsgCh() chan *Message {
-	return lc.msgCh
+func NewContext() *Context {
+	return &Context{
+		msgCh:   make(chan *Message),
+		cmdIn:   make(chan *Cmd),
+		cmdOut:  make(chan *Cmd),
+		storage: &sync.Map{},
+	}
 }
 
-func (lc *LinkContext) GetCmdIn() chan *Cmd {
-	return lc.cmdIn
+func NewContextUnsafe(msgCh chan *Message,
+	cmdIn chan *Cmd, cmdOut chan *Cmd, storage *sync.Map) *Context {
+	return &Context{
+		msgCh:   msgCh,
+		cmdIn:   cmdIn,
+		cmdOut:  cmdOut,
+		storage: storage,
+	}
 }
 
-func (lc *LinkContext) GetCmdOut() chan *Cmd {
-	return lc.cmdOut
+func (c *Context) GetMsgCh() chan *Message {
+	return c.msgCh
 }
 
-func (lc *LinkContext) GetVal(key string) (interface{}, bool) {
-	val, ok := lc.state.Load(key)
+func (c *Context) GetCmdIn() chan *Cmd {
+	return c.cmdIn
+}
+
+func (c *Context) GetCmdOut() chan *Cmd {
+	return c.cmdOut
+}
+
+func (c *Context) GetVal(key string) (interface{}, bool) {
+	val, ok := c.storage.Load(key)
 	return val, ok
 }
 
-func (lc *LinkContext) SetVal(key string, value interface{}) {
-	lc.state.Store(key, value)
+func (c *Context) SetVal(key string, value interface{}) {
+	c.storage.Store(key, value)
 }
 
 type Link interface {
@@ -46,21 +65,20 @@ type Link interface {
 	LinkTo([]Link) error
 	RouteTo(map[string]Link) error
 	ExecCmd(*Cmd) error
-	GetContext() *LinkContext
+	GetContext() *Context
 }
 
 type Connector struct {
-	context *LinkContext
-	msgCh   chan *Message
-	cmdIn   chan *Cmd
-	cmdOut  chan *Cmd
+	context *Context
 }
 
 func NewConnector() *Connector {
+	return NewConnectorWithContext(NewContext())
+}
+
+func NewConnectorWithContext(context *Context) *Connector {
 	return &Connector{
-		msgCh:  make(chan *Message),
-		cmdIn:  make(chan *Cmd),
-		cmdOut: make(chan *Cmd),
+		context: context,
 	}
 }
 
@@ -69,7 +87,7 @@ func (cn *Connector) Recv(msg *Message) error {
 }
 
 func (cn *Connector) Send(msg *Message) error {
-	cn.msgCh <- msg
+	cn.context.msgCh <- msg
 	return nil
 }
 
@@ -79,7 +97,7 @@ func (cn *Connector) ExecCmd(cmd *Cmd) error {
 
 func (cn *Connector) ConnectTo(l Link) error {
 	go func() {
-		for msg := range cn.msgCh {
+		for msg := range cn.context.msgCh {
 			l.Recv(msg)
 		}
 	}()
@@ -95,9 +113,13 @@ func (cn *Connector) RouteTo(map[string]Link) error {
 }
 
 func (cn *Connector) GetMsgCh() chan *Message {
-	return cn.msgCh
+	return cn.context.msgCh
 }
 
 func (cn *Connector) String() string {
 	return "A connector"
+}
+
+func (cn *Connector) GetContext() *Context {
+	return cn.context
 }

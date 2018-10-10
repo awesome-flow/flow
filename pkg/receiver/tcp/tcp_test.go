@@ -44,7 +44,8 @@ func TestTCP_recv(t *testing.T) {
 	}
 	t.Logf("Sent %d bytes over the network", n)
 	time.Sleep(10 * time.Millisecond)
-	if string(rcvLink.lastMsg) != strings.Trim(payload, "\n\r") {
-		t.Fatalf("Unexpected receiver last message: %s", rcvLink.lastMsg)
+	if string(rcvLink.lastMsg) != strings.Trim(payload, "\r\n") {
+		t.Fatalf("Unexpected receiver last message: %q, expected: %q",
+			rcvLink.lastMsg, payload)
 	}
 }

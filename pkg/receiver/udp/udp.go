@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 
@@ -79,6 +80,8 @@ func (udp *UDP) recv() {
 			}
 			return
 		}
+
+		data = bytes.TrimRight(data, "\r\n")
 		msg := core.NewMessage(data)
 
 		if sendErr := udp.Send(msg); sendErr != nil {

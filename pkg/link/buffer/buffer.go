@@ -2,6 +2,7 @@ package link
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/whiteboxio/flow/pkg/core"
@@ -25,7 +26,7 @@ type Buffer struct {
 	capacity int
 	strategy BufStrategy
 	maxRetry int
-	msgChan  chan *core.Message
+	context  *core.Context
 }
 
 func New(name string, params core.Params) (core.Link, error) {
@@ -50,14 +51,24 @@ func New(name string, params core.Params) (core.Link, error) {
 	if v, ok := params["max_retry"]; ok {
 		maxRetry = v.(int)
 	}
+	ctx := core.NewContextUnsafe(
+		make(chan *core.Message, capacity),
+		nil,
+		nil,
+		&sync.Map{},
+	)
 	buf := &Buffer{
 		name,
 		capacity,
 		strategy,
 		maxRetry,
-		make(chan *core.Message, capacity),
+		ctx,
 	}
 	return buf, nil
+}
+
+func (buf *Buffer) GetContext() *core.Context {
+	return buf.context
 }
 
 func (buf *Buffer) Recv(msg *core.Message) error {
@@ -67,24 +78,24 @@ func (buf *Buffer) Recv(msg *core.Message) error {
 func (buf *Buffer) Send(msg *core.Message) error {
 	switch buf.strategy {
 	case BufStrategyDrop:
-		if len(buf.msgChan) >= buf.capacity {
+		if len(buf.context.GetMsgCh()) >= buf.capacity {
 			return msg.AckFailed()
 		}
 	case BufStrategySub:
-		for len(buf.msgChan) >= buf.capacity {
-			msg := <-buf.msgChan
+		for len(buf.context.GetMsgCh()) >= buf.capacity {
+			msg := <-buf.context.GetMsgCh()
 			msg.AckFailed()
 		}
 	}
 
-	buf.msgChan <- msg
+	buf.context.GetMsgCh() <- msg
 
 	return nil
 }
 
 func (buf *Buffer) ConnectTo(link core.Link) error {
 	go func() {
-		for msg := range buf.msgChan {
+		for msg := range buf.context.GetMsgCh() {
 			if msg.GetAttempts() >= uint32(buf.maxRetry) {
 				metrics.GetCounter(
 					"links.buffer," + buf.Name + "_max_attempts").Inc(1)

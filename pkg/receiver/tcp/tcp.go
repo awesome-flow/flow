@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"net"
@@ -114,6 +115,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 			return
 		}
 
+		data = bytes.TrimRight(data, "\r\n")
 		msg := core.NewMessage(data)
 
 		if sendErr := tcp.Send(msg); sendErr != nil {

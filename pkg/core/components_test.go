@@ -45,7 +45,7 @@ type C struct {
 }
 
 func NewC() *C {
-	return &C{rcvCh: make(chan bool, 1)}
+	return &C{make(chan bool, 1)}
 }
 
 func (c *C) Recv(msg *Message) error {
@@ -71,6 +71,8 @@ func (c *C) ExecCmd(cmd *Cmd) error {
 }
 
 func (c *C) String() string { return "a C instance" }
+
+func (c *C) GetContext() *Context { return nil }
 
 func Test2ConnectedLinks(t *testing.T) {
 	a := NewA()

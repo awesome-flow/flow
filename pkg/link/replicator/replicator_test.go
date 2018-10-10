@@ -22,6 +22,10 @@ func (tl *TestLink) Recv(msg *core.Message) error {
 	return msg.AckDone()
 }
 
+func (tl *TestLink) String() string {
+	return tl.Name
+}
+
 func TestReplicator_linksForKey(t *testing.T) {
 	links := []core.Link{
 		NewTestLink("Link1"),
@@ -46,15 +50,15 @@ func TestReplicator_linksForKey(t *testing.T) {
 	}{
 		{
 			key:      []byte("msgKey1"),
-			expected: []core.Link{links[4], links[0], links[2]},
+			expected: []core.Link{links[2], links[1], links[6]},
 		},
 		{
 			key:      []byte("msgKey2"),
-			expected: []core.Link{links[1], links[0], links[4]},
+			expected: []core.Link{links[2], links[3], links[0]},
 		},
 		{
 			key:      []byte("KeyAno"),
-			expected: []core.Link{links[4], links[5], links[0]},
+			expected: []core.Link{links[6], links[2], links[5]},
 		},
 	}
 	for _, tt := range tests {
