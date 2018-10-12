@@ -20,7 +20,7 @@ type MPX struct {
 	*sync.Mutex
 }
 
-func New(name string, _ core.Params) (core.Link, error) {
+func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	links := make([]core.Link, 0)
 	mpx := &MPX{name, links, core.NewConnector(), &sync.Mutex{}}
 	go func() {

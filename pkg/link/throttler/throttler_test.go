@@ -25,8 +25,11 @@ func TestThrottler_Recv(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			th, thErr := New("t",
-				core.Params{"msg_key": test.msgKey, "rps": test.rps})
+			th, thErr := New(
+				"t",
+				core.Params{"msg_key": test.msgKey, "rps": test.rps},
+				core.NewContext(),
+			)
 			if thErr != nil {
 				t.Errorf("Could not instantiate throttler: %s", thErr.Error())
 			}

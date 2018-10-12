@@ -16,7 +16,7 @@ type Router struct {
 	*sync.Mutex
 }
 
-func New(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 	routingKey, ok := params["routing_key"]
 	if !ok {
 		return nil, fmt.Errorf("Router %s parameters are missing routing_key", name)

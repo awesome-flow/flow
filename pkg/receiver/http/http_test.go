@@ -159,7 +159,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 	for _, testCase := range tests {
 		t.Logf("Inspecting case %s", testCase.name)
 		httpRcv, err := New("test_http",
-			core.Params{"bind_addr": testCase.bindAddr})
+			core.Params{"bind_addr": testCase.bindAddr}, core.NewContext())
 		if err != nil {
 			t.Errorf("Failed to create an HTTP receiver: %s", err)
 		}

@@ -37,7 +37,7 @@ func TestReplicator_linksForKey(t *testing.T) {
 		NewTestLink("Link7"),
 	}
 
-	repl, err := New("replicator", core.Params{"replicas": 3})
+	repl, err := New("replicator", core.Params{"replicas": 3}, core.NewContext())
 	if err != nil {
 		t.Fatalf("Unexpected error while initializing replicator: %s", err)
 	}

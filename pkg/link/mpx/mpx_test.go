@@ -71,7 +71,7 @@ func TestMPX_multiplex(t *testing.T) {
 
 	for _, tstCase := range tests {
 		t.Run(tstCase.descr, func(t *testing.T) {
-			mpx, err := New("mpx", nil)
+			mpx, err := New("mpx", nil, core.NewContext())
 			if err != nil {
 				t.Errorf("Unexpected mxp init error: %s", err.Error())
 			}

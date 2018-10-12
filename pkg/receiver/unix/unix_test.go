@@ -28,7 +28,7 @@ func TestUnix_unixRecv(t *testing.T) {
 	defer os.Remove(path)
 	testRcv := NewA()
 	payload := "hello world" + "\n"
-	unix, err := New("test_unix", core.Params{"path": path})
+	unix, err := New("test_unix", core.Params{"path": path}, core.NewContext())
 	if err != nil {
 		t.Fatalf("Failed to initialize unix receiver: %s", err.Error())
 	}

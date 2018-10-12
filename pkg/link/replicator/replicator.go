@@ -28,7 +28,7 @@ const (
 	ReplMsgSendTimeout = 50 * time.Millisecond
 )
 
-func New(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 
 	nBuckets := uint32(2 ^ 32 - 1)
 

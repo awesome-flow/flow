@@ -24,7 +24,7 @@ type stts struct {
 	timestamp int64
 }
 
-func New(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 	rps, rpsOk := params["rps"]
 	if !rpsOk {
 		return nil, fmt.Errorf("Throttler params are missing rps")

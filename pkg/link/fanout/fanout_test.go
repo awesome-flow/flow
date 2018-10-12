@@ -19,7 +19,7 @@ func (a *A) Recv(msg *core.Message) error {
 }
 
 func TestFanout_RingSize(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
@@ -34,7 +34,7 @@ func TestFanout_RingSize(t *testing.T) {
 }
 
 func TestFanout_Send(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
@@ -51,7 +51,7 @@ func TestFanout_Send(t *testing.T) {
 }
 
 func TestFanout_Recv(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
@@ -68,7 +68,7 @@ func TestFanout_Recv(t *testing.T) {
 }
 
 func TestFanout_addRingLinkAsHead(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -85,7 +85,7 @@ func TestFanout_addRingLinkAsHead(t *testing.T) {
 }
 
 func TestFanout_addRingLinkAsExtra(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -104,7 +104,7 @@ func TestFanout_addRingLinkAsExtra(t *testing.T) {
 }
 
 func TestFanout_removeRingLinkAsHead(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -124,7 +124,7 @@ func TestFanout_removeRingLinkAsHead(t *testing.T) {
 }
 
 func TestFanout_Connections(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
@@ -238,7 +238,7 @@ func TestFanout_Connections(t *testing.T) {
 }
 
 func TestFanout_FindLink(t *testing.T) {
-	ft, ftErr := New("fanout", core.Params{})
+	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize fanout: %s", ftErr.Error())
 	}

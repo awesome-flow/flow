@@ -20,7 +20,7 @@ type Fanout struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 	ft := &Fanout{
 		name,
 		nil,

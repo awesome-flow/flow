@@ -24,7 +24,7 @@ func TestBuffer_TestNew(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			b, err := New("buffer", test.params)
+			b, err := New("buffer", test.params, core.NewContext())
 			if err != nil {
 				t.Errorf("Failed to initialize buffer: %s", err.Error())
 			}

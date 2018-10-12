@@ -36,7 +36,7 @@ type Pipeline struct {
 	adminHttp *admin.HTTP
 }
 
-type ConstrFunc func(string, core.Params) (core.Link, error)
+type ConstrFunc func(string, core.Params, *core.Context) (core.Link, error)
 
 var (
 	compBuilders = map[string]ConstrFunc{
@@ -65,7 +65,8 @@ func NewPipeline(
 
 	compPool := make(map[string]core.Link)
 	for compName, compParams := range compsCfg {
-		comp, compErr := buildComp(compName, compParams)
+		context := core.NewContext()
+		comp, compErr := buildComp(compName, compParams, context)
 		if compErr != nil {
 			return nil, compErr
 		}
@@ -140,7 +141,7 @@ func NewPipeline(
 	return pipeline, nil
 }
 
-func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error) {
+func buildComp(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
 	if cfg.Plugin != "" {
 		pluginPath, _ := config.Get("flow.plugin.path")
 		p, pErr := plugin.Open(fmt.Sprintf("%s/%s/%s.so",
@@ -152,7 +153,7 @@ func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error)
 		if cErr != nil {
 			return nil, cErr
 		}
-		comp, err := c.(func(string, core.Params) (core.Link, error))(compName, cfg.Params)
+		comp, err := c.(func(string, core.Params, *core.Context) (core.Link, error))(compName, cfg.Params, context)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -162,7 +163,7 @@ func buildComp(compName string, cfg config.CfgBlockComponent) (core.Link, error)
 		return comp, err
 	}
 	if builder, ok := compBuilders[cfg.Module]; ok {
-		return builder(compName, cfg.Params)
+		return builder(compName, cfg.Params, context)
 	}
 	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
 }

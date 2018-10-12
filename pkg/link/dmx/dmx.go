@@ -9,7 +9,7 @@ type DMX struct {
 	*core.Connector
 }
 
-func New(name string, _ core.Params) (core.Link, error) {
+func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	dmx := &DMX{
 		name,
 		core.NewConnector(),

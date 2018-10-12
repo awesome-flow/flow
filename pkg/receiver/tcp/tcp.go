@@ -46,7 +46,7 @@ type TCP struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 	tcpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("TCP receiver parameters are missing bind_addr")
@@ -58,7 +58,7 @@ func New(name string, params core.Params) (core.Link, error) {
 			params["listeners"] = []interface{}{
 				"tcp://" + params["bind_addr"].(string),
 			}
-			return evio_rcv.New(name, params)
+			return evio_rcv.New(name, params, context)
 		case "std":
 		default:
 			return nil, fmt.Errorf("Unknown backend: %s", backend)

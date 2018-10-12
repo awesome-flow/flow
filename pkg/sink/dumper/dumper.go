@@ -14,7 +14,7 @@ type Dumper struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 	out, outOk := params["out"]
 	if !outOk {
 		return nil, fmt.Errorf("Dumper %s params are missing out", name)

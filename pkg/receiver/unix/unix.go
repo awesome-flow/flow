@@ -28,7 +28,7 @@ type Unix struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params) (core.Link, error) {
+func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 	path, ok := params["bind_addr"]
 	if !ok {
 		path = "/tmp/flow.sock"
@@ -41,7 +41,7 @@ func New(name string, params core.Params) (core.Link, error) {
 			params["listeners"] = []interface{}{
 				"unix://" + path.(string),
 			}
-			return evio_rcv.New(name, params)
+			return evio_rcv.New(name, params, context)
 		case "std":
 		default:
 			return nil, fmt.Errorf("Unknown backend: %s", backend)

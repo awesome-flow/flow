@@ -26,6 +26,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	r, rErr := New(
 		"router",
 		core.Params{"routing_key": "sender"},
+		core.NewContext(),
 	)
 	if rErr != nil {
 		t.Errorf("Failed to initialize router: %s", rErr.Error())

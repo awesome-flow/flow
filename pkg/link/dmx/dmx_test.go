@@ -32,7 +32,7 @@ func (cntr *Cntr) Recv(msg *core.Message) error {
 func TestDMX_Demultiplex(t *testing.T) {
 	a1, a2 := NewA(), NewA()
 	cntr := NewCntr()
-	dmx, dmxErr := New("dmx", nil)
+	dmx, dmxErr := New("dmx", nil, core.NewContext())
 	if dmxErr != nil {
 		t.Errorf("Unexpected DMX error: %s", dmxErr.Error())
 	}
