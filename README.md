@@ -130,13 +130,13 @@ this is effectively a trivial message lifecycle.
 Some more examples of pipelines:
 
 ```
-  Aggregator            Multiplexer                Multi-stage Router
+  Aggregator          Demultiplexer                Multi-stage Router
 
   R  R  R (Receivers)     R     (Receiver)                R (Receiver)
    \ | /                  |                               |
-     D    (DMX)           M     (MPX)                     R (Router)
+     M    (Mux)           D     (Demux)                   R (Router)
      |                  / | \                           /   \
-     S    (Sink)       S  S  S  (Sinks)       (Buffer) B     M (MPX)
+     S    (Sink)       S  S  S  (Sinks)       (Buffer) B     D (Demux)
                                                        |     | \
                                                (Sinks) S     S   \
                                                                   R (Router)
@@ -147,7 +147,7 @@ Some more examples of pipelines:
 In the examples above:
 
 Aggregator is a set of receivers: it might encounter different transports,
-multiple endpoints, etc. All messages are piped into a single DMX link, and
+multiple endpoints, etc. All messages are piped into a single Mux link, and
 are collected by a sink.
 
 A multiplexer is the opposite: a single receiver gets all messages from the
@@ -196,7 +196,7 @@ complex pipelines.
 
   * `link.buffer`: a one-to-one link, implements an intermediate buffer with
     lightweight retry logic.
-  * `link.dmx`: demultiplexer, a many-to-one link, collects messages from N(>=1)
+  * `link.mux`: multiplexer, a many-to-one link, collects messages from N(>=1)
     links and pipes them in a single channel
   * `link.fanout`: a one-to-many link, sends messages to exactly 1 link,
     changing destination after every submission like a roller.
@@ -207,7 +207,7 @@ complex pipelines.
     the payload accordingly. This might be useful in combination with router:
     a client provides k/v URL-encoded attributes, and router performs some
     routing logic.
-  * `link.mpx`: a one-to-many link, multiplexes copies of messages
+  * `link.demux`: a one-to-many link, demultiplexes copies of messages
     to N(>=0) links and reports the composite status back.
   * `link.replicator`: a one-to-many link, implements a consistent hash
     replication logic. Accepts the number of replicas and the hashing key to be

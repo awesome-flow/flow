@@ -4,22 +4,22 @@ import (
 	"github.com/whiteboxio/flow/pkg/core"
 )
 
-type DMX struct {
+type Mux struct {
 	Name string
 	*core.Connector
 }
 
 func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
-	dmx := &DMX{
+	mux := &Mux{
 		name,
 		core.NewConnector(),
 	}
-	return dmx, nil
+	return mux, nil
 }
 
-func (dmx *DMX) LinkTo(links []core.Link) error {
+func (mux *Mux) LinkTo(links []core.Link) error {
 	for _, link := range links {
-		if err := link.ConnectTo(dmx); err != nil {
+		if err := link.ConnectTo(mux); err != nil {
 			return err
 		}
 	}

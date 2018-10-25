@@ -29,17 +29,17 @@ func (cntr *Cntr) Recv(msg *core.Message) error {
 	return msg.AckDone()
 }
 
-func TestDMX_Demultiplex(t *testing.T) {
+func TestMux_Demultiplex(t *testing.T) {
 	a1, a2 := NewA(), NewA()
 	cntr := NewCntr()
-	dmx, dmxErr := New("dmx", nil, core.NewContext())
-	if dmxErr != nil {
-		t.Errorf("Unexpected DMX error: %s", dmxErr.Error())
+	mux, muxErr := New("mux", nil, core.NewContext())
+	if muxErr != nil {
+		t.Errorf("Unexpected Mux error: %s", muxErr.Error())
 	}
-	if linkErr := dmx.LinkTo([]core.Link{a1, a2}); linkErr != nil {
-		t.Errorf("Failed to link dmx: %s", linkErr.Error())
+	if linkErr := mux.LinkTo([]core.Link{a1, a2}); linkErr != nil {
+		t.Errorf("Failed to link mux: %s", linkErr.Error())
 	}
-	dmx.ConnectTo(cntr)
+	mux.ConnectTo(cntr)
 
 	msg1 := core.NewMessage([]byte{})
 	if sendErr1 := a1.Send(msg1); sendErr1 != nil {

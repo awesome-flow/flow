@@ -9,10 +9,10 @@ import (
 	"github.com/whiteboxio/flow/pkg/config"
 	"github.com/whiteboxio/flow/pkg/core"
 	buffer "github.com/whiteboxio/flow/pkg/link/buffer"
-	dmx "github.com/whiteboxio/flow/pkg/link/dmx"
+	demux "github.com/whiteboxio/flow/pkg/link/demux"
 	fanout "github.com/whiteboxio/flow/pkg/link/fanout"
 	meta_parser "github.com/whiteboxio/flow/pkg/link/meta_parser"
-	mpx "github.com/whiteboxio/flow/pkg/link/mpx"
+	mux "github.com/whiteboxio/flow/pkg/link/mux"
 	replicator "github.com/whiteboxio/flow/pkg/link/replicator"
 	router "github.com/whiteboxio/flow/pkg/link/router"
 	throttler "github.com/whiteboxio/flow/pkg/link/throttler"
@@ -40,22 +40,24 @@ type ConstrFunc func(string, core.Params, *core.Context) (core.Link, error)
 
 var (
 	compBuilders = map[string]ConstrFunc{
-		"receiver.tcp":     tcp_rcv.New,
-		"receiver.udp":     udp_rcv.New,
-		"receiver.http":    http_rcv.New,
-		"receiver.unix":    unix_rcv.New,
-		"receiver.evio":    evio_rcv.New,
-		"link.dmx":         dmx.New,
-		"link.mpx":         mpx.New,
+		"receiver.tcp":  tcp_rcv.New,
+		"receiver.udp":  udp_rcv.New,
+		"receiver.http": http_rcv.New,
+		"receiver.unix": unix_rcv.New,
+		"receiver.evio": evio_rcv.New,
+
+		"link.demux":       demux.New,
+		"link.mux":         mux.New,
 		"link.router":      router.New,
 		"link.throttler":   throttler.New,
 		"link.fanout":      fanout.New,
 		"link.replicator":  replicator.New,
 		"link.buffer":      buffer.New,
 		"link.meta_parser": meta_parser.New,
-		"sink.dumper":      dumper_sink.New,
-		"sink.tcp":         tcp_sink.New,
-		"sink.udp":         udp_sink.New,
+
+		"sink.dumper": dumper_sink.New,
+		"sink.tcp":    tcp_sink.New,
+		"sink.udp":    udp_sink.New,
 	}
 )
 

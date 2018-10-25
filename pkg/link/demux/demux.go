@@ -1,6 +1,7 @@
 package link
 
 import (
+	"math/bits"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -10,10 +11,13 @@ import (
 )
 
 const (
-	MpxMsgSendTimeout = 50 * time.Millisecond
+	DemuxMsgSendTimeout = 50 * time.Millisecond
+
+	DemuxMaskAll  uint64 = 0xFFFFFFFFFFFFFFFF
+	DemuxMaskNone uint64 = 0x0
 )
 
-type MPX struct {
+type Demux struct {
 	Name  string
 	links []core.Link
 	*core.Connector
@@ -22,30 +26,44 @@ type MPX struct {
 
 func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	links := make([]core.Link, 0)
-	mpx := &MPX{name, links, core.NewConnector(), &sync.Mutex{}}
+	demux := &Demux{name, links, core.NewConnector(), &sync.Mutex{}}
 	go func() {
-		for msg := range mpx.GetMsgCh() {
-			if sendErr := Multiplex(msg, mpx.links, MpxMsgSendTimeout); sendErr != nil {
+		for msg := range demux.GetMsgCh() {
+			if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, DemuxMsgSendTimeout); sendErr != nil {
 				logrus.Warnf("Failed to multiplex message: %q", sendErr)
 			}
 		}
 	}()
-	return mpx, nil
+	return demux, nil
 }
 
-func (mpx *MPX) ConnectTo(core.Link) error {
-	panic("MPX link is not supposed to be connected directly")
+func (dedemux *Demux) ConnectTo(core.Link) error {
+	panic("Demux link is not supposed to be connected directly")
 }
 
-func (mpx *MPX) LinkTo(links []core.Link) error {
-	mpx.Lock()
-	defer mpx.Unlock()
-	mpx.links = append(mpx.links, links...)
+func (dedemux *Demux) LinkTo(links []core.Link) error {
+	dedemux.Lock()
+	defer dedemux.Unlock()
+	dedemux.links = append(dedemux.links, links...)
 	return nil
 }
 
-func Multiplex(msg *core.Message, links []core.Link, timeout time.Duration) error {
-	var totalCnt, succCnt, failCnt uint32 = uint32(len(links)), 0, 0
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func Demultiplex(msg *core.Message, mask uint64, links []core.Link, timeout time.Duration) error {
+	totalCnt, succCnt, failCnt := uint32(minInt(bits.OnesCount64(mask), len(links))), uint32(0), uint32(0)
 	done := make(chan core.MsgStatus, totalCnt)
 	doneClosed := false
 	defer func() {
@@ -54,11 +72,14 @@ func Multiplex(msg *core.Message, links []core.Link, timeout time.Duration) erro
 	}()
 
 	wg := sync.WaitGroup{}
-	for _, l := range links {
+	for ix := range links {
+		if (mask>>uint(ix))&1 == 0 {
+			continue
+		}
 		wg.Add(1)
-		go func(link core.Link) {
+		go func(i int) {
 			msgCp := core.CpMessage(msg)
-			err := link.Recv(msgCp)
+			err := links[i].Recv(msgCp)
 			wg.Done()
 			if err != nil {
 				atomic.AddUint32(&failCnt, 1)
@@ -70,7 +91,10 @@ func Multiplex(msg *core.Message, links []core.Link, timeout time.Duration) erro
 			if !doneClosed {
 				done <- status
 			}
-		}(l)
+		}(ix)
+	}
+	if !core.MsgIsSync(msg) {
+		return msg.AckDone()
 	}
 	wg.Wait()
 	brk := time.After(timeout)

@@ -6,11 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/whiteboxio/flow/pkg/metrics"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/whiteboxio/flow/pkg/core"
+	demux "github.com/whiteboxio/flow/pkg/link/demux"
 	hash "github.com/whiteboxio/flow/pkg/util/hash"
 )
 
@@ -102,48 +101,61 @@ func (repl *Replicator) replicate() {
 			}
 		}
 
-		//log.Infof("Sending a message: %s", msg.Payload)
-
-		links, err := repl.linksForKey(msgKey)
+		linksIxs, err := repl.linksIxsForKey(msgKey)
 		if err != nil {
 			log.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
 		}
-		wg := &sync.WaitGroup{}
-		for _, link := range links {
-			wg.Add(1)
-			go func(l core.Link) {
-				// log.Infof("Routing the message identified by: %s to %s",
-				// 	string(msgKey), l.String())
-				msgCp := core.CpMessage(msg)
-				if sendErr := l.Recv(msgCp); sendErr != nil {
-					metrics.GetCounter(
-						fmt.Sprintf("link.replicator.%s.msg.failed", link)).Inc(1)
-					return
-				}
-				metrics.GetCounter(
-					fmt.Sprintf("link.replicator.%s.msg.sent", link)).Inc(1)
 
-				<-msgCp.GetAckCh()
-				wg.Done()
-			}(link)
+		if err := demux.Demultiplex(msg, linksIxs, repl.links, ReplMsgSendTimeout); err != nil {
+			log.Errorf("Replicator failed to send message: %q", err)
 		}
-		ack := make(chan bool, 1)
-		timeout := false
-		go func() {
-			wg.Wait()
-			if !timeout {
-				ack <- true
-			}
-		}()
-		select {
-		case <-ack:
-			msg.AckDone()
-		case <-time.After(ReplMsgSendTimeout):
-			timeout = true
-			msg.AckTimedOut()
-		}
-		close(ack)
 	}
+}
+
+func (repl *Replicator) linksIxsForKey(key []byte) (uint64, error) {
+	mask := demux.DemuxMaskNone
+
+	if len(repl.links) > 64 {
+		return mask, fmt.Errorf("The current version of replicator does not" +
+			"support more than 64 connected links")
+	}
+
+	hObj := fnv.New64a()
+	if _, err := hObj.Write(key); err != nil {
+		return mask, err
+	}
+
+	h := hObj.Sum64()
+	i := len(repl.links)
+
+	var j uint32
+	var realJ int
+	subs := make(map[int]int)
+	selected := 0
+	for i > 0 {
+		j = uint32(hash.JumpHash(h, i))
+		realJ = int(j)
+		for {
+			_, ok := subs[realJ]
+			if !ok {
+				break
+			}
+			realJ = subs[realJ]
+		}
+		mask |= (1 << uint(realJ))
+		selected++
+		if selected >= repl.replFactor {
+			break
+		}
+		h ^= h >> 12
+		h ^= h << 25
+		h ^= h >> 27
+		h *= uint64(2685821657736338717)
+		i--
+		subs[int(j)] = i
+	}
+
+	return mask, nil
 }
 
 func (repl *Replicator) linksForKey(key []byte) ([]core.Link, error) {

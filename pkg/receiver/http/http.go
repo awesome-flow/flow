@@ -99,9 +99,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sync, ok := msg.GetMeta("sync")
-	isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
-	if !isSync {
+	if !core.MsgIsSync(msg) {
 		metrics.GetCounter("receiver.http.accepted").Inc(1)
 		rw.WriteHeader(http.StatusAccepted)
 		rw.Write([]byte("Accepted"))

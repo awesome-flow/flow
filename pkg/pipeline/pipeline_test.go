@@ -42,16 +42,16 @@ func TestPipeline_buildComp(t *testing.T) {
 			},
 		},
 		{
-			"DMX link",
+			"Demux link",
 			&config.CfgBlockComponent{
-				Module: "link.dmx",
+				Module: "link.demux",
 				Params: core.Params{},
 			},
 		},
 		{
-			"MPX link",
+			"Mux link",
 			&config.CfgBlockComponent{
-				Module: "link.fanout",
+				Module: "link.mux",
 				Params: core.Params{},
 			},
 		},

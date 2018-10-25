@@ -57,7 +57,7 @@ func (c *C) Recv(msg *core.Message) error {
 
 func (c *C) GetRcvCnt() int { return c.rcvCnt }
 
-func TestMPX_multiplex(t *testing.T) {
+func TestDemux_multiplex(t *testing.T) {
 	tests := []struct {
 		descr  string
 		links  []core.Link
@@ -71,16 +71,21 @@ func TestMPX_multiplex(t *testing.T) {
 
 	for _, tstCase := range tests {
 		t.Run(tstCase.descr, func(t *testing.T) {
-			mpx, err := New("mpx", nil, core.NewContext())
+			demux, err := New("demux", nil, core.NewContext())
 			if err != nil {
-				t.Errorf("Unexpected mxp init error: %s", err.Error())
+				t.Errorf("Unexpected demux init error: %s", err.Error())
 			}
-			linkErr := mpx.LinkTo(tstCase.links)
+			linkErr := demux.LinkTo(tstCase.links)
 			if linkErr != nil {
-				t.Errorf("Failed to connect links to mpx: %s", linkErr.Error())
+				t.Errorf("Failed to connect links to mux: %s", linkErr.Error())
 			}
-			msg := core.NewMessage([]byte(""))
-			if rcvErr := mpx.Recv(msg); rcvErr != nil {
+			msg := core.NewMessageWithMeta(
+				map[string]interface{}{
+					"sync": "true",
+				},
+				[]byte(""),
+			)
+			if rcvErr := demux.Recv(msg); rcvErr != nil {
 				t.Errorf("Unexpected rcv error: %s", rcvErr.Error())
 			}
 			select {
@@ -95,7 +100,7 @@ func TestMPX_multiplex(t *testing.T) {
 	}
 }
 
-func Test_Multiplex(t *testing.T) {
+func Test_Demultiplex(t *testing.T) {
 	tests := []struct {
 		name           string
 		links          []core.Link
@@ -137,8 +142,13 @@ func Test_Multiplex(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			msg := core.NewMessage([]byte("hello world"))
-			err := Multiplex(msg, testCase.links, 50*time.Millisecond)
+			msg := core.NewMessageWithMeta(
+				map[string]interface{}{
+					"sync": "true",
+				},
+				[]byte("hello world"),
+			)
+			err := Demultiplex(msg, DemuxMaskAll, testCase.links, 50*time.Millisecond)
 			if !reflect.DeepEqual(err, testCase.expectedErr) {
 				t.Errorf("Got an unexpected error: %q, want: %q",
 					err, testCase.expectedErr)

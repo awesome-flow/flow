@@ -9,6 +9,10 @@ import (
 type MsgStatus = uint8
 
 const (
+	MsgMetaKeySync = "sync"
+)
+
+const (
 	MsgStatusNew MsgStatus = iota
 	MsgStatusDone
 	MsgStatusPartialSend
@@ -250,4 +254,20 @@ func CpMessage(m *Message) *Message {
 		Payload: m.Payload,
 		ackCh:   make(chan MsgStatus, 1),
 	}
+}
+
+var (
+	msgMetaSyncValues = map[string]bool{"true": true, "1": true}
+)
+
+func MsgIsSync(msg *Message) bool {
+	if sync, ok := msg.GetMeta(MsgMetaKeySync); sync != nil && ok {
+		if _, ok = sync.(string); !ok {
+			return false
+		}
+		if _, ok = msgMetaSyncValues[sync.(string)]; ok {
+			return true
+		}
+	}
+	return false
 }
