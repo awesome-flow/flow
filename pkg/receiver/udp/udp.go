@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"runtime"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteboxio/flow/pkg/core"
@@ -63,7 +64,9 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 
 	udp.conn = conn
 
-	go udp.recv()
+	for i := 0; i < runtime.GOMAXPROCS(-1); i++ {
+		go udp.recv()
+	}
 
 	return udp, nil
 }

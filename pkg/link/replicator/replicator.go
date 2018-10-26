@@ -3,7 +3,6 @@ package link
 import (
 	"fmt"
 	"hash/fnv"
-	"runtime"
 	"sync"
 	"time"
 
@@ -39,7 +38,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		"", // "" stands for message body as a hashing key
 		make([]core.Link, 0),
 		&sync.Mutex{},
-		core.NewConnector(),
+		core.NewConnectorWithContext(context),
 	}
 
 	if nBuckets, ok := params["n_buckets"]; ok {
@@ -54,11 +53,8 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		repl.hashKey = hashKey.(string)
 	}
 
-	threadiness := runtime.GOMAXPROCS(-1)
-
-	log.Infof("Starting replicator with threadiness %d", threadiness)
-	for i := 0; i < threadiness; i++ {
-		go repl.replicate()
+	for _, ch := range repl.GetMsgCh() {
+		go repl.replicate(ch)
 	}
 
 	return repl, nil
@@ -86,9 +82,9 @@ func (repl *Replicator) RemoveLink(link core.Link) error {
 	return nil
 }
 
-func (repl *Replicator) replicate() {
+func (repl *Replicator) replicate(ch chan *core.Message) {
 	var msgKey []byte
-	for msg := range repl.GetMsgCh() {
+	for msg := range ch {
 		if repl.hashKey == "" {
 			msgKey = msg.Payload
 		} else {

@@ -2,7 +2,9 @@ package link
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/whiteboxio/flow/pkg/core"
 )
@@ -51,6 +53,7 @@ func TestFanout_Send(t *testing.T) {
 }
 
 func TestFanout_Recv(t *testing.T) {
+	rand.Seed(time.Now().UTC().UnixNano())
 	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())

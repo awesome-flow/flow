@@ -2,8 +2,10 @@ package pipeline
 
 import (
 	"fmt"
+	"math/rand"
 	"plugin"
 	"runtime"
+	"time"
 
 	"github.com/whiteboxio/flow/pkg/admin"
 	"github.com/whiteboxio/flow/pkg/config"
@@ -218,6 +220,7 @@ func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
 }
 
 func (ppl *Pipeline) Start() error {
+	rand.Seed(time.Now().UTC().UnixNano())
 	return ppl.ExecCmd(&core.Cmd{Code: core.CmdCodeStart}, core.CmdPpgtBtmUp)
 }
 

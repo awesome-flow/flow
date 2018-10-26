@@ -38,7 +38,13 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	}
 	routes := make(map[string]core.Link)
 	r := &Router{name, routingFunc, routes, core.NewConnector(), &sync.Mutex{}}
-	go r.dsptchMsgs()
+
+	for _, ch := range r.GetMsgCh() {
+		go func(ch chan *core.Message) {
+			r.dsptchMsgs(ch)
+		}(ch)
+	}
+
 	return r, nil
 }
 
@@ -84,8 +90,8 @@ func (r *Router) Recv(msg *core.Message) error {
 	return r.Send(msg)
 }
 
-func (r *Router) dsptchMsgs() {
-	for msg := range r.GetMsgCh() {
+func (r *Router) dsptchMsgs(ch chan *core.Message) {
+	for msg := range ch {
 		dst, dstErr := r.routingFunc(msg)
 		if dstErr != nil {
 			msg.AckUnroutable()

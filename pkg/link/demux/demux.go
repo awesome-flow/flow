@@ -2,7 +2,6 @@ package link
 
 import (
 	"math/bits"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,17 +27,14 @@ type Demux struct {
 func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	links := make([]core.Link, 0)
 	demux := &Demux{name, links, core.NewConnectorWithContext(context), &sync.Mutex{}}
-
-	threadiness := runtime.GOMAXPROCS(-1)
-
-	for i := 0; i < threadiness; i++ {
-		go func() {
-			for msg := range demux.GetMsgCh() {
+	for _, ch := range demux.GetMsgCh() {
+		go func(ch chan *core.Message) {
+			for msg := range ch {
 				if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, DemuxMsgSendTimeout); sendErr != nil {
 					logrus.Warnf("Failed to multiplex message: %q", sendErr)
 				}
 			}
-		}()
+		}(ch)
 	}
 
 	return demux, nil

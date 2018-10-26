@@ -1,6 +1,8 @@
 package core
 
 import (
+	"math/rand"
+	"runtime"
 	"sync"
 )
 
@@ -11,22 +13,27 @@ type RoutingFunc func(*Message) (string, error)
 // Context is there to provide a current state of the link.
 // Anything but linkContent should remain stateless.
 type Context struct {
-	msgCh   chan *Message
+	msgCh   []chan *Message
 	cmdIn   chan *Cmd
 	cmdOut  chan *Cmd
 	storage *sync.Map
 }
 
 func NewContext() *Context {
+	threadiness := runtime.GOMAXPROCS(-1)
+	msgChannels := make([]chan *Message, threadiness)
+	for i := 0; i < threadiness; i++ {
+		msgChannels[i] = make(chan *Message)
+	}
 	return &Context{
-		msgCh:   make(chan *Message),
+		msgCh:   msgChannels,
 		cmdIn:   make(chan *Cmd),
 		cmdOut:  make(chan *Cmd),
 		storage: &sync.Map{},
 	}
 }
 
-func NewContextUnsafe(msgCh chan *Message,
+func NewContextUnsafe(msgCh []chan *Message,
 	cmdIn chan *Cmd, cmdOut chan *Cmd, storage *sync.Map) *Context {
 	return &Context{
 		msgCh:   msgCh,
@@ -36,7 +43,7 @@ func NewContextUnsafe(msgCh chan *Message,
 	}
 }
 
-func (c *Context) GetMsgCh() chan *Message {
+func (c *Context) GetMsgCh() []chan *Message {
 	return c.msgCh
 }
 
@@ -87,7 +94,8 @@ func (cn *Connector) Recv(msg *Message) error {
 }
 
 func (cn *Connector) Send(msg *Message) error {
-	cn.context.msgCh <- msg
+	rnd := rand.Intn(len(cn.context.msgCh))
+	cn.context.msgCh[rnd] <- msg
 	return nil
 }
 
@@ -96,11 +104,13 @@ func (cn *Connector) ExecCmd(cmd *Cmd) error {
 }
 
 func (cn *Connector) ConnectTo(l Link) error {
-	go func() {
-		for msg := range cn.context.msgCh {
-			l.Recv(msg)
-		}
-	}()
+	for i := 0; i < len(cn.context.msgCh); i++ {
+		go func(ch chan *Message) {
+			for msg := range ch {
+				l.Recv(msg)
+			}
+		}(cn.context.msgCh[i])
+	}
 	return nil
 }
 
@@ -112,7 +122,7 @@ func (cn *Connector) RouteTo(map[string]Link) error {
 	panic("This package does not support RouteTo()")
 }
 
-func (cn *Connector) GetMsgCh() chan *Message {
+func (cn *Connector) GetMsgCh() []chan *Message {
 	return cn.context.msgCh
 }
 

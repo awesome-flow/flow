@@ -2,6 +2,8 @@ package link
 
 import (
 	"fmt"
+	"math/rand"
+	"runtime"
 	"sync"
 	"time"
 
@@ -18,7 +20,8 @@ const (
 )
 
 const (
-	MsgSendTimeout = 100 * time.Millisecond
+	MsgSendTimeout     = 100 * time.Millisecond
+	DefaultBufCapacity = 65536
 )
 
 type Buffer struct {
@@ -30,7 +33,7 @@ type Buffer struct {
 }
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
-	capacity := 65536
+	capacity := DefaultBufCapacity
 	if v, ok := params["capacity"]; ok {
 		capacity = v.(int)
 	}
@@ -51,19 +54,14 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	if v, ok := params["max_retry"]; ok {
 		maxRetry = v.(int)
 	}
-	ctx := core.NewContextUnsafe(
-		make(chan *core.Message, capacity),
-		nil,
-		nil,
-		&sync.Map{},
-	)
-	buf := &Buffer{
-		name,
-		capacity,
-		strategy,
-		maxRetry,
-		ctx,
+	threadiness := runtime.GOMAXPROCS(-1)
+	msgCh := make([]chan *core.Message, threadiness)
+	for i := 0; i < threadiness; i++ {
+		msgCh[i] = make(chan *core.Message, capacity)
 	}
+	ctx := core.NewContextUnsafe(msgCh, nil, nil, &sync.Map{})
+	buf := &Buffer{name, capacity, strategy, maxRetry, ctx}
+
 	return buf, nil
 }
 
@@ -76,62 +74,65 @@ func (buf *Buffer) Recv(msg *core.Message) error {
 }
 
 func (buf *Buffer) Send(msg *core.Message) error {
+	rnd := rand.Intn(len(buf.context.GetMsgCh()))
 	switch buf.strategy {
 	case BufStrategyDrop:
-		if len(buf.context.GetMsgCh()) >= buf.capacity {
+		if len(buf.context.GetMsgCh()[rnd]) >= buf.capacity {
 			return msg.AckFailed()
 		}
 	case BufStrategySub:
 		for len(buf.context.GetMsgCh()) >= buf.capacity {
-			msg := <-buf.context.GetMsgCh()
+			msg := <-buf.context.GetMsgCh()[rnd]
 			msg.AckFailed()
 		}
 	}
 
-	buf.context.GetMsgCh() <- msg
+	buf.context.GetMsgCh()[rnd] <- msg
 
 	return nil
 }
 
 func (buf *Buffer) ConnectTo(link core.Link) error {
-	go func() {
-		for msg := range buf.context.GetMsgCh() {
-			if msg.GetAttempts() >= uint32(buf.maxRetry) {
-				metrics.GetCounter(
-					"links.buffer," + buf.Name + "_max_attempts").Inc(1)
-				msg.AckFailed()
-				continue
-			}
-			msgCp := core.CpMessage(msg)
-			if recvErr := link.Recv(msgCp); recvErr != nil {
-				metrics.GetCounter(
-					"links.buffer." + buf.Name + "_retry").Inc(1)
-				msg.BumpAttempts()
-				buf.Send(msg)
-				continue
-			}
-			select {
-			case upd := <-msgCp.GetAckCh():
-				if upd != core.MsgStatusDone {
+	for _, ch := range buf.context.GetMsgCh() {
+		go func(ch chan *core.Message) {
+			for msg := range ch {
+				if msg.GetAttempts() >= uint32(buf.maxRetry) {
+					metrics.GetCounter(
+						"links.buffer," + buf.Name + "_max_attempts").Inc(1)
+					msg.AckFailed()
+					continue
+				}
+				msgCp := core.CpMessage(msg)
+				if recvErr := link.Recv(msgCp); recvErr != nil {
 					metrics.GetCounter(
 						"links.buffer." + buf.Name + "_retry").Inc(1)
 					msg.BumpAttempts()
 					buf.Send(msg)
 					continue
-				} else {
-					metrics.GetCounter(
-						"links.buffer." + buf.Name + "_success").Inc(1)
-					msg.AckDone()
 				}
-			case <-time.After(MsgSendTimeout):
-				metrics.GetCounter(
-					"links.buffer." + buf.Name + "_timeout").Inc(1)
-				msg.BumpAttempts()
-				buf.Send(msg)
-				continue
+				select {
+				case upd := <-msgCp.GetAckCh():
+					if upd != core.MsgStatusDone {
+						metrics.GetCounter(
+							"links.buffer." + buf.Name + "_retry").Inc(1)
+						msg.BumpAttempts()
+						buf.Send(msg)
+						continue
+					} else {
+						metrics.GetCounter(
+							"links.buffer." + buf.Name + "_success").Inc(1)
+						msg.AckDone()
+					}
+				case <-time.After(MsgSendTimeout):
+					metrics.GetCounter(
+						"links.buffer." + buf.Name + "_timeout").Inc(1)
+					msg.BumpAttempts()
+					buf.Send(msg)
+					continue
+				}
 			}
-		}
-	}()
+		}(ch)
+	}
 	return nil
 }
 

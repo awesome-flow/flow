@@ -27,7 +27,11 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		&sync.Mutex{},
 		core.NewConnector(),
 	}
-	go ft.fanout()
+	for _, ch := range ft.GetMsgCh() {
+		go func(ch chan *core.Message) {
+			ft.fanout(ch)
+		}(ch)
+	}
 	return ft, nil
 }
 
@@ -35,8 +39,8 @@ func (ft *Fanout) ConnectTo(core.Link) error {
 	panic("Fanout is not supposed to be connected")
 }
 
-func (ft *Fanout) fanout() {
-	for msg := range ft.GetMsgCh() {
+func (ft *Fanout) fanout(ch chan *core.Message) {
+	for msg := range ch {
 		head := ft.ringHead
 		if head == nil {
 			msg.AckFailed()
