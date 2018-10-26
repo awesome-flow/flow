@@ -3,6 +3,7 @@ package link
 import (
 	"fmt"
 	"hash/fnv"
+	"runtime"
 	"sync"
 	"time"
 
@@ -53,7 +54,12 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		repl.hashKey = hashKey.(string)
 	}
 
-	go repl.replicate()
+	threadiness := runtime.GOMAXPROCS(-1)
+
+	log.Infof("Starting replicator with threadiness %d", threadiness)
+	for i := 0; i < threadiness; i++ {
+		go repl.replicate()
+	}
 
 	return repl, nil
 }

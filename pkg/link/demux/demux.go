@@ -2,6 +2,7 @@ package link
 
 import (
 	"math/bits"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,13 +29,17 @@ func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	links := make([]core.Link, 0)
 	demux := &Demux{name, links, core.NewConnectorWithContext(context), &sync.Mutex{}}
 
-	go func() {
-		for msg := range demux.GetMsgCh() {
-			if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, DemuxMsgSendTimeout); sendErr != nil {
-				logrus.Warnf("Failed to multiplex message: %q", sendErr)
+	threadiness := runtime.GOMAXPROCS(-1)
+
+	for i := 0; i < threadiness; i++ {
+		go func() {
+			for msg := range demux.GetMsgCh() {
+				if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, DemuxMsgSendTimeout); sendErr != nil {
+					logrus.Warnf("Failed to multiplex message: %q", sendErr)
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return demux, nil
 }
@@ -76,7 +81,7 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 	defer func() {
 		if msgIsSync {
 			doneMutex.Lock()
-			doneMutex.Unlock()
+			defer doneMutex.Unlock()
 			doneClosed = true
 		}
 		close(done)
