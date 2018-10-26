@@ -12,7 +12,7 @@ type Mux struct {
 func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	mux := &Mux{
 		name,
-		core.NewConnector(),
+		core.NewConnectorWithContext(context),
 	}
 	return mux, nil
 }

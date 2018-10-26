@@ -26,7 +26,8 @@ type Demux struct {
 
 func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	links := make([]core.Link, 0)
-	demux := &Demux{name, links, core.NewConnector(), &sync.Mutex{}}
+	demux := &Demux{name, links, core.NewConnectorWithContext(context), &sync.Mutex{}}
+
 	go func() {
 		for msg := range demux.GetMsgCh() {
 			if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, DemuxMsgSendTimeout); sendErr != nil {
@@ -34,6 +35,7 @@ func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 			}
 		}
 	}()
+
 	return demux, nil
 }
 
@@ -62,18 +64,28 @@ func minInt(a, b int) int {
 	return b
 }
 
-func Demultiplex(msg *core.Message, mask uint64, links []core.Link, timeout time.Duration) error {
-	totalCnt, succCnt, failCnt := uint32(minInt(bits.OnesCount64(mask), len(links))), uint32(0), uint32(0)
+func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout time.Duration) error {
+
+	totalCnt, succCnt, failCnt := uint32(minInt(bits.OnesCount64(active), len(links))), uint32(0), uint32(0)
 	done := make(chan core.MsgStatus, totalCnt)
 	doneClosed := false
+	doneMutex := sync.Mutex{}
+
+	msgIsSync := core.MsgIsSync(msg)
+
 	defer func() {
-		doneClosed = true
+		if msgIsSync {
+			doneMutex.Lock()
+			doneMutex.Unlock()
+			doneClosed = true
+		}
 		close(done)
 	}()
 
 	wg := sync.WaitGroup{}
+
 	for ix := range links {
-		if (mask>>uint(ix))&1 == 0 {
+		if (active>>uint(ix))&1 == 0 {
 			continue
 		}
 		wg.Add(1)
@@ -81,41 +93,50 @@ func Demultiplex(msg *core.Message, mask uint64, links []core.Link, timeout time
 			msgCp := core.CpMessage(msg)
 			err := links[i].Recv(msgCp)
 			wg.Done()
+			if !msgIsSync {
+				return
+			}
 			if err != nil {
 				atomic.AddUint32(&failCnt, 1)
+				doneMutex.Lock()
+				defer doneMutex.Unlock()
 				if !doneClosed {
 					done <- core.MsgStatusFailed
 				}
+				return
 			}
 			status := <-msgCp.GetAckCh()
+			doneMutex.Lock()
+			defer doneMutex.Unlock()
 			if !doneClosed {
 				done <- status
 			}
 		}(ix)
 	}
-	if !core.MsgIsSync(msg) {
-		return msg.AckDone()
-	}
-	wg.Wait()
-	brk := time.After(timeout)
-	for i := 0; uint32(i) < totalCnt; i++ {
-		select {
-		case status := <-done:
-			if status == core.MsgStatusDone {
-				atomic.AddUint32(&succCnt, 1)
-			} else {
-				atomic.AddUint32(&failCnt, 1)
-			}
-		case <-brk:
-			return msg.AckTimedOut()
-		}
-	}
 
-	if failCnt > 0 {
-		if succCnt == 0 {
-			return msg.AckFailed()
+	wg.Wait()
+
+	if msgIsSync {
+		brk := time.After(timeout)
+		for i := 0; uint32(i) < totalCnt; i++ {
+			select {
+			case status := <-done:
+				if status == core.MsgStatusDone {
+					atomic.AddUint32(&succCnt, 1)
+				} else {
+					atomic.AddUint32(&failCnt, 1)
+				}
+			case <-brk:
+				return msg.AckTimedOut()
+			}
 		}
-		return msg.AckPartialSend()
+
+		if failCnt > 0 {
+			if succCnt == 0 {
+				return msg.AckFailed()
+			}
+			return msg.AckPartialSend()
+		}
 	}
 
 	return msg.AckDone()
