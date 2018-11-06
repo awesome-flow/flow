@@ -22,7 +22,8 @@ func main() {
 		panic(fmt.Sprintf("Unable to resolve config: %s", err))
 	}
 
-	log.Infof("Starting %s version %d", ProgramName, MajVersion)
+	log.Infof("Starting %s version %d, process ID: %d",
+		ProgramName, MajVersion, os.Getpid())
 
 	log.Infof("Initializing the pipeline")
 

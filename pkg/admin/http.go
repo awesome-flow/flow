@@ -17,7 +17,7 @@ func newAdminSrvMx(cfg *config.CfgBlockSystem) *http.ServeMux {
 	srvMx := http.NewServeMux()
 
 	for _, wa := range agent.AllAgents() {
-		srvMx.HandleFunc(wa.GetPath(), wa.GetHandler())
+		srvMx.Handle(wa.GetPath(), wa.GetHandler())
 	}
 
 	return srvMx
@@ -37,7 +37,7 @@ func NewHTTP(cfg *config.CfgBlockSystem) (*HTTP, error) {
 			case http.ErrServerClosed:
 				log.Info("Admin server closed")
 			default:
-				panic(fmt.Sprintf("Admin server critical error: %s", err))
+				log.Errorf(fmt.Sprintf("Admin server critical error: %s", err))
 			}
 		}
 	}()
