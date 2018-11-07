@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"sync/atomic"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ func main() {
 	sendTo := flag.String("send-to", "", "Receiver net address")
 	num := flag.Uint64("n", 0, "Send up to N messages (0 for no limit)")
 	proto := flag.String("proto", "tcp", "Network protocol (tcp, udp, unix)")
+	noReply := flag.Bool("no-reply", false, "Does the receiver notify us back or it's a write-only connection?")
 
 	flag.Parse()
 
@@ -29,6 +31,7 @@ func main() {
 	if err != nil {
 		log.Errorf("Unexpected error: %s", err)
 	}
+	connExpResp = connExpResp && !*noReply
 
 	log.Infof("Creating a new connection to %s", *sendTo)
 
@@ -49,6 +52,18 @@ func main() {
 	} else {
 		log.Infof("A response from connection is not expected")
 	}
+
+	go func() {
+		var prevNum, curNum uint64
+	Report:
+		curNum = atomic.LoadUint64(&sentCnt)
+		if curNum != prevNum {
+			log.Infof("Sent %d messages", curNum-prevNum)
+		}
+		prevNum = curNum
+		time.Sleep(time.Second)
+		goto Report
+	}()
 
 	for {
 		if *num > 0 {

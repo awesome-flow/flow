@@ -24,6 +24,7 @@ import (
 	udp_rcv "github.com/whiteboxio/flow/pkg/receiver/udp"
 	unix_rcv "github.com/whiteboxio/flow/pkg/receiver/unix"
 	dumper_sink "github.com/whiteboxio/flow/pkg/sink/dumper"
+	null_sink "github.com/whiteboxio/flow/pkg/sink/null"
 	tcp_sink "github.com/whiteboxio/flow/pkg/sink/tcp"
 	udp_sink "github.com/whiteboxio/flow/pkg/sink/udp"
 	"github.com/whiteboxio/flow/pkg/util/data"
@@ -60,6 +61,7 @@ var (
 		"sink.dumper": dumper_sink.New,
 		"sink.tcp":    tcp_sink.New,
 		"sink.udp":    udp_sink.New,
+		"sink.null":   null_sink.New,
 	}
 )
 

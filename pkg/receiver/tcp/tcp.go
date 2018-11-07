@@ -13,8 +13,6 @@ import (
 	"github.com/whiteboxio/flow/pkg/core"
 	"github.com/whiteboxio/flow/pkg/metrics"
 	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
-
-	"github.com/facebookgo/grace/gracenet"
 )
 
 const (
@@ -22,6 +20,13 @@ const (
 
 	ConnReadTimeout  = 1 * time.Second
 	ConnWriteTimeout = 1 * time.Second
+)
+
+type TcpMode uint8
+
+const (
+	TcpModeSilent TcpMode = iota
+	TcpModeTalkative
 )
 
 var (
@@ -42,6 +47,7 @@ var (
 
 type TCP struct {
 	Name string
+	mode TcpMode
 	srv  net.Listener
 	*core.Connector
 }
@@ -50,6 +56,15 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	tcpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("TCP receiver parameters are missing bind_addr")
+	}
+	mode := TcpModeTalkative
+	if alterMode, ok := params["mode"]; ok {
+		switch alterMode {
+		case "silent":
+			mode = TcpModeSilent
+		case "talkative":
+			mode = TcpModeTalkative
+		}
 	}
 	if backend, ok := params["backend"]; ok {
 		switch backend {
@@ -67,12 +82,12 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 
 	log.Info("Instantiating standard backend for TCP receiver")
 
-	net := &gracenet.Net{}
+	//net := &gracenet.Net{}
 	srv, err := net.Listen("tcp", tcpAddr.(string))
 	if err != nil {
 		return nil, err
 	}
-	tcp := &TCP{name + "@" + tcpAddr.(string), srv, core.NewConnector()}
+	tcp := &TCP{name + "@" + tcpAddr.(string), mode, srv, core.NewConnector()}
 	go tcp.handleListener()
 
 	return tcp, nil
@@ -121,8 +136,9 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		if sendErr := tcp.Send(msg); sendErr != nil {
 			metrics.GetCounter("receiver.tcp.msg.failed").Inc(1)
 			log.Errorf("Failed to send message: %s", sendErr)
-			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			conn.Write(TcpRespFail)
+			tcp.replyWith(conn, TcpRespFail)
+			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			//conn.Write(TcpRespFail)
 			continue
 		}
 
@@ -130,8 +146,9 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
 		if !isSync {
 			metrics.GetCounter("receiver.tcp.msg.accepted").Inc(1)
-			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			conn.Write(TcpRespAcpt)
+			tcp.replyWith(conn, TcpRespAcpt)
+			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			//conn.Write(TcpRespAcpt)
 			continue
 		}
 
@@ -139,12 +156,14 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		case s := <-msg.GetAckCh():
 			metrics.GetCounter(
 				"receiver.tcp.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
-			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			conn.Write(status2resp(s))
+			tcp.replyWith(conn, status2resp(s))
+			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			//conn.Write(status2resp(s))
 		case <-time.After(TcpMsgSendTimeout):
 			metrics.GetCounter("receiver.tcp.msg.timed_out").Inc(1)
-			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			conn.Write(TcpRespTime)
+			tcp.replyWith(conn, TcpRespTime)
+			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+			//conn.Write(TcpRespTime)
 		}
 
 		if err == io.EOF {
@@ -153,6 +172,14 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 	}
 	metrics.GetCounter("receiver.tcp.conn.closed").Inc(1)
 	conn.Close()
+}
+
+func (tcp *TCP) replyWith(conn net.Conn, reply []byte) {
+	if tcp.mode == TcpModeSilent {
+		return
+	}
+	conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
+	conn.Write(reply)
 }
 
 func status2resp(s core.MsgStatus) []byte {

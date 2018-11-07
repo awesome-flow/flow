@@ -14,6 +14,13 @@ import (
 	"github.com/whiteboxio/flow/pkg/metrics"
 )
 
+type transpMode uint8
+
+const (
+	transpModeSilent transpMode = iota
+	transpModeTalkative
+)
+
 var (
 	RespAcpt = []byte("ACCEPTED")
 	RespSent = []byte("SENT")
@@ -29,6 +36,7 @@ var (
 
 type Evio struct {
 	Name   string
+	mode   transpMode
 	events *evio.Events
 	*core.Connector
 }
@@ -53,8 +61,19 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		params["listeners"].([]interface{}),
 	)
 
+	mode := transpModeTalkative
+	if alterMode, ok := params["mode"]; ok {
+		switch alterMode {
+		case "silent":
+			mode = transpModeSilent
+		case "talkative":
+			mode = transpModeTalkative
+		}
+	}
+
 	ev := &Evio{
 		name,
+		mode,
 		events,
 		core.NewConnector(),
 	}
