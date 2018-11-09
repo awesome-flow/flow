@@ -78,8 +78,6 @@ func (repl *Replicator) AddLink(link core.Link) error {
 
 func (repl *Replicator) RemoveLink(link core.Link) error {
 	panic("Not implemented")
-	//TODO
-	return nil
 }
 
 func (repl *Replicator) replicate(ch chan *core.Message) {
@@ -103,7 +101,7 @@ func (repl *Replicator) replicate(ch chan *core.Message) {
 			}
 		}
 
-		linksIxs, err := repl.linksIxsForKey(msgKey)
+		linksIxs, err := linksIxsForKey(msgKey, repl.replFactor, len(repl.links))
 		if err != nil {
 			log.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
 		}
@@ -114,21 +112,21 @@ func (repl *Replicator) replicate(ch chan *core.Message) {
 	}
 }
 
-func (repl *Replicator) linksIxsForKey(key []byte) (uint64, error) {
+func linksIxsForKey(key []byte, replFactor, nLinks int) (uint64, error) {
 	mask := demux.DemuxMaskNone
 
-	if len(repl.links) > 64 {
+	if nLinks > 64 {
 		return mask, fmt.Errorf("The current version of replicator does not" +
-			"support more than 64 connected links")
+			" support more than 64 connected links")
 	}
 
 	hObj := fnv.New64a()
 	if _, err := hObj.Write(key); err != nil {
-		return mask, err
+		return demux.DemuxMaskNone, err
 	}
 
 	h := hObj.Sum64()
-	i := len(repl.links)
+	i := nLinks
 
 	var j uint32
 	var realJ int
@@ -146,7 +144,7 @@ func (repl *Replicator) linksIxsForKey(key []byte) (uint64, error) {
 		}
 		mask |= (1 << uint(realJ))
 		selected++
-		if selected >= repl.replFactor {
+		if selected >= replFactor {
 			break
 		}
 		h ^= h >> 12
@@ -158,45 +156,4 @@ func (repl *Replicator) linksIxsForKey(key []byte) (uint64, error) {
 	}
 
 	return mask, nil
-}
-
-func (repl *Replicator) linksForKey(key []byte) ([]core.Link, error) {
-	if repl.replFactor > len(repl.links) {
-		return nil, fmt.Errorf("The number of replicas exceeds the number" +
-			" of active nodes")
-	}
-
-	linksCp := make([]core.Link, len(repl.links))
-	for ix, link := range repl.links {
-		linksCp[ix] = link
-	}
-
-	hObj := fnv.New64a()
-	if _, err := hObj.Write(key); err != nil {
-		return nil, err
-	}
-
-	h := hObj.Sum64()
-	i := len(linksCp)
-
-	res := make([]core.Link, repl.replFactor)
-	resIx := 0
-	for i > 0 {
-		j := hash.JumpHash(h, i)
-		res[resIx] = linksCp[j]
-		resIx++
-
-		if resIx >= repl.replFactor {
-			break
-		}
-
-		h ^= h >> 12
-		h ^= h << 25
-		h ^= h >> 27
-		h *= uint64(2685821657736338717)
-		i--
-		linksCp[j] = linksCp[i]
-	}
-
-	return res, nil
 }

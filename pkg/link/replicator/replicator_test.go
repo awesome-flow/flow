@@ -65,7 +65,7 @@ func TestReplicator_linksIxsForKey(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		links, err := repl.(*Replicator).linksIxsForKey(tt.key)
+		links, err := linksIxsForKey(tt.key, repl.(*Replicator).replFactor, len(repl.(*Replicator).links))
 		if err != nil {
 			t.Fatalf("Failed to get the list of links from the replicator: %s", err)
 		}
