@@ -1,6 +1,8 @@
 package core
 
 import (
+	"math/rand"
+	"sync"
 	"testing"
 	"time"
 )
@@ -100,5 +102,75 @@ func Test3ConnectedLinks(t *testing.T) {
 	}
 	if b.rcvCnt != 1 {
 		t.Fatalf("Unexpected rcv counter in B: %d", b.rcvCnt)
+	}
+}
+
+// ===== Benchmarks =====
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandStringBytes(n int) []byte {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return b
+}
+
+type consumer struct {
+	cnt uint64
+	*Connector
+}
+
+func newConsumer(ctx *Context) *consumer {
+	return &consumer{0, NewConnectorWithContext(ctx)}
+}
+
+func (c *consumer) Recv(msg *Message) error {
+	c.cnt++
+	return nil
+}
+
+func BenchmarkSendRecvUno(b *testing.B) {
+	doBenchmarkSendRecv(b, 1, 1)
+}
+
+func BenchmarkSendRecvDuo(b *testing.B) {
+	doBenchmarkSendRecv(b, 2, 1)
+}
+
+func BenchmarkSendRecvQuadro(b *testing.B) {
+	doBenchmarkSendRecv(b, 4, 1)
+}
+
+func BenchmarkSendRecvOcta(b *testing.B) {
+	doBenchmarkSendRecv(b, 8, 1)
+}
+
+func doBenchmarkSendRecv(b *testing.B, threadiness int, bufSize int) {
+
+	contexts := make([]*Context, threadiness+1) // +1 for the receiver
+	for i := 0; i < threadiness+1; i++ {
+		msgChannels := make([]chan *Message, threadiness)
+		for i := 0; i < threadiness; i++ {
+			msgChannels[i] = make(chan *Message, bufSize)
+		}
+		contexts[i] = NewContextUnsafe(msgChannels, make(chan *Cmd), make(chan *Cmd), &sync.Map{})
+	}
+	receiver := NewConnectorWithContext(contexts[threadiness]) // the last one
+	consumers := make([]*consumer, threadiness)
+	for i := 0; i < threadiness; i++ {
+		consumers[i] = newConsumer(contexts[i])
+		receiver.ConnectTo(consumers[i])
+	}
+	for i := 0; i < b.N; i++ {
+		msg := NewMessage(RandStringBytes(1024))
+		if err := receiver.Recv(msg); err != nil {
+			panic(err)
+		}
 	}
 }

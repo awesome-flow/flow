@@ -16,17 +16,15 @@ import (
 )
 
 const (
-	MaxTCPBufSize = 65536
-
 	ConnReadTimeout  = 1 * time.Second
 	ConnWriteTimeout = 1 * time.Second
 )
 
-type TcpMode uint8
+type replyMode uint8
 
 const (
-	TcpModeSilent TcpMode = iota
-	TcpModeTalkative
+	replyModeSilent replyMode = iota
+	replyModeTalkative
 )
 
 var (
@@ -47,7 +45,7 @@ var (
 
 type TCP struct {
 	Name string
-	mode TcpMode
+	mode replyMode
 	srv  net.Listener
 	*core.Connector
 }
@@ -57,13 +55,13 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	if !ok {
 		return nil, fmt.Errorf("TCP receiver parameters are missing bind_addr")
 	}
-	mode := TcpModeTalkative
+	mode := replyModeTalkative
 	if alterMode, ok := params["mode"]; ok {
 		switch alterMode {
 		case "silent":
-			mode = TcpModeSilent
+			mode = replyModeSilent
 		case "talkative":
-			mode = TcpModeTalkative
+			mode = replyModeTalkative
 		}
 	}
 	if backend, ok := params["backend"]; ok {
@@ -137,8 +135,6 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 			metrics.GetCounter("receiver.tcp.msg.failed").Inc(1)
 			log.Errorf("Failed to send message: %s", sendErr)
 			tcp.replyWith(conn, TcpRespFail)
-			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			//conn.Write(TcpRespFail)
 			continue
 		}
 
@@ -147,8 +143,6 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		if !isSync {
 			metrics.GetCounter("receiver.tcp.msg.accepted").Inc(1)
 			tcp.replyWith(conn, TcpRespAcpt)
-			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			//conn.Write(TcpRespAcpt)
 			continue
 		}
 
@@ -157,13 +151,9 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 			metrics.GetCounter(
 				"receiver.tcp.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
 			tcp.replyWith(conn, status2resp(s))
-			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			//conn.Write(status2resp(s))
 		case <-time.After(TcpMsgSendTimeout):
 			metrics.GetCounter("receiver.tcp.msg.timed_out").Inc(1)
 			tcp.replyWith(conn, TcpRespTime)
-			//conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
-			//conn.Write(TcpRespTime)
 		}
 
 		if err == io.EOF {
@@ -175,7 +165,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 }
 
 func (tcp *TCP) replyWith(conn net.Conn, reply []byte) {
-	if tcp.mode == TcpModeSilent {
+	if tcp.mode == replyModeSilent {
 		return
 	}
 	conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))

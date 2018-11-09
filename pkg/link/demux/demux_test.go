@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/whiteboxio/flow/pkg/core"
+	test "github.com/whiteboxio/flow/pkg/util/test"
 )
 
 type CntRcvd interface {
@@ -63,10 +64,42 @@ func TestDemux_multiplex(t *testing.T) {
 		links  []core.Link
 		expSts core.MsgStatus
 	}{
-		{"succ send", []core.Link{NewA(), NewA(), NewA()}, core.MsgStatusDone},
-		{"part send", []core.Link{NewB(), NewA(), NewA()}, core.MsgStatusPartialSend},
-		{"fail send", []core.Link{NewB(), NewB(), NewB()}, core.MsgStatusFailed},
-		{"time out", []core.Link{NewA(), NewA(), NewC()}, core.MsgStatusTimedOut},
+		{
+			"succ send",
+			test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyDone,
+				"B": test.ReplyDone,
+				"C": test.ReplyDone,
+			}),
+			core.MsgStatusDone,
+		},
+		{
+			"part send",
+			test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyFailed,
+				"B": test.ReplyDone,
+				"C": test.ReplyDone,
+			}),
+			core.MsgStatusPartialSend,
+		},
+		{
+			"fail send",
+			test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyFailed,
+				"B": test.ReplyFailed,
+				"C": test.ReplyFailed,
+			}),
+			core.MsgStatusFailed,
+		},
+		{
+			"time out",
+			test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyDone,
+				"B": test.ReplyDone,
+				"C": test.ReplyContinue,
+			}),
+			core.MsgStatusTimedOut,
+		},
 	}
 
 	for _, tstCase := range tests {
@@ -109,29 +142,45 @@ func Test_Demultiplex(t *testing.T) {
 		expectedErr    error
 	}{
 		{
-			name:           "succ send",
-			links:          []core.Link{NewA(), NewA(), NewA()},
+			name: "succ send",
+			links: test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyDone,
+				"B": test.ReplyDone,
+				"C": test.ReplyDone,
+			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusDone,
 			expectedErr:    nil,
 		},
 		{
-			name:           "part send",
-			links:          []core.Link{NewA(), NewA(), NewB()},
+			name: "part send",
+			links: test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyDone,
+				"B": test.ReplyDone,
+				"C": test.ReplyFailed,
+			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusPartialSend,
 			expectedErr:    core.ErrMsgPartialSend,
 		},
 		{
-			name:           "fail send",
-			links:          []core.Link{NewB(), NewB(), NewB()},
+			name: "fail send",
+			links: test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyFailed,
+				"B": test.ReplyFailed,
+				"C": test.ReplyFailed,
+			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusFailed,
 			expectedErr:    core.ErrMsgFailed,
 		},
 		{
-			name:           "time out",
-			links:          []core.Link{NewA(), NewA(), NewC()},
+			name: "time out",
+			links: test.InitCountAndReplySet(map[string]test.ReplyType{
+				"A": test.ReplyDone,
+				"B": test.ReplyDone,
+				"C": test.ReplyContinue,
+			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusTimedOut,
 			expectedErr:    core.ErrMsgTimedOut,
@@ -164,7 +213,7 @@ func Test_Demultiplex(t *testing.T) {
 				t.Errorf("Timed out to receive an ack from message")
 			}
 			for ix, link := range testCase.links {
-				linkRcvCnt := link.(CntRcvd).GetRcvCnt()
+				linkRcvCnt := link.(*test.CountAndReply).RcvCnt
 				if linkRcvCnt != testCase.expectedCnts[ix] {
 					t.Errorf("Unexpected rcv count: %d, want: %d",
 						linkRcvCnt, testCase.expectedCnts[ix])
