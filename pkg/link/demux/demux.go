@@ -3,7 +3,6 @@ package link
 import (
 	"math/bits"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -67,76 +66,58 @@ func minInt(a, b int) int {
 
 func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout time.Duration) error {
 
-	totalCnt, succCnt, failCnt := uint32(minInt(bits.OnesCount64(active), len(links))), uint32(0), uint32(0)
-	done := make(chan core.MsgStatus, totalCnt)
-	doneClosed := false
-	doneMutex := sync.Mutex{}
-
+	totalCnt, failCnt := uint8(minInt(bits.OnesCount64(active), len(links))), uint8(0)
 	msgIsSync := core.MsgIsSync(msg)
 
-	defer func() {
-		if msgIsSync {
-			doneMutex.Lock()
-			defer doneMutex.Unlock()
-			doneClosed = true
-		}
-		close(done)
-	}()
-
-	wg := sync.WaitGroup{}
+	wgSend := sync.WaitGroup{}
+	wgAck := sync.WaitGroup{}
 
 	for ix := range links {
 		if (active>>uint(ix))&1 == 0 {
 			continue
 		}
-		wg.Add(1)
+		wgSend.Add(1)
+		wgAck.Add(1)
 		go func(i int) {
 			msgCp := core.CpMessage(msg)
 			err := links[i].Recv(msgCp)
-			wg.Done()
+			wgSend.Done()
 			if !msgIsSync {
 				return
 			}
 			if err != nil {
-				atomic.AddUint32(&failCnt, 1)
-				doneMutex.Lock()
-				defer doneMutex.Unlock()
-				if !doneClosed {
-					done <- core.MsgStatusFailed
+				failCnt++
+			} else {
+				status := <-msgCp.GetAckCh()
+				if status != core.MsgStatusDone {
+					failCnt++
 				}
-				return
 			}
-			status := <-msgCp.GetAckCh()
-			doneMutex.Lock()
-			defer doneMutex.Unlock()
-			if !doneClosed {
-				done <- status
-			}
+			wgAck.Done()
 		}(ix)
 	}
 
-	wg.Wait()
+	wgSend.Wait()
 
 	if msgIsSync {
+		done := make(chan uint8)
+		go func() {
+			defer close(done)
+			wgAck.Wait()
+			done <- totalCnt - failCnt
+		}()
 		brk := time.After(timeout)
-		for i := 0; uint32(i) < totalCnt; i++ {
-			select {
-			case status := <-done:
-				if status == core.MsgStatusDone {
-					atomic.AddUint32(&succCnt, 1)
-				} else {
-					atomic.AddUint32(&failCnt, 1)
+		select {
+		case succCnt := <-done:
+			if succCnt < totalCnt {
+				if succCnt == 0 {
+					return msg.AckFailed()
 				}
-			case <-brk:
-				return msg.AckTimedOut()
+				return msg.AckPartialSend()
 			}
-		}
-
-		if failCnt > 0 {
-			if succCnt == 0 {
-				return msg.AckFailed()
-			}
-			return msg.AckPartialSend()
+			return msg.AckDone()
+		case <-brk:
+			return msg.AckTimedOut()
 		}
 	}
 

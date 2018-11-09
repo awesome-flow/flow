@@ -182,6 +182,7 @@ func BenchmarkDemultiplexSync(b *testing.B) {
 		"B": test.ReplyDone,
 		"C": test.ReplyDone,
 		"D": test.ReplyDone,
+		"E": test.ReplyDone,
 	})
 	for i := 0; i < b.N; i++ {
 		msg := core.NewMessageWithMeta(
@@ -196,12 +197,29 @@ func BenchmarkDemultiplexSync(b *testing.B) {
 	}
 }
 
-func BenchmarkDemultiplexAsync(b *testing.B) {
+func BenchmarkDemultiplexAsyncNoMeta(b *testing.B) {
 	links := test.InitCountAndReplySet(map[string]test.ReplyType{
 		"A": test.ReplyDone,
 		"B": test.ReplyDone,
 		"C": test.ReplyDone,
 		"D": test.ReplyDone,
+		"E": test.ReplyDone,
+	})
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(test.RandStringBytes(1024))
+		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkDemultiplexAsyncCpMeta(b *testing.B) {
+	links := test.InitCountAndReplySet(map[string]test.ReplyType{
+		"A": test.ReplyDone,
+		"B": test.ReplyDone,
+		"C": test.ReplyDone,
+		"D": test.ReplyDone,
+		"E": test.ReplyDone,
 	})
 	for i := 0; i < b.N; i++ {
 		msg := core.NewMessageWithMeta(
