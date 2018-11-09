@@ -9,55 +9,6 @@ import (
 	test "github.com/whiteboxio/flow/pkg/util/test"
 )
 
-type CntRcvd interface {
-	GetRcvCnt() int
-}
-
-type A struct {
-	rcvCnt int
-	*core.Connector
-}
-
-func NewA() *A { return &A{0, core.NewConnector()} }
-
-// This function always marks messages as done
-func (a *A) Recv(msg *core.Message) error {
-	a.rcvCnt++
-	return msg.AckDone()
-}
-
-func (a *A) GetRcvCnt() int { return a.rcvCnt }
-
-type B struct {
-	rcvCnt int
-	*core.Connector
-}
-
-func NewB() *B { return &B{0, core.NewConnector()} }
-
-// This function always marks messages as failed
-func (b *B) Recv(msg *core.Message) error {
-	b.rcvCnt++
-	return msg.AckFailed()
-}
-
-func (b *B) GetRcvCnt() int { return b.rcvCnt }
-
-type C struct {
-	rcvCnt int
-	*core.Connector
-}
-
-func NewC() *C { return &C{0, core.NewConnector()} }
-
-// This function never acks the message, so it should time out
-func (c *C) Recv(msg *core.Message) error {
-	c.rcvCnt++
-	return nil
-}
-
-func (c *C) GetRcvCnt() int { return c.rcvCnt }
-
 func TestDemux_multiplex(t *testing.T) {
 	tests := []struct {
 		descr  string
@@ -220,5 +171,45 @@ func Test_Demultiplex(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// ===== Benchmarks =====
+
+func BenchmarkDemultiplexSync(b *testing.B) {
+	links := test.InitCountAndReplySet(map[string]test.ReplyType{
+		"A": test.ReplyDone,
+		"B": test.ReplyDone,
+		"C": test.ReplyDone,
+		"D": test.ReplyDone,
+	})
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessageWithMeta(
+			map[string]interface{}{
+				core.MsgMetaKeySync: "true",
+			},
+			test.RandStringBytes(1024),
+		)
+		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkDemultiplexAsync(b *testing.B) {
+	links := test.InitCountAndReplySet(map[string]test.ReplyType{
+		"A": test.ReplyDone,
+		"B": test.ReplyDone,
+		"C": test.ReplyDone,
+		"D": test.ReplyDone,
+	})
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessageWithMeta(
+			map[string]interface{}{},
+			test.RandStringBytes(1024),
+		)
+		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
+			b.Error(err)
+		}
 	}
 }
