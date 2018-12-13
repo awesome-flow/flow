@@ -6,7 +6,7 @@
 
 The Flow framework is a comprehensive library of primitive building blocks
 and tools that lets one design and build data relays of any complexity. Highly
-inspired by electrical circuit elements design, it provides a clear and
+inspired by electrical circuit engineering primitives, it provides a clear and
 well-defined approach to building message pipelines of any nature. One can think
 of Flow as LEGO in the world of data: a set of primitive reusable building
 bricks which are gathered together in a sophisticated assembly.
