@@ -341,9 +341,9 @@ See [Flow plugins](https://github.com/whiteboxio/flow-plugins).
 
 ## Copyright
 
-This software is created by Oleg Sidorov in 2018. It uses some ideas and code
-samples written by Ivan Kruglov and Damian Gryski and is mostly inspired by
-their work.
+This software is created by Oleg Sidorov in 2018–2019. It uses some ideas and code
+samples written by Ivan Kruglov and Damian Gryski and is partially inspired by
+their work. The major concept is inspired by GStreamer pipeline ecosystem.
 
 This software is distributed under under MIT license. See LICENSE file for full
 license text.
