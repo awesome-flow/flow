@@ -73,7 +73,7 @@ Flow comes with a very compact dictionary or terms which are widely used in this
 documentation.
 
 First of all, Flow is here to pass some data around. A unit of data is a *message*.
-Every Flow program is a singular *pipeline*, which is built of primitives: we call
+Every Flow program is a single *pipeline*, which is built of primitives: we call
 them *links*. An example of a link: UDP receiver, router, multiplexer, etc. Links
 are connectable to each other, and the connecting elements are called *connectors*.
 Connectors are mono-directional: they pass messages in one direction from
