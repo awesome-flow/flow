@@ -10,8 +10,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	event "github.com/whiteboxio/flow/pkg/util/file/event"
-	vf "github.com/whiteboxio/flow/pkg/util/file/volatile_file"
+	event "github.com/awesome-flow/flow/pkg/util/file/event"
+	vf "github.com/awesome-flow/flow/pkg/util/file/volatile_file"
 )
 
 type RemoteHttpFile struct {

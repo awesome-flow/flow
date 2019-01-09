@@ -8,9 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/whiteboxio/flow/pkg/core"
-	demux "github.com/whiteboxio/flow/pkg/link/demux"
-	hash "github.com/whiteboxio/flow/pkg/util/hash"
+	"github.com/awesome-flow/flow/pkg/core"
+	demux "github.com/awesome-flow/flow/pkg/link/demux"
+	hash "github.com/awesome-flow/flow/pkg/util/hash"
 )
 
 type Replicator struct {

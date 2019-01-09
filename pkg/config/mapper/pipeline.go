@@ -3,7 +3,7 @@ package config_mapper
 import (
 	"fmt"
 
-	"github.com/whiteboxio/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/config"
 )
 
 func GetPipelineCfg() (map[string]config.CfgBlockPipeline, error) {

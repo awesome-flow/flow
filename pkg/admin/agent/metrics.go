@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/whiteboxio/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/metrics"
 )
 
 func init() {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	file_event "github.com/whiteboxio/flow/pkg/util/file/event"
+	file_event "github.com/awesome-flow/flow/pkg/util/file/event"
 )
 
 func TestVolatileFile_Deploy(t *testing.T) {

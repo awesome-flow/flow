@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/core"
 )
 
 type RingLink struct {

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/whiteboxio/flow/pkg/core"
-	test "github.com/whiteboxio/flow/pkg/util/test"
+	"github.com/awesome-flow/flow/pkg/core"
+	test "github.com/awesome-flow/flow/pkg/util/test"
 )
 
 func TestDemux_multiplex(t *testing.T) {

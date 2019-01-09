@@ -1,6 +1,6 @@
 package sink
 
-import "github.com/whiteboxio/flow/pkg/core"
+import "github.com/awesome-flow/flow/pkg/core"
 
 type Null struct {
 	Name string

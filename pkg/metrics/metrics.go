@@ -9,7 +9,7 @@ import (
 
 	graphite "github.com/marpaia/graphite-golang"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteboxio/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/config"
 )
 
 type Counter struct {

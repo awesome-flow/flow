@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/core"
 )
 
 const (

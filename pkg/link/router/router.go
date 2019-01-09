@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/whiteboxio/flow/pkg/core"
-	"github.com/whiteboxio/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/metrics"
 )
 
 type Router struct {

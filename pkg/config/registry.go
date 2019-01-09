@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	data "github.com/whiteboxio/flow/pkg/util/data"
+	data "github.com/awesome-flow/flow/pkg/util/data"
 )
 
 type Registry struct {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/whiteboxio/flow/pkg/config"
-	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/core"
 )
 
 func TestPipeline_buildComp(t *testing.T) {

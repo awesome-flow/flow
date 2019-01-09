@@ -10,8 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/tidwall/evio"
-	"github.com/whiteboxio/flow/pkg/core"
-	"github.com/whiteboxio/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/metrics"
 )
 
 type transpMode uint8

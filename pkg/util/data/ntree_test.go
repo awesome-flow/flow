@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/core"
 )
 
 type A struct {

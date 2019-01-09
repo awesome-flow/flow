@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteboxio/flow/pkg/admin/agent"
-	"github.com/whiteboxio/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/admin/agent"
+	"github.com/awesome-flow/flow/pkg/config"
 )
 
 type HTTP struct {

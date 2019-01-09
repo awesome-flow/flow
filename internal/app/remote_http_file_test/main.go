@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	remote_file "github.com/whiteboxio/flow/pkg/util/file/remote_http_file"
+	remote_file "github.com/awesome-flow/flow/pkg/util/file/remote_http_file"
 )
 
 type Timestamp struct {

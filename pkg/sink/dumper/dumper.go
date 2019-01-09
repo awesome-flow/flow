@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/core"
 )
 
 type Dumper struct {

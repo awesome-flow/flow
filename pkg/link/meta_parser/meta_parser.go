@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"net/url"
 
-	"github.com/whiteboxio/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/core"
 )
 
 type MetaParser struct {

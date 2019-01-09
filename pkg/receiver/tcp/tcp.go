@@ -10,9 +10,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteboxio/flow/pkg/core"
-	"github.com/whiteboxio/flow/pkg/metrics"
-	evio_rcv "github.com/whiteboxio/flow/pkg/receiver/evio"
+	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/metrics"
+	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
 )
 
 const (

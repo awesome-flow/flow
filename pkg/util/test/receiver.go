@@ -1,6 +1,6 @@
 package test
 
-import "github.com/whiteboxio/flow/pkg/core"
+import "github.com/awesome-flow/flow/pkg/core"
 
 type ReplyType uint8
 

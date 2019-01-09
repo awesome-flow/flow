@@ -6,10 +6,10 @@ import (
 	"os/signal"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteboxio/flow/pkg/config"
-	"github.com/whiteboxio/flow/pkg/config/mapper"
-	"github.com/whiteboxio/flow/pkg/metrics"
-	"github.com/whiteboxio/flow/pkg/pipeline"
+	"github.com/awesome-flow/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/config/mapper"
+	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/pipeline"
 )
 
 const (

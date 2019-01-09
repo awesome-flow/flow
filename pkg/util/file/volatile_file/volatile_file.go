@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/fsnotify/fsnotify"
-	event "github.com/whiteboxio/flow/pkg/util/file/event"
+	event "github.com/awesome-flow/flow/pkg/util/file/event"
 )
 
 const (

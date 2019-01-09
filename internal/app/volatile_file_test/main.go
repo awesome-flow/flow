@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	volatile_file "github.com/whiteboxio/flow/pkg/util/file/volatile_file"
+	volatile_file "github.com/awesome-flow/flow/pkg/util/file/volatile_file"
 )
 
 type VolatileJsonFile struct {

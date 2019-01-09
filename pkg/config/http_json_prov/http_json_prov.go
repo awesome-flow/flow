@@ -8,7 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	registry "github.com/whiteboxio/flow/pkg/config"
+	registry "github.com/awesome-flow/flow/pkg/config"
 )
 
 type HttpJsonOpt uint32
