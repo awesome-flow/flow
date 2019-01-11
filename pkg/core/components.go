@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"runtime"
 	"sync"
+
+	"github.com/awesome-flow/flow/pkg/config"
 )
 
 type Params map[string]interface{}
@@ -20,9 +22,9 @@ type Context struct {
 }
 
 func NewContext() *Context {
-	threadiness := runtime.GOMAXPROCS(-1)
-	msgChannels := make([]chan *Message, threadiness)
-	for i := 0; i < threadiness; i++ {
+	threadiness, _ := config.GetOrDefault("global.system.maxprocs", runtime.GOMAXPROCS(-1))
+	msgChannels := make([]chan *Message, threadiness.(int))
+	for i := 0; i < threadiness.(int); i++ {
 		msgChannels[i] = make(chan *Message)
 	}
 	return &Context{

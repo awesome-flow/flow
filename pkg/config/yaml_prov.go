@@ -66,6 +66,7 @@ const (
 func (y *yamlProv) Setup() error {
 	keys := []string{
 		YML_CFG_KEY_SYS,
+		YML_CFG_KEY_SYS + ".maxprocs",
 		YML_CFG_KEY_COMP,
 		YML_CFG_KEY_PPL,
 	}
@@ -82,12 +83,21 @@ func (y *yamlProv) GetOptions() ProviderOptions {
 }
 
 func (y *yamlProv) GetValue(key string) (interface{}, bool) {
+	if y.cfg == nil {
+		return nil, false
+	}
 	switch key {
 	case YML_CFG_KEY_SYS:
 		if y.cfg.System == nil {
 			return nil, false
 		}
 		return y.cfg.System, true
+
+	case YML_CFG_KEY_SYS + ".maxprocs":
+		if y.cfg.System == nil {
+			return nil, false
+		}
+		return y.cfg.System.Maxprocs, true
 	case YML_CFG_KEY_COMP:
 		if y.cfg.Components == nil {
 			return nil, false

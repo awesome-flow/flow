@@ -1,7 +1,6 @@
 package core
 
 import (
-	//"sync"
 	"testing"
 	"time"
 	//"github.com/awesome-flow/flow/pkg/util/test"
