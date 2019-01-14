@@ -6,11 +6,11 @@ import (
 	"io"
 	"net"
 
-	"github.com/facebookgo/grace/gracenet"
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
+	"github.com/facebookgo/grace/gracenet"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -58,12 +58,12 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	ux := &Unix{name, lstnr, core.NewConnector()}
 	go func() {
 		for {
-			fd, err := lstnr.Accept()
+			conn, err := lstnr.Accept()
 			if err != nil {
 				log.Errorf("Unix listener failed to call accept: %s", err.Error())
 				continue
 			}
-			go unixRecv(ux, fd)
+			go ux.unixRecv(conn)
 		}
 	}()
 	return ux, nil
@@ -79,7 +79,7 @@ func (ux *Unix) ExecCmd(cmd *core.Cmd) error {
 	return nil
 }
 
-func unixRecv(ux *Unix, conn net.Conn) {
+func (ux *Unix) unixRecv(conn net.Conn) {
 	metrics.GetCounter("receiver.unix.conn.opened").Inc(1)
 	reader := bufio.NewReader(conn)
 	for {
