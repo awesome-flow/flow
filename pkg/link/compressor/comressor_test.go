@@ -175,3 +175,156 @@ func TestCompressGzip(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkCompressorGzipBestSpeed(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "gzip", "level": gzip.BestSpeed}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over gzip link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressorGzipBestCompression(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "gzip", "level": gzip.BestCompression}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over gzip link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressorFlateBestSpeed(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "flate", "level": flate.BestSpeed}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressorFlateBestCompression(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "flate", "level": flate.BestCompression}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressorLZW(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "lzw"}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressionZLIBestSpeed(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "zlib", "level": flate.BestSpeed}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressionZLIBestCompression(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "zlib", "level": flate.BestCompression}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressionZSTDBestSpeed(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "zstd", "level": 1}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressionZSTDBestCompression(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "zstd", "level": 19}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
