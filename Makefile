@@ -8,7 +8,7 @@ GOTEST=$(GOCMD) test
 MAKE=make
 
 test:
-	@$(GOTEST) -v ./...
+	@$(GOTEST) -race -v ./...
 
 build:
 	@cd cmd/flowd; $(GOBUILD) -o ../../builds/$(BINARY_NAME) -v
