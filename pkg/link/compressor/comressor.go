@@ -13,12 +13,6 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 )
 
-type CompAlgo uint8
-
-const (
-	CompAlgoGzip CompAlgo = iota
-)
-
 type CoderFunc func([]byte, int) ([]byte, error)
 
 type Compressor struct {
@@ -55,7 +49,10 @@ var Coders = map[string]CoderFunc{
 	},
 	"lzw": func(payload []byte, _ int) ([]byte, error) {
 		var b bytes.Buffer
-		// https://golang.org/src/compress/lzw/writer.go?s=6435:6504#L231
+		// The final digit is the literal codew width. Varies from 2 to
+		// 8 bits. We are using 8 by default here.
+		// See https://golang.org/src/compress/lzw/writer.go#L241
+		// for more details.
 		w := lzw.NewWriter(&b, lzw.MSB, 8)
 		if _, err := w.Write(payload); err != nil {
 			return nil, err
