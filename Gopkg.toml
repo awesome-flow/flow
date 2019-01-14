@@ -45,6 +45,6 @@
   name = "github.com/tidwall/evio"
   branch = "master"
 
-[prune]
-  go-tests = true
-  unused-packages = true
+# [prune]
+#   go-tests = true
+#   unused-packages = true
