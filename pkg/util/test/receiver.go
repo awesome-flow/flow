@@ -1,6 +1,10 @@
 package test
 
-import "github.com/awesome-flow/flow/pkg/core"
+import (
+	"sync"
+
+	"github.com/awesome-flow/flow/pkg/core"
+)
 
 type ReplyType uint8
 
@@ -15,25 +19,8 @@ const (
 	ReplyThrottled
 )
 
-type CountAndReply struct {
-	Name   string
-	RcvCnt int
-	Reply  ReplyType
-	*core.Connector
-}
-
-func NewCountAndReply(name string, reply ReplyType) *CountAndReply {
-	return &CountAndReply{
-		name,
-		0,
-		reply,
-		core.NewConnector(),
-	}
-}
-
-func (car *CountAndReply) Recv(msg *core.Message) error {
-	car.RcvCnt++
-	switch car.Reply {
+func replyToMsgStatus(reply ReplyType, msg *core.Message) error {
+	switch reply {
 	case ReplyDone:
 		return msg.AckDone()
 	case ReplyInvalid:
@@ -51,6 +38,62 @@ func (car *CountAndReply) Recv(msg *core.Message) error {
 	default:
 		return msg.AckContinue()
 	}
+}
+
+type CountAndReply struct {
+	Name   string
+	rcvcnt int
+	reply  ReplyType
+	mx     *sync.Mutex
+	*core.Connector
+}
+
+func NewCountAndReply(name string, reply ReplyType) *CountAndReply {
+	return &CountAndReply{
+		name,
+		0,
+		reply,
+		&sync.Mutex{},
+		core.NewConnector(),
+	}
+}
+
+func (car *CountAndReply) Recv(msg *core.Message) error {
+	car.mx.Lock()
+	defer car.mx.Unlock()
+	car.rcvcnt++
+	return replyToMsgStatus(car.reply, msg)
+}
+
+func (car *CountAndReply) RcvCnt() int {
+	car.mx.Lock()
+	defer car.mx.Unlock()
+	return car.rcvcnt
+}
+
+type RememberAndReply struct {
+	Name    string
+	lastmsg *core.Message
+	reply   ReplyType
+	mx      *sync.Mutex
+	*core.Connector
+}
+
+func NewRememberAndReply(name string, reply ReplyType) *RememberAndReply {
+	return &RememberAndReply{name, nil, reply, &sync.Mutex{}, core.NewConnector()}
+}
+
+func (rar *RememberAndReply) Recv(msg *core.Message) error {
+	rar.mx.Lock()
+	defer rar.mx.Unlock()
+	rar.lastmsg = msg
+	return replyToMsgStatus(rar.reply, msg)
+}
+
+func (rar *RememberAndReply) LastMsg() *core.Message {
+	rar.mx.Lock()
+	defer rar.mx.Unlock()
+	return rar.lastmsg
 }
 
 func InitCountAndReplySet(namereplies map[string]ReplyType) []core.Link {
