@@ -164,7 +164,7 @@ func Test_Demultiplex(t *testing.T) {
 				t.Errorf("Timed out to receive an ack from message")
 			}
 			for ix, link := range testCase.links {
-				linkRcvCnt := link.(*test.CountAndReply).RcvCnt
+				linkRcvCnt := link.(*test.CountAndReply).RcvCnt()
 				if linkRcvCnt != testCase.expectedCnts[ix] {
 					t.Errorf("Unexpected rcv count: %d, want: %d",
 						linkRcvCnt, testCase.expectedCnts[ix])
