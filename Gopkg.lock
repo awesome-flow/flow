@@ -2,10 +2,16 @@
 
 
 [[projects]]
+  name = "github.com/DataDog/zstd"
+  packages = ["."]
+  revision = "c7161f8c63c045cbc7ca051dcc969dd0e4054de2"
+  version = "v1.3.5"
+
+[[projects]]
   name = "github.com/cenk/backoff"
   packages = ["."]
-  revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
-  version = "v2.0.0"
+  revision = "1e4cf3da559842a91afcb6ea6141451e6c30c618"
+  version = "v2.1.1"
 
 [[projects]]
   name = "github.com/cenkalti/backoff"
@@ -20,10 +26,22 @@
   version = "v1.4.7"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/golang/snappy"
+  packages = ["."]
+  revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
   name = "github.com/kavu/go_reuseport"
   packages = ["."]
   revision = "ffa96de2479e10ecd06aca8069bf9c55a86701b5"
   version = "v1.4.0"
+
+[[projects]]
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
+  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
@@ -34,42 +52,36 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "3e01752db0189b9157070a0e1668a620f9a85da2"
-  version = "v1.0.6"
+  revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
+  version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/tidwall/evio"
   packages = [".","internal"]
-  revision = "3db0020933b5ae6646c7d06f3f1e2a012f4969f8"
+  revision = "b353be3a765785dafabbb63a7b25aadec3533946"
+  version = "v1.0.2"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "182538f80094b6a8efaade63a8fd8e0d9d5843dd"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/net"
-  packages = ["context"]
-  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
+  revision = "ff983b9c42bc9fbf91556e191cc8efb585c16908"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "49385e6e15226593f68b26af201feec29d5bba22"
+  revision = "a457fd036447854c0c02e89ea439481bdcf941a2"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3675fe0e8ba48399b6e602f01fec3a43e94f986fbd4c2d5c91ea5ad222242c0b"
+  inputs-digest = "9a03ef288228c9866133eca49e1176c07b6ed4d7829e9fd51032ca2d8940077a"
   solver-name = "gps-cdcl"
   solver-version = 1

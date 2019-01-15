@@ -7,10 +7,21 @@ import (
 	"runtime"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/awesome-flow/flow/pkg/admin"
 	"github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/util/data"
+
+	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
+	http_rcv "github.com/awesome-flow/flow/pkg/receiver/http"
+	tcp_rcv "github.com/awesome-flow/flow/pkg/receiver/tcp"
+	udp_rcv "github.com/awesome-flow/flow/pkg/receiver/udp"
+	unix_rcv "github.com/awesome-flow/flow/pkg/receiver/unix"
+
 	buffer "github.com/awesome-flow/flow/pkg/link/buffer"
+	compressor "github.com/awesome-flow/flow/pkg/link/compressor"
 	demux "github.com/awesome-flow/flow/pkg/link/demux"
 	fanout "github.com/awesome-flow/flow/pkg/link/fanout"
 	meta_parser "github.com/awesome-flow/flow/pkg/link/meta_parser"
@@ -18,18 +29,11 @@ import (
 	replicator "github.com/awesome-flow/flow/pkg/link/replicator"
 	router "github.com/awesome-flow/flow/pkg/link/router"
 	throttler "github.com/awesome-flow/flow/pkg/link/throttler"
-	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
-	http_rcv "github.com/awesome-flow/flow/pkg/receiver/http"
-	tcp_rcv "github.com/awesome-flow/flow/pkg/receiver/tcp"
-	udp_rcv "github.com/awesome-flow/flow/pkg/receiver/udp"
-	unix_rcv "github.com/awesome-flow/flow/pkg/receiver/unix"
+
 	dumper_sink "github.com/awesome-flow/flow/pkg/sink/dumper"
 	null_sink "github.com/awesome-flow/flow/pkg/sink/null"
 	tcp_sink "github.com/awesome-flow/flow/pkg/sink/tcp"
 	udp_sink "github.com/awesome-flow/flow/pkg/sink/udp"
-	"github.com/awesome-flow/flow/pkg/util/data"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type Pipeline struct {
@@ -57,6 +61,7 @@ var (
 		"link.replicator":  replicator.New,
 		"link.buffer":      buffer.New,
 		"link.meta_parser": meta_parser.New,
+		"link.compressor":  compressor.New,
 
 		"sink.dumper": dumper_sink.New,
 		"sink.tcp":    tcp_sink.New,
