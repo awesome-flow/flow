@@ -1,6 +1,7 @@
 package core
 
 import (
+	"sync"
 	"testing"
 	"time"
 	//"github.com/awesome-flow/flow/pkg/util/test"
@@ -29,16 +30,25 @@ func (a *A) Recv(*Message) error {
 
 type B struct {
 	rcvCnt int
+	mx     *sync.Mutex
 	*Connector
 }
 
 func NewB() *B {
-	return &B{0, NewConnector()}
+	return &B{0, &sync.Mutex{}, NewConnector()}
 }
 
 func (b *B) Recv(msg *Message) error {
+	b.mx.Lock()
+	defer b.mx.Unlock()
 	b.rcvCnt++
 	return b.Send(msg)
+}
+
+func (b *B) RcvCnt() int {
+	b.mx.Lock()
+	defer b.mx.Unlock()
+	return b.rcvCnt
 }
 
 type C struct {
@@ -99,7 +109,7 @@ func Test3ConnectedLinks(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		t.Fatal("Failed to receive the message in C")
 	}
-	if b.rcvCnt != 1 {
+	if b.RcvCnt() != 1 {
 		t.Fatalf("Unexpected rcv counter in B: %d", b.rcvCnt)
 	}
 }
