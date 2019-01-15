@@ -3,46 +3,55 @@ package receiver
 import (
 	"net"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
 
-type A struct {
-	lastMsg []byte
-	*core.Connector
-}
-
-func NewA() *A {
-	return &A{nil, core.NewConnector()}
-}
-
-func (a *A) Recv(msg *core.Message) error {
-	a.lastMsg = msg.Payload
-	return msg.AckDone()
-}
+const (
+	DefaultMessageSize = 1024
+)
 
 func TestUnix_unixRecv(t *testing.T) {
 	path := "/tmp/flow.sock"
 	defer os.Remove(path)
-	testRcv := NewA()
-	payload := "hello world" + "\n"
+	testRcv := testutils.NewRememberAndReply("rar", testutils.ReplyDone)
+	payload := append(testutils.RandStringBytes(DefaultMessageSize), '\n')
 	unix, err := New("test_unix", core.Params{"path": path}, core.NewContext())
 	if err != nil {
 		t.Fatalf("Failed to initialize unix receiver: %s", err.Error())
 	}
+
 	unix.ConnectTo(testRcv)
-	time.Sleep(10 * time.Millisecond)
+
 	conn, connErr := net.Dial("unix", path)
 	if connErr != nil {
 		t.Fatalf("Unable to connect to the unix socket: %s", connErr.Error())
 	}
-	if _, err := conn.Write([]byte(payload)); err != nil {
+
+	if _, err := conn.Write(payload); err != nil {
 		t.Fatalf("Unable to write data to unix socket: %s", err.Error())
 	}
-	time.Sleep(10 * time.Millisecond)
-	if string(testRcv.lastMsg) != payload {
-		t.Fatalf("Unexpected contents in receiver last message: %s", testRcv.lastMsg)
+
+	received := make(chan struct{})
+	go func() {
+		for {
+			if testRcv.LastMsg() != nil {
+				received <- struct{}{}
+			}
+		}
+	}()
+
+	select {
+	case <-received:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timed out to receive the message")
+	}
+
+	if !reflect.DeepEqual(testRcv.LastMsg().Payload, payload) {
+		t.Fatalf("Unexpected contents in receiver last message: %s", testRcv.LastMsg().Payload)
 	}
 }

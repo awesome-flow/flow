@@ -3,10 +3,11 @@ package link
 import (
 	"math/bits"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -66,7 +67,7 @@ func minInt(a, b int) int {
 
 func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout time.Duration) error {
 
-	totalCnt, failCnt := uint8(minInt(bits.OnesCount64(active), len(links))), uint8(0)
+	totalCnt, failCnt := uint32(minInt(bits.OnesCount64(active), len(links))), uint32(0)
 	msgIsSync := core.MsgIsSync(msg)
 
 	wgSend := sync.WaitGroup{}
@@ -86,11 +87,11 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 				return
 			}
 			if err != nil {
-				failCnt++
+				atomic.AddUint32(&failCnt, 1)
 			} else {
 				status := <-msgCp.GetAckCh()
 				if status != core.MsgStatusDone {
-					failCnt++
+					atomic.AddUint32(&failCnt, 1)
 				}
 			}
 			wgAck.Done()
@@ -100,7 +101,7 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 	wgSend.Wait()
 
 	if msgIsSync {
-		done := make(chan uint8)
+		done := make(chan uint32)
 		go func() {
 			defer close(done)
 			wgAck.Wait()
@@ -110,7 +111,7 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 		select {
 		case succCnt := <-done:
 			if succCnt < totalCnt {
-				if succCnt == 0 {
+				if atomic.LoadUint32(&succCnt) == 0 {
 					return msg.AckFailed()
 				}
 				return msg.AckPartialSend()

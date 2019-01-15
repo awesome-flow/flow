@@ -7,11 +7,13 @@ import (
 	"testing"
 )
 
-type dummy struct{}
+type dummy struct {
+	ch rune
+}
 
 func TestNTree_buildCompTree(t *testing.T) {
 
-	a, b, c, d, e, f := &dummy{}, &dummy{}, &dummy{}, &dummy{}, &dummy{}, &dummy{}
+	a, b, c, d, e, f := &dummy{'a'}, &dummy{'b'}, &dummy{'c'}, &dummy{'d'}, &dummy{'e'}, &dummy{'f'}
 
 	tree := &NTree{}
 	aNode := tree.FindOrInsert(a)
@@ -35,7 +37,7 @@ func TestNTree_buildCompTree(t *testing.T) {
 	}
 	nodeA, parentNodeB := tree.Find(a), tree.FindParent(b)
 	if nodeA != parentNodeB {
-		t.Errorf("Expected node A to be the parent of node B")
+		t.Errorf("Expected node A to be the parent of node B, %#v, %#v", nodeA, parentNodeB)
 	}
 	parentNodeC, parentNodeD, nodeA := tree.FindParent(c), tree.FindParent(d), tree.Find(a)
 	if nodeA != parentNodeC || nodeA != parentNodeD {

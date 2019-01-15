@@ -1,8 +1,11 @@
 package data
 
+import "sync"
+
 type NTree struct {
 	value    interface{}
 	children []*NTree
+	mx       sync.Mutex
 }
 
 func (t *NTree) GetValue() interface{} {
@@ -10,6 +13,13 @@ func (t *NTree) GetValue() interface{} {
 }
 
 func (t *NTree) Find(val interface{}) *NTree {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+
+	return t.findUnsafe(val)
+}
+
+func (t *NTree) findUnsafe(val interface{}) *NTree {
 	if t.value == val {
 		return t
 	}
@@ -22,6 +32,13 @@ func (t *NTree) Find(val interface{}) *NTree {
 }
 
 func (t *NTree) FindParent(val interface{}) *NTree {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+
+	return t.findParentUnsafe(val)
+}
+
+func (t *NTree) findParentUnsafe(val interface{}) *NTree {
 	for _, child := range t.children {
 		if child.value == val {
 			return t
@@ -36,11 +53,12 @@ func (t *NTree) FindParent(val interface{}) *NTree {
 }
 
 func (t *NTree) FindCommonParent(vals ...interface{}) *NTree {
+	t.mx.Lock()
+	defer t.mx.Unlock()
 
 	nodes := make([]*NTree, len(vals))
-
 	for ix, val := range vals {
-		nodes[ix] = t.Find(val)
+		nodes[ix] = t.findUnsafe(val)
 		// If one of the nodes is the root, we return it right away
 		if nodes[ix] == t {
 			return t
@@ -62,6 +80,7 @@ func (t *NTree) findLCA(t1 *NTree, t2 *NTree) *NTree {
 	if t == t1 || t == t2 {
 		return t
 	}
+
 	finds := make([]*NTree, 0)
 	for _, chld := range t.children {
 		if res := chld.findLCA(t1, t2); res != nil {
@@ -80,7 +99,10 @@ func (t *NTree) findLCA(t1 *NTree, t2 *NTree) *NTree {
 }
 
 func (t *NTree) FindOrInsert(val interface{}) *NTree {
-	if ptr := t.Find(val); ptr == nil {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+
+	if ptr := t.findUnsafe(val); ptr == nil {
 		ptr = &NTree{value: val}
 		t.children = append(t.children, ptr)
 		return ptr
@@ -90,7 +112,10 @@ func (t *NTree) FindOrInsert(val interface{}) *NTree {
 }
 
 func (t *NTree) Detach(val interface{}) *NTree {
-	if ptr := t.FindParent(val); ptr != nil {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+
+	if ptr := t.findParentUnsafe(val); ptr != nil {
 		for ix, chld := range ptr.children {
 			if val == chld.value {
 				res := ptr.children[ix]
@@ -103,6 +128,9 @@ func (t *NTree) Detach(val interface{}) *NTree {
 }
 
 func (t *NTree) PostTraversal() []interface{} {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+
 	stack := make([]interface{}, 0)
 	for _, chld := range t.children {
 		stack = append(stack, chld.PostTraversal()...)
@@ -114,6 +142,9 @@ func (t *NTree) PostTraversal() []interface{} {
 }
 
 func (t *NTree) PreTraversal() []interface{} {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+
 	stack := make([]interface{}, 0)
 	if t.value != nil {
 		stack = append(stack, t.value)

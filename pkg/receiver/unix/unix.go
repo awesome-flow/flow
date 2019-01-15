@@ -6,11 +6,12 @@ import (
 	"io"
 	"net"
 
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
-	"github.com/facebookgo/grace/gracenet"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -24,6 +25,7 @@ var (
 
 type Unix struct {
 	Name     string
+	path     string
 	listener net.Listener
 	*core.Connector
 }
@@ -50,23 +52,31 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 
 	log.Info("Instantiating standard backend for UNIX receiver")
 
-	net := &gracenet.Net{}
 	lstnr, err := net.Listen("unix", path.(string))
 	if err != nil {
 		return nil, err
 	}
-	ux := &Unix{name, lstnr, core.NewConnector()}
+
+	ux := &Unix{name, path.(string), lstnr, core.NewConnector()}
 	go func() {
-		for {
-			conn, err := lstnr.Accept()
-			if err != nil {
-				log.Errorf("Unix listener failed to call accept: %s", err.Error())
-				continue
-			}
-			go ux.unixRecv(conn)
-		}
+		ux.connect()
 	}()
 	return ux, nil
+}
+
+func (ux *Unix) connect() error {
+	if err := backoff.Retry(func() error {
+		conn, err := ux.listener.Accept()
+		if err != nil {
+			return err
+		}
+		go ux.unixRecv(conn)
+		return nil
+	}, backoff.NewExponentialBackOff()); err != nil {
+		// Unrecoverable error, giving up
+		return err
+	}
+	return nil
 }
 
 func (ux *Unix) ExecCmd(cmd *core.Cmd) error {
@@ -92,6 +102,10 @@ func (ux *Unix) unixRecv(conn net.Conn) {
 			}
 			log.Warnf("Unix conn Read failed: %s", err)
 			metrics.GetCounter("receiver.unix.msg.failed").Inc(1)
+			if err := ux.connect(); err != nil {
+				panic(err.Error())
+			}
+			return
 		}
 
 		if len(data) == 0 {

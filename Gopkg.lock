@@ -8,10 +8,10 @@
   version = "v2.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/facebookgo/grace"
-  packages = ["gracenet"]
-  revision = "75cf19382434e82df4dd84953f566b8ad23d6e9e"
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  revision = "1e4cf3da559842a91afcb6ea6141451e6c30c618"
+  version = "v2.1.1"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -70,6 +70,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0b95ae07fc810a88160189fe9686b827e7e137bc282023bb40843620ce94e2fa"
+  inputs-digest = "3675fe0e8ba48399b6e602f01fec3a43e94f986fbd4c2d5c91ea5ad222242c0b"
   solver-name = "gps-cdcl"
   solver-version = 1
