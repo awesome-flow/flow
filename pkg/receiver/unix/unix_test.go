@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
 	testutils "github.com/awesome-flow/flow/pkg/util/test"
@@ -43,7 +44,12 @@ func TestUnix_unixRecv(t *testing.T) {
 			}
 		}
 	}()
-	<-received
+
+	select {
+	case <-received:
+	case <-time.After(10 * time.Millisecond):
+		t.Fatalf("timed out to receive the message")
+	}
 
 	if !reflect.DeepEqual(testRcv.LastMsg().Payload, payload) {
 		t.Fatalf("Unexpected contents in receiver last message: %s", testRcv.LastMsg().Payload)
