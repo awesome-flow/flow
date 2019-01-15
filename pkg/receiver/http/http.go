@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -53,7 +53,6 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 			default:
 				panic(fmt.Sprintf("HTTP server critical error: %s", err))
 			}
-
 		}
 	}()
 
@@ -63,7 +62,8 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 func (h *HTTP) ExecCmd(cmd *core.Cmd) error {
 	switch cmd.Code {
 	case core.CmdCodeStop:
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 		return h.Server.Shutdown(ctx)
 	}
 	return nil
@@ -108,7 +108,6 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 
 	select {
 	case s := <-msg.GetAckCh():
-		fmt.Printf("Received a message status update\n")
 		httpCode, httpResp := status2resp(s)
 		metrics.GetCounter(
 			"receiver.http." + fmt.Sprintf("ack_%d", httpCode)).Inc(1)
