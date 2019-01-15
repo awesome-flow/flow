@@ -173,7 +173,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 
 			select {
 			case <-received:
-			case <-time.After(10 * time.Millisecond):
+			case <-time.After(100 * time.Millisecond):
 				t.Fatalf("Failed to receive the message")
 			}
 

@@ -47,7 +47,7 @@ func TestUnix_unixRecv(t *testing.T) {
 
 	select {
 	case <-received:
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		t.Fatalf("timed out to receive the message")
 	}
 

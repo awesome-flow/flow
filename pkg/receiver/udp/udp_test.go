@@ -51,7 +51,7 @@ func TestUDP_recv(t *testing.T) {
 
 	select {
 	case <-received:
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		t.Fatalf("Timed out to receive the message")
 	}
 
