@@ -2,26 +2,27 @@ package link
 
 import (
 	"fmt"
-	"math"
 	"sync"
 	"sync/atomic"
-	"time"
+	_ "unsafe"
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 )
 
-type Throttler struct {
-	Name    string
-	key     string
-	rps     uint64
-	buckets *sync.Map
-	*core.Connector
-}
+//go:noescape
+//go:linkname nanotime runtime.nanotime
+func nanotime() int64
 
-type stts struct {
-	budget    int64
-	timestamp int64
+// GCRA-based throttler https://jameslao.com/post/gcra-rate-limiting/
+type Throttler struct {
+	Name           string
+	key            string
+	messageCost    int64
+	bucketCapacity int64
+	mx             sync.RWMutex
+	buckets        map[string]*int64
+	*core.Connector
 }
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
@@ -29,18 +30,79 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	if !rpsOk {
 		return nil, fmt.Errorf("Throttler params are missing rps")
 	}
+
+	const nanosecondsPerSecond = 1000000000
+	nanosecondsPerRequest := nanosecondsPerSecond / int64(rps.(int)) // T
+	bucketCapacity := nanosecondsPerSecond - nanosecondsPerRequest   // τ
+
 	th := &Throttler{
 		name,
 		"",
-		uint64(rps.(int)),
-		&sync.Map{},
+		nanosecondsPerRequest,
+		bucketCapacity,
+		sync.RWMutex{},
+		map[string]*int64{"": new(int64)},
 		core.NewConnector(),
 	}
+	*th.buckets[""] = nanotime() - 1
+
 	if key, keyOk := params["msg_key"]; keyOk {
 		th.key = key.(string)
 	}
 
 	return th, nil
+}
+
+func (th *Throttler) getOrCreateBucket(key string) *int64 {
+	th.mx.RLock()
+	bucket, ok := th.buckets[key]
+	th.mx.RUnlock()
+
+	if ok {
+		return bucket
+	}
+
+	// Slow path: create a new bucket and try to insert it
+	newBucket := new(int64)
+	*newBucket = nanotime() - 1
+
+	th.mx.Lock()
+	defer th.mx.Unlock()
+
+	bucket, ok = th.buckets[key]
+	if ok {
+		return bucket
+	} else {
+		th.buckets[key] = newBucket
+		return newBucket
+	}
+}
+
+func (th *Throttler) shouldPassMessageWithKey(key string) bool {
+	messageCost := th.messageCost       // T
+	bucketCapacity := th.bucketCapacity // τ
+	bucket := th.getOrCreateBucket(key)
+
+	for loopBreaker := 0; loopBreaker < 10; loopBreaker++ {
+		now := nanotime()
+		tat := atomic.LoadInt64(bucket) // theoretical arrival time
+		if now < tat-bucketCapacity {
+			return false
+		}
+
+		var newTat int64
+		if now > tat {
+			newTat = now + messageCost
+		} else {
+			newTat = tat + messageCost
+		}
+
+		if atomic.CompareAndSwapInt64(bucket, tat, newTat) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (th *Throttler) Recv(msg *core.Message) error {
@@ -50,40 +112,12 @@ func (th *Throttler) Recv(msg *core.Message) error {
 			msgKey = v.(string)
 		}
 	}
-	bucket, _ := th.buckets.LoadOrStore(msgKey, &stts{
-		budget:    int64(th.rps),
-		timestamp: time.Now().UnixNano(),
-	})
-	var t, prevTimestamp, budgetExtra, newBudget, budget int64
-	loopBreaker := 10
 
-	for {
-		if loopBreaker < 0 {
-			break
-		}
-		t = time.Now().UnixNano()
-		prevTimestamp = atomic.LoadInt64(&(bucket.(*stts)).timestamp)
-		budget = atomic.LoadInt64(&(bucket.(*stts)).budget)
-		budgetExtra = int64(
-			math.Round(float64(t-prevTimestamp) *
-				float64(th.rps) / float64(time.Second.Nanoseconds())))
-		newBudget = budget + budgetExtra - 1
-		if newBudget < 0 {
-			break
-		}
-		if newBudget > int64(th.rps) {
-			newBudget = int64(th.rps)
-		}
-		if atomic.CompareAndSwapInt64(&(bucket.(*stts)).timestamp, prevTimestamp, t) {
-			// TODO: Race condition here
-			atomic.StoreInt64(&(bucket.(*stts)).budget, newBudget)
-			metrics.GetCounter(
-				"links.throttler.msg." + th.Name + "_pass").Inc(1)
-			return th.Send(msg)
-		}
-		loopBreaker--
+	if th.shouldPassMessageWithKey(msgKey) {
+		metrics.GetCounter("links.throttler.msg." + th.Name + "_pass").Inc(1)
+		return th.Send(msg)
+	} else {
+		metrics.GetCounter("links.throttler.msg." + th.Name + "_reject").Inc(1)
+		return msg.AckThrottled()
 	}
-
-	metrics.GetCounter("links.throttler.msg." + th.Name + "_reject").Inc(1)
-	return msg.AckThrottled()
 }
