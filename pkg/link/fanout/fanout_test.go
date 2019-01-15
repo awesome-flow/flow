@@ -2,6 +2,7 @@ package link
 
 import (
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,9 +34,17 @@ func TestFanout_Send(t *testing.T) {
 	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
+	wg := &sync.WaitGroup{}
 	for i := 0; i < 3; i++ {
-		ft.Send(core.NewMessage([]byte{}))
+		wg.Add(1)
+		msg := core.NewMessage([]byte{})
+		go func() {
+			<-msg.GetAckCh()
+			wg.Done()
+		}()
+		ft.Send(msg)
 	}
+	wg.Wait()
 	if a1.RcvCnt() != 1 && a2.RcvCnt() != 1 && a3.RcvCnt() != 1 {
 		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.RcvCnt(), a2.RcvCnt(), a3.RcvCnt())
 	}
@@ -51,9 +60,17 @@ func TestFanout_Recv(t *testing.T) {
 	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
+	wg := &sync.WaitGroup{}
 	for i := 0; i < 3; i++ {
-		ft.Recv(core.NewMessage([]byte{}))
+		wg.Add(1)
+		msg := core.NewMessage([]byte{})
+		go func() {
+			<-msg.GetAckCh()
+			wg.Done()
+		}()
+		ft.Send(msg)
 	}
+	wg.Wait()
 	if a1.RcvCnt() != 1 && a2.RcvCnt() != 1 && a3.RcvCnt() != 1 {
 		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.RcvCnt(), a2.RcvCnt(), a3.RcvCnt())
 	}
