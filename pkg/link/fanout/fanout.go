@@ -41,13 +41,16 @@ func (ft *Fanout) ConnectTo(core.Link) error {
 
 func (ft *Fanout) fanout(ch chan *core.Message) {
 	for msg := range ch {
+		ft.Lock()
 		head := ft.ringHead
 		if head == nil {
 			msg.AckFailed()
+			ft.Unlock()
 			continue
 		}
 		head.self.Recv(msg)
 		ft.ringHead = head.next
+		ft.Unlock()
 	}
 }
 
@@ -141,11 +144,11 @@ func (ft *Fanout) removeRingLink(rl *RingLink) error {
 }
 
 func (ft *Fanout) RingSize() int {
+	ft.Lock()
+	defer ft.Unlock()
 	if ft.ringHead == nil {
 		return 0
 	}
-	ft.Lock()
-	defer ft.Unlock()
 	cnt := 1
 	head := ft.ringHead
 	ptr := head.next

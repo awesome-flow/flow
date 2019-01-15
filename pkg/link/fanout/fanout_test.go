@@ -1,31 +1,20 @@
 package link
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
-
-type A struct {
-	rcvd int
-	*core.Connector
-}
-
-func NewA() *A { return &A{0, core.NewConnector()} }
-func (a *A) Recv(msg *core.Message) error {
-	a.rcvd++
-	return msg.AckDone()
-}
 
 func TestFanout_RingSize(t *testing.T) {
 	ft, ftErr := New("fanout", core.Params{}, core.NewContext())
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
-	a1, a2, a3 := NewA(), NewA(), NewA()
+	a1, a2, a3 := testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone)
 	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
@@ -40,15 +29,15 @@ func TestFanout_Send(t *testing.T) {
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
-	a1, a2, a3 := NewA(), NewA(), NewA()
+	a1, a2, a3 := testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone)
 	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
 	for i := 0; i < 3; i++ {
 		ft.Send(core.NewMessage([]byte{}))
 	}
-	if a1.rcvd != 1 && a2.rcvd != 1 && a3.rcvd != 1 {
-		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.rcvd, a2.rcvd, a3.rcvd)
+	if a1.RcvCnt() != 1 && a2.RcvCnt() != 1 && a3.RcvCnt() != 1 {
+		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.RcvCnt(), a2.RcvCnt(), a3.RcvCnt())
 	}
 }
 
@@ -58,15 +47,15 @@ func TestFanout_Recv(t *testing.T) {
 	if ftErr != nil {
 		t.Errorf("Failed to initialize new fanout: %s", ftErr.Error())
 	}
-	a1, a2, a3 := NewA(), NewA(), NewA()
+	a1, a2, a3 := testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone)
 	if linkErr := ft.LinkTo([]core.Link{a1, a2, a3}); linkErr != nil {
 		t.Errorf("Failed to link fanout: %s", linkErr.Error())
 	}
 	for i := 0; i < 3; i++ {
 		ft.Recv(core.NewMessage([]byte{}))
 	}
-	if a1.rcvd != 1 && a2.rcvd != 1 && a3.rcvd != 1 {
-		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.rcvd, a2.rcvd, a3.rcvd)
+	if a1.RcvCnt() != 1 && a2.RcvCnt() != 1 && a3.RcvCnt() != 1 {
+		t.Errorf("Unexpected rcv counters: %d, %d, %d", a1.RcvCnt(), a2.RcvCnt(), a3.RcvCnt())
 	}
 }
 
@@ -75,7 +64,7 @@ func TestFanout_addRingLinkAsHead(t *testing.T) {
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
-	link := NewA()
+	link := testutils.NewCountAndReply("car", testutils.ReplyDone)
 	rl := &RingLink{self: link}
 	ft.(*Fanout).addRingLink(rl)
 	ringSize := ft.(*Fanout).RingSize()
@@ -92,8 +81,8 @@ func TestFanout_addRingLinkAsExtra(t *testing.T) {
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
-	ft.(*Fanout).addRingLink(&RingLink{self: NewA()})
-	link := NewA()
+	ft.(*Fanout).addRingLink(&RingLink{self: testutils.NewCountAndReply("car", testutils.ReplyDone)})
+	link := testutils.NewCountAndReply("car", testutils.ReplyDone)
 	rl := &RingLink{self: link}
 	ft.(*Fanout).addRingLink(rl)
 
@@ -111,8 +100,8 @@ func TestFanout_removeRingLinkAsHead(t *testing.T) {
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
-	ft.(*Fanout).addRingLink(&RingLink{self: NewA()})
-	link := &RingLink{self: NewA()}
+	ft.(*Fanout).addRingLink(&RingLink{self: testutils.NewCountAndReply("car", testutils.ReplyDone)})
+	link := &RingLink{self: testutils.NewCountAndReply("car", testutils.ReplyDone)}
 	ft.(*Fanout).addRingLink(link)
 	if ft.(*Fanout).ringHead != link {
 		t.Fatal("Unexpected ring head")
@@ -131,7 +120,7 @@ func TestFanout_Connections(t *testing.T) {
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize a new fanout: %s", ftErr.Error())
 	}
-	a, b, c := NewA(), NewA(), NewA()
+	a, b, c := testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone)
 	lA, lB, lC := &RingLink{self: a},
 		&RingLink{self: b},
 		&RingLink{self: c}
@@ -245,7 +234,7 @@ func TestFanout_FindLink(t *testing.T) {
 	if ftErr != nil {
 		t.Fatalf("Failed to initialize fanout: %s", ftErr.Error())
 	}
-	a, b, c := NewA(), NewA(), NewA()
+	a, b, c := testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone), testutils.NewCountAndReply("car", testutils.ReplyDone)
 	lA, lB, lC := &RingLink{self: a},
 		&RingLink{self: b},
 		&RingLink{self: c}
@@ -272,13 +261,11 @@ func TestFanout_FindLink(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			if testCase.add != nil {
-				fmt.Println("adding a link")
 				if err := ft.(*Fanout).addRingLink(testCase.add); err != nil {
 					t.Errorf("Unable to add link: %s", err.Error())
 				}
 			}
 			if testCase.remove != nil {
-				fmt.Println("removing a link")
 				if err := ft.(*Fanout).removeRingLink(testCase.remove); err != nil {
 					t.Errorf("Unable to remove link: %s", err.Error())
 				}
