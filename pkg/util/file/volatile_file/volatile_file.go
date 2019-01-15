@@ -7,8 +7,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/fsnotify/fsnotify"
 	event "github.com/awesome-flow/flow/pkg/util/file/event"
+	"github.com/fsnotify/fsnotify"
 )
 
 const (
@@ -23,7 +23,6 @@ type VolatileFile struct {
 }
 
 func New(path string) (*VolatileFile, error) {
-
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
