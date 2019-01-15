@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/DataDog/zstd"
+	"github.com/golang/snappy"
 
 	"github.com/awesome-flow/flow/pkg/core"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
@@ -60,6 +61,8 @@ func compress(payload []byte, format string, level int) []byte {
 		}
 	case "zstd":
 		writer = zstd.NewWriterLevel(&b, level)
+	case "snappy":
+		writer = snappy.NewBufferedWriter(&b)
 	default:
 		panic(fmt.Sprintf("unknown compression format: %s", format))
 	}
@@ -139,6 +142,18 @@ func TestCompressGzip(t *testing.T) {
 			"zstd non-empty string",
 			[]byte(testutil.RandStringBytes(DefaultMessageSize)),
 			"zstd",
+			1,
+		},
+		{
+			"snappy empty string",
+			[]byte{},
+			"snappy",
+			1,
+		},
+		{
+			"snappy non-empty string",
+			[]byte(testutil.RandStringBytes(DefaultMessageSize)),
+			"snappy",
 			1,
 		},
 	}
@@ -315,6 +330,23 @@ func BenchmarkCompressionZSTDBestSpeed(b *testing.B) {
 func BenchmarkCompressionZSTDBestCompression(b *testing.B) {
 	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
 	cmp, err := New("compressor", core.Params{"algo": "zstd", "level": 19}, core.NewContext())
+	if err != nil {
+		panic(err.Error())
+	}
+	cmp.ConnectTo(rcv)
+	payload := []byte(testutil.RandStringBytes(1024))
+	for i := 0; i < b.N; i++ {
+		msg := core.NewMessage(payload)
+		if err := rcv.Recv(msg); err != nil {
+			panic("Error on sending over flate link")
+		}
+		<-msg.GetAckCh()
+	}
+}
+
+func BenchmarkCompressionSnappy(b *testing.B) {
+	rcv := testutil.NewCountAndReply("counter", testutil.ReplyDone)
+	cmp, err := New("compressor", core.Params{"algo": "snappy"}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}

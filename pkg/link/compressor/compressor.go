@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/DataDog/zstd"
+	"github.com/golang/snappy"
 
 	"github.com/awesome-flow/flow/pkg/core"
 )
@@ -81,9 +82,18 @@ var Coders = map[string]CoderFunc{
 		w.Close()
 		return b.Bytes(), nil
 	},
+	"snappy": func(payload []byte, _ int) ([]byte, error) {
+		var b bytes.Buffer
+		w := snappy.NewBufferedWriter(&b)
+		if _, err := w.Write(payload); err != nil {
+			return nil, err
+		}
+		w.Close()
+		return b.Bytes(), nil
+	},
 }
 
-func New(name string, params core.Params, ctx *core.Context) (*Compressor, error) {
+func New(name string, params core.Params, ctx *core.Context) (core.Link, error) {
 	var coder CoderFunc
 	if algo, ok := params["algo"]; ok {
 		coder, ok = Coders[algo.(string)]

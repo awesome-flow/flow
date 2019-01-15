@@ -26,6 +26,12 @@
   version = "v1.4.7"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/golang/snappy"
+  packages = ["."]
+  revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
   name = "github.com/kavu/go_reuseport"
   packages = ["."]
   revision = "ffa96de2479e10ecd06aca8069bf9c55a86701b5"
@@ -76,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1fbd411b32fa0703cc04566779ec4f7ed1f1ac97d06686649db92eef18755158"
+  inputs-digest = "9a03ef288228c9866133eca49e1176c07b6ed4d7829e9fd51032ca2d8940077a"
   solver-name = "gps-cdcl"
   solver-version = 1
