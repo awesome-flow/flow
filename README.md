@@ -2,6 +2,8 @@
 
 ![logo](https://github.com/whiteboxio/flow/blob/master/flow.png)
 
+[![Build Status](https://travis-ci.com/awesome-flow/flow.svg?branch=master)](https://travis-ci.com/awesome-flow/flow)
+
 ## Intro
 
 The Flow framework is a comprehensive library of primitive building blocks
