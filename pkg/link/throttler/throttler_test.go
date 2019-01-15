@@ -12,6 +12,10 @@ type Nil struct {
 	*core.Connector
 }
 
+const (
+	DefaultCntrPrecision = 0.01 // 0.5%
+)
+
 func NewNil() *Nil                          { return &Nil{core.NewConnector()} }
 func (n *Nil) Recv(msg *core.Message) error { return msg.AckDone() }
 
@@ -121,10 +125,14 @@ func TestThrottler_Recv_Parallel(t *testing.T) {
 				wantCnt = test.rpsLimit
 			}
 
-			if cnt != wantCnt {
+			if !withinPrecisionInterval(cnt, wantCnt, DefaultCntrPrecision) {
 				t.Errorf("Unexpected amount of succ sends: %d, want: %d", cnt, wantCnt)
 			}
 		})
 	}
+}
 
+func withinPrecisionInterval(want, got int, precision float32) bool {
+	return (1+precision)*float32(want) >= float32(got) &&
+		(1-precision)*float32(want) <= float32(got)
 }
