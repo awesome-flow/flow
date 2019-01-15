@@ -5,25 +5,13 @@ package data
 import (
 	"reflect"
 	"testing"
-
-	"github.com/awesome-flow/flow/pkg/core"
 )
 
-type A struct {
-	*core.Connector
-}
-
-func NewA() *A {
-	return &A{core.NewConnector()}
-}
+type dummy struct{}
 
 func TestNTree_buildCompTree(t *testing.T) {
-	// ppl := map[string]config.CfgBlockPipeline{
-	// 	"A": config.CfgBlockPipeline{Connect: "B", Links: []string{"C", "D"}},
-	// 	"B": config.CfgBlockPipeline{Routes: map[string]string{"e": "E", "f": "F"}},
-	// }
 
-	a, b, c, d, e, f := NewA(), NewA(), NewA(), NewA(), NewA(), NewA()
+	a, b, c, d, e, f := &dummy{}, &dummy{}, &dummy{}, &dummy{}, &dummy{}, &dummy{}
 
 	tree := &NTree{}
 	aNode := tree.FindOrInsert(a)
