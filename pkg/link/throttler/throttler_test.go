@@ -13,7 +13,7 @@ type Nil struct {
 }
 
 const (
-	DefaultCntrPrecision = 0.01 // 0.5%
+	DefaultCntrPrecision = 0.1 // 10%
 )
 
 func NewNil() *Nil                          { return &Nil{core.NewConnector()} }
