@@ -10,7 +10,6 @@ type Counter struct {
 
 func (cntr *Counter) Inc(delta int64) {
 	atomic.AddInt64(&cntr.v, delta)
-	// cntr.v++  //FIXME remove that!
 }
 
 func (cntr *Counter) get() int64 {

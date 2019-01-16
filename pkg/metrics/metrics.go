@@ -31,14 +31,15 @@ func Initialize(sysCfg *config.CfgBlockSystem) error {
 	return nil
 }
 
-//Given same name returns same pointer to Counter,
+//Given same name returns pointer to the same Counter,
 // which can be used whole program lifetime.
+// FIXME using same name for different metrics types will panic.
 func GetCounter(name string) *Counter {
 	cntr, _ := counters.LoadOrStore(name, &Counter{})
 	return cntr.(*Counter)
 }
 
-//Given same name returns same pointer to Counter,
+//Given same name returns pointer to the same Gauge,
 // which can be used whole program lifetime.
 func GetGauge(name string) *Gauge {
 	gauge, _ := counters.LoadOrStore(name, &Gauge{})
