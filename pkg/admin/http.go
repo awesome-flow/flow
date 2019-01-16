@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type AdminHTTP struct {
+type HttpMux struct {
 	server *http.Server
 }
 
@@ -23,13 +23,13 @@ func newAdminSrvMx(cfg *config.CfgBlockSystem) *http.ServeMux {
 	return srvMx
 }
 
-func NewHTTP(cfg *config.CfgBlockSystem) (*HTTP, error) {
+func NewHttpMux(cfg *config.CfgBlockSystem) (*HttpMux, error) {
 	srvMx := newAdminSrvMx(cfg)
 	server := &http.Server{
 		Addr:    cfg.Admin.BindAddr,
 		Handler: srvMx,
 	}
-	h := &AdminHTTP{server}
+	h := &HttpMux{server}
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
@@ -45,7 +45,7 @@ func NewHTTP(cfg *config.CfgBlockSystem) (*HTTP, error) {
 	return h, nil
 }
 
-func (h *HTTP) Stop() error {
+func (h *HttpMux) Stop() error {
 	// TODO(olegs): shut down the agents gracefully
 	return nil
 }

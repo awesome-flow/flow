@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -138,7 +138,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 			continue
 		}
 
-		sync, ok := msg.GetMeta("sync")
+		sync, ok := msg.Meta("sync")
 		isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
 		if !isSync {
 			metrics.GetCounter("receiver.tcp.msg.accepted").Inc(1)

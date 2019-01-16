@@ -88,7 +88,7 @@ func TestMetaParser_Recv(t *testing.T) {
 				t.Errorf("Timed out to send message")
 			}
 
-			msgMeta := testRcv.lastMsg.GetMetaAll()
+			msgMeta := testRcv.lastMsg.MetaAll()
 			if !reflect.DeepEqual(msgMeta, testCase.expMeta) {
 				t.Errorf("Unexpected message meta: %+v, want: %+v",
 					msgMeta, testCase.expMeta)

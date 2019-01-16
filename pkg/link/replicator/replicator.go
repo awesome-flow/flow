@@ -86,7 +86,7 @@ func (repl *Replicator) replicate(ch chan *core.Message) {
 		if repl.hashKey == "" {
 			msgKey = msg.Payload()
 		} else {
-			if v, ok := msg.GetMeta(repl.hashKey); ok {
+			if v, ok := msg.Meta(repl.hashKey); ok {
 				if vConv, convOk := v.([]byte); convOk {
 					msgKey = vConv
 				} else {

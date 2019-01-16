@@ -82,42 +82,43 @@ func NewMessageWithAckCh(ackCh chan MsgStatus, meta map[string]interface{}, payl
 	return msg
 }
 
-func (msg *Message) GetMeta(key string) (interface{}, bool) {
+func (msg *Message) Meta(key string) (interface{}, bool) {
 	msg.mx.Lock()
 	defer msg.mx.Unlock()
 
-	return msg.getMetaUnsafe(key)
+	return msg.metaUnsafe(key)
 
 }
 
-func (msg *Message) getMetaUnsafe(key string) (interface{}, bool) {
+func (msg *Message) metaUnsafe(key string) (interface{}, bool) {
 	v, ok := msg.meta[key]
 	return v, ok
 }
 
-func (msg *Message) GetMetaOrDef(key string, def interface{}) (interface{}, bool) {
+func (msg *Message) MetaOrDefault(key string, def interface{}) (interface{}, bool) {
 	msg.mx.Lock()
 	defer msg.mx.Unlock()
 
-	if v, ok := msg.getMetaUnsafe(key); ok {
+	if v, ok := msg.metaUnsafe(key); ok {
 		return v, true
 	}
 
 	return def, false
 }
 
-func (msg *Message) GetMetaAll() map[string]interface{} {
+func (msg *Message) MetaAll() map[string]interface{} {
 	msg.mx.Lock()
 	defer msg.mx.Unlock()
 
-	return msg.getMetaAllUnsafe()
+	return msg.metaAllUnsafe()
 }
 
-func (msg *Message) getMetaAllUnsafe() map[string]interface{} {
+func (msg *Message) metaAllUnsafe() map[string]interface{} {
 	mapcp := make(map[string]interface{})
 	for k, v := range msg.meta {
 		mapcp[k] = v
 	}
+
 	return mapcp
 }
 
@@ -253,7 +254,7 @@ func CpMessage(msg *Message) *Message {
 
 	return &Message{
 		payload: buf.Bytes(),
-		meta:    msg.getMetaAllUnsafe(),
+		meta:    msg.metaAllUnsafe(),
 		ackCh:   make(chan MsgStatus, 1),
 	}
 }
@@ -261,7 +262,7 @@ func CpMessage(msg *Message) *Message {
 var msgMetaSyncValues = map[string]bool{"true": true, "1": true}
 
 func MsgIsSync(msg *Message) bool {
-	if sync, ok := msg.GetMeta(MsgMetaKeySync); sync != nil && ok {
+	if sync, ok := msg.Meta(MsgMetaKeySync); sync != nil && ok {
 		if _, ok = sync.(string); !ok {
 			return false
 		}

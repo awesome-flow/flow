@@ -108,7 +108,7 @@ func (th *Throttler) shouldPassMessageWithKey(key string) bool {
 func (th *Throttler) Recv(msg *core.Message) error {
 	msgKey := ""
 	if len(th.key) > 0 {
-		if v, ok := msg.GetMeta(th.key); ok {
+		if v, ok := msg.Meta(th.key); ok {
 			msgKey = v.(string)
 		}
 	}

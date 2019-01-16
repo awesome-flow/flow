@@ -23,9 +23,9 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	}
 	var routingFunc core.RoutingFunc
 	if strKey, ok := routingKey.(string); ok {
-		errNoKey := fmt.Errorf("Message is missing routing key %s", strKey)
+		errNoKey := fmt.Errorf("Message is missing the routing key %s", strKey)
 		routingFunc = func(msg *core.Message) (string, error) {
-			k, ok := msg.GetMeta(strKey)
+			k, ok := msg.Meta(strKey)
 			if !ok {
 				return "", errNoKey
 			}
@@ -34,7 +34,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	} else if funcKey, ok := routingKey.(func(*core.Message) (string, error)); ok {
 		routingFunc = funcKey
 	} else {
-		return nil, fmt.Errorf("Incompatible routing_key type")
+		return nil, fmt.Errorf("Incompatible routing key type")
 	}
 	routes := make(map[string]core.Link)
 	r := &Router{name, routingFunc, routes, core.NewConnector(), &sync.Mutex{}}

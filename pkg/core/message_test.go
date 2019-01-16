@@ -17,14 +17,14 @@ func TestMessage_NewMessage(t *testing.T) {
 	msg := NewMessage([]byte{})
 	var v interface{}
 	var ok bool
-	v, ok = msg.GetMeta("foo")
+	v, ok = msg.Meta("foo")
 	if ok {
 		t.Errorf("Unexpected presence flag for key foo")
 	}
 	if v != nil {
 		t.Errorf("Unexpected return value from en empty meta")
 	}
-	v, ok = msg.GetMetaOrDef("foo", "bar")
+	v, ok = msg.MetaOrDefault("foo", "bar")
 	if ok {
 		t.Errorf("Unexpected presence flag for key foo")
 	}
@@ -32,14 +32,14 @@ func TestMessage_NewMessage(t *testing.T) {
 		t.Errorf("Unexpected default value for key foo")
 	}
 
-	metaAll := msg.GetMetaAll()
+	metaAll := msg.MetaAll()
 	if !reflect.DeepEqual(metaAll, map[string]interface{}{}) {
 		t.Errorf("Unexpected contents of message meta: %+v, ecpected: an empty map",
 			metaAll)
 	}
 
 	msg.SetMeta("foo", "bar")
-	metaAll = msg.GetMetaAll()
+	metaAll = msg.MetaAll()
 	expMeta := map[string]interface{}{"foo": "bar"}
 	if !reflect.DeepEqual(metaAll, expMeta) {
 		t.Errorf("Unexpected contents of message meta: %+v, ecpected: %+v",
@@ -47,14 +47,14 @@ func TestMessage_NewMessage(t *testing.T) {
 	}
 
 	msg.SetMetaAll(map[string]interface{}{"foo": "baz", "baz": "bar"})
-	metaAll = msg.GetMetaAll()
+	metaAll = msg.MetaAll()
 	expMeta = map[string]interface{}{"foo": "baz", "baz": "bar"}
 	if !reflect.DeepEqual(metaAll, expMeta) {
 		t.Errorf("Unexpected contents of message meta: %+v, ecpected: %+v",
 			metaAll, expMeta)
 	}
 
-	v, ok = msg.GetMetaOrDef("baz", "boooo")
+	v, ok = msg.MetaOrDefault("baz", "boooo")
 	if !ok {
 		t.Errorf("Unexpected presence flag for key baz")
 	}
@@ -64,7 +64,7 @@ func TestMessage_NewMessage(t *testing.T) {
 
 	msg.UnsetMeta("foo")
 
-	metaAll = msg.GetMetaAll()
+	metaAll = msg.MetaAll()
 	expMeta = map[string]interface{}{"baz": "bar"}
 	if !reflect.DeepEqual(metaAll, expMeta) {
 		t.Errorf("Unexpected contents of message meta: %+v, ecpected: %+v",
@@ -96,7 +96,7 @@ func TestMessage_GetMeta(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			msg := NewMessageWithMeta(testCase.meta, []byte{})
 			for _, exp := range testCase.expected {
-				v, ok := msg.GetMeta(exp.key)
+				v, ok := msg.Meta(exp.key)
 				if exp.found != ok {
 					t.Errorf("Found flag does not match: %t, want: %t", ok, exp.found)
 				}
@@ -135,7 +135,7 @@ func TestMessage_GetMetaAll(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			msg := NewMessageWithMeta(testCase.meta, []byte{})
-			msgMeta := msg.GetMetaAll()
+			msgMeta := msg.MetaAll()
 			if !reflect.DeepEqual(msgMeta, testCase.expectedMeta) {
 				t.Errorf("Unexpected message meta: %+v, want: %+v",
 					msgMeta, testCase.expectedMeta)

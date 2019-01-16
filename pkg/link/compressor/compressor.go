@@ -121,7 +121,7 @@ func (comp *Compressor) Recv(msg *core.Message) error {
 	if err != nil {
 		return msg.AckFailed()
 	}
-	msgcp := core.NewMessageWithAckCh(msg.GetAckCh(), msg.GetMetaAll(), payload)
+	msgcp := core.NewMessageWithAckCh(msg.GetAckCh(), msg.MetaAll(), payload)
 
 	return comp.Send(msgcp)
 }
