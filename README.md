@@ -2,7 +2,7 @@
 
 ![logo](https://github.com/whiteboxio/flow/blob/master/flow.png)
 
-[![Build Status](https://travis-ci.com/awesome-flow/flow.svg?branch=master)](https://travis-ci.com/awesome-flow/flow)
+[![Build Status](https://travis-ci.com/awesome-flow/flow.svg?branch=master)](https://travis-ci.com/awesome-flow/flow) [![Coverage Status](https://coveralls.io/repos/github/awesome-flow/flow/badge.svg?branch=master)](https://coveralls.io/github/awesome-flow/flow?branch=master)
 
 ## Intro
 

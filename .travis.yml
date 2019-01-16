@@ -7,8 +7,12 @@ go:
 before_install:                                                                 
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh  
   - dep ensure
+  - go get github.com/mattn/goveralls
 
 install: true
 
 notifications:
   email: false
+
+script:
+  - $GOPATH/bin/goveralls -v -service=travis-ci
