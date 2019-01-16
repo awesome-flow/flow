@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/admin/agent"
 	"github.com/awesome-flow/flow/pkg/config"
+	log "github.com/sirupsen/logrus"
 )
 
 type HTTP struct {

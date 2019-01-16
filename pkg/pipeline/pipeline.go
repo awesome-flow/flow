@@ -9,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/awesome-flow/flow/pkg/admin"
 	"github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/util/data"
@@ -37,10 +36,9 @@ import (
 )
 
 type Pipeline struct {
-	pplCfg    map[string]config.CfgBlockPipeline
-	compsCfg  map[string]config.CfgBlockComponent
-	compTree  *data.NTree
-	adminHttp *admin.HTTP
+	pplCfg   map[string]config.CfgBlockPipeline
+	compsCfg map[string]config.CfgBlockComponent
+	compTree *data.NTree
 }
 
 type ConstrFunc func(string, core.Params, *core.Context) (core.Link, error)
@@ -141,10 +139,9 @@ func NewPipeline(
 	}
 
 	pipeline := &Pipeline{
-		pplCfg:    pplCfg,
-		compsCfg:  compsCfg,
-		compTree:  buildCompTree(pplCfg, compPool),
-		adminHttp: nil,
+		pplCfg:   pplCfg,
+		compsCfg: compsCfg,
+		compTree: buildCompTree(pplCfg, compPool),
 	}
 
 	pipeline.applySysCfg()
@@ -250,14 +247,6 @@ func (ppl *Pipeline) applySysCfg() error {
 	log.Infof("Setting GOMAXPROCS to %d", sysCfg.Maxprocs)
 	runtime.GOMAXPROCS(sysCfg.Maxprocs)
 
-	if sysCfg.Admin.Enabled {
-		log.Infof("Starting admin interface on %s", sysCfg.Admin.BindAddr)
-		admHttp, err := admin.NewHTTP(sysCfg)
-		if err != nil {
-			return err
-		}
-		ppl.adminHttp = admHttp
-	}
 	return nil
 }
 

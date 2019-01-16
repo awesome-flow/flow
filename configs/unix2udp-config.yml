@@ -1,5 +1,8 @@
 system:
   maxprocs: 4
+  admin:
+    enabled: true
+    bind_addr: :8080
 
 components:
   unix_rcv:
