@@ -2,6 +2,7 @@ package link
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"testing"
 
@@ -13,7 +14,7 @@ type Nil struct {
 }
 
 const (
-	DefaultCntrPrecision = 0.1 // 10%
+	DefaultCntrPrecision = 0.01 // 1%
 )
 
 func NewNil() *Nil                          { return &Nil{core.NewConnector()} }
@@ -83,7 +84,7 @@ func TestThrottler_Recv_Parallel(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			th, thErr := New(
 				"t",
-				core.Params{"msg_key": "", "rps": test.rpsLimit},
+				core.Params{"msg_key": "", "rps": test.rpsLimit, "timeFunction": func() int64 { return 0 }},
 				core.NewContext(),
 			)
 			if thErr != nil {
@@ -125,14 +126,17 @@ func TestThrottler_Recv_Parallel(t *testing.T) {
 				wantCnt = test.rpsLimit
 			}
 
-			if !withinPrecisionInterval(cnt, wantCnt, DefaultCntrPrecision) {
+			if cnt > wantCnt {
 				t.Errorf("Unexpected amount of succ sends: %d, want: %d", cnt, wantCnt)
+			}
+
+			if !withinPrecisionInterval(cnt, wantCnt, DefaultCntrPrecision) {
+				t.Errorf("Unexpected amount of succ sends: %d, want: %d ± %v%%", cnt, wantCnt, DefaultCntrPrecision*100)
 			}
 		})
 	}
 }
 
-func withinPrecisionInterval(want, got int, precision float32) bool {
-	return (1+precision)*float32(want) >= float32(got) &&
-		(1-precision)*float32(want) <= float32(got)
+func withinPrecisionInterval(want, got int, precision float64) bool {
+	return math.Abs(float64(want-got)) <= float64(want)*precision
 }

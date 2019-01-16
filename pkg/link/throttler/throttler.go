@@ -20,6 +20,7 @@ type Throttler struct {
 	key            string
 	messageCost    int64
 	bucketCapacity int64
+	timeFunction   func() int64
 	mx             sync.RWMutex
 	buckets        map[string]*int64
 	*core.Connector
@@ -31,6 +32,11 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		return nil, fmt.Errorf("Throttler params are missing rps")
 	}
 
+	timeFunction := nanotime
+	if timeFunctionParam, ok := params["timeFunction"]; ok {
+		timeFunction = timeFunctionParam.(func() int64)
+	}
+
 	const nanosecondsPerSecond = 1000000000
 	nanosecondsPerRequest := nanosecondsPerSecond / int64(rps.(int)) // T
 	bucketCapacity := nanosecondsPerSecond - nanosecondsPerRequest   // τ
@@ -40,11 +46,12 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		"",
 		nanosecondsPerRequest,
 		bucketCapacity,
+		timeFunction,
 		sync.RWMutex{},
 		map[string]*int64{"": new(int64)},
 		core.NewConnector(),
 	}
-	*th.buckets[""] = nanotime() - 1
+	*th.buckets[""] = th.timeFunction() - 1
 
 	if key, keyOk := params["msg_key"]; keyOk {
 		th.key = key.(string)
@@ -64,7 +71,7 @@ func (th *Throttler) getOrCreateBucket(key string) *int64 {
 
 	// Slow path: create a new bucket and try to insert it
 	newBucket := new(int64)
-	*newBucket = nanotime() - 1
+	*newBucket = th.timeFunction() - 1
 
 	th.mx.Lock()
 	defer th.mx.Unlock()
@@ -84,7 +91,7 @@ func (th *Throttler) shouldPassMessageWithKey(key string) bool {
 	bucket := th.getOrCreateBucket(key)
 
 	for loopBreaker := 0; loopBreaker < 10; loopBreaker++ {
-		now := nanotime()
+		now := th.timeFunction()
 		tat := atomic.LoadInt64(bucket) // theoretical arrival time
 		if now < tat-bucketCapacity {
 			return false
