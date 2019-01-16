@@ -55,7 +55,7 @@ func TestUDP_recv(t *testing.T) {
 		t.Fatalf("Timed out to receive the message")
 	}
 
-	if !reflect.DeepEqual(rcvLink.LastMsg().Payload, payload) {
-		t.Fatalf("Unexpected receiver last message: %s", rcvLink.LastMsg().Payload)
+	if !reflect.DeepEqual(rcvLink.LastMsg().Payload(), payload) {
+		t.Fatalf("Unexpected receiver last message: %s", rcvLink.LastMsg().Payload())
 	}
 }

@@ -20,8 +20,8 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 }
 
 func (mp *MetaParser) Recv(msg *core.Message) error {
-	if bytes.ContainsRune(msg.Payload, ' ') {
-		chunks := bytes.SplitN(msg.Payload, []byte{' '}, 2)
+	if bytes.ContainsRune(msg.Payload(), ' ') {
+		chunks := bytes.SplitN(msg.Payload(), []byte{' '}, 2)
 		query, payload := chunks[0], chunks[1]
 
 		queryPairs, err := url.ParseQuery(string(query))
@@ -34,7 +34,7 @@ func (mp *MetaParser) Recv(msg *core.Message) error {
 			msgMeta[k] = vals[0]
 		}
 		msg.SetMetaAll(msgMeta)
-		msg.Payload = payload
+		msg.SetPayload(payload)
 	}
 
 	return mp.Send(msg)

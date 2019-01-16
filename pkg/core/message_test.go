@@ -62,25 +62,12 @@ func TestMessage_NewMessage(t *testing.T) {
 		t.Errorf("Unexpected value for key baz")
 	}
 
-	v, ok = msg.UnsetMeta("foo")
-	if !ok {
-		t.Errorf("Unexpected return value from UnsetMeta")
-	}
-	if v != "baz" {
-		t.Errorf("Unexpected value returned by UnsetMeta: %s", v)
-	}
+	msg.UnsetMeta("foo")
 
 	metaAll = msg.GetMetaAll()
 	expMeta = map[string]interface{}{"baz": "bar"}
 	if !reflect.DeepEqual(metaAll, expMeta) {
 		t.Errorf("Unexpected contents of message meta: %+v, ecpected: %+v",
-			metaAll, expMeta)
-	}
-
-	metaAll = msg.UnsetMetaAll()
-	expMeta = map[string]interface{}{"baz": "bar"}
-	if !reflect.DeepEqual(metaAll, expMeta) {
-		t.Errorf("Unexpected value returned by UnsetMetaAll: %+v, want: %+v",
 			metaAll, expMeta)
 	}
 }
@@ -216,12 +203,12 @@ func TestMessage_CpMessage(t *testing.T) {
 	meta1 := map[string]interface{}{"k1": "v1"}
 	msg1 := NewMessageWithMeta(meta1, pl1)
 	msg2 := CpMessage(msg1)
-	msg2.Payload[len(msg2.Payload)-1] = '2'
-	if !reflect.DeepEqual(msg2.Payload, []byte("payload2")) {
-		t.Errorf("Unexpected payload in msg2: %s", msg2.Payload)
+	(msg2.Payload())[len(msg2.Payload())-1] = '2'
+	if !reflect.DeepEqual(msg2.Payload(), []byte("payload2")) {
+		t.Errorf("Unexpected payload in msg2: %s", msg2.Payload())
 	}
-	if !reflect.DeepEqual(msg1.Payload, pl1) {
-		t.Errorf("Unexpected payload in msg1: %s", msg1.Payload)
+	if !reflect.DeepEqual(msg1.Payload(), pl1) {
+		t.Errorf("Unexpected payload in msg1: %s", msg1.Payload())
 	}
 }
 

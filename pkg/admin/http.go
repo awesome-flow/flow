@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type HTTP struct {
+type AdminHTTP struct {
 	server *http.Server
 }
 
@@ -29,7 +29,7 @@ func NewHTTP(cfg *config.CfgBlockSystem) (*HTTP, error) {
 		Addr:    cfg.Admin.BindAddr,
 		Handler: srvMx,
 	}
-	h := &HTTP{server}
+	h := &AdminHTTP{server}
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {

@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/cenk/backoff"
 )
@@ -70,7 +70,7 @@ func (udp *UDP) Recv(msg *core.Message) error {
 	udp.Lock()
 	defer udp.Unlock()
 	udp.conn.SetDeadline(time.Now().Add(UdpWriteDeadline))
-	if _, err := udp.conn.Write(msg.Payload); err != nil {
+	if _, err := udp.conn.Write(msg.Payload()); err != nil {
 		metrics.GetCounter("sink.udp.failed").Inc(1)
 		go udp.connect()
 		return msg.AckFailed()

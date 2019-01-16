@@ -117,7 +117,7 @@ func New(name string, params core.Params, ctx *core.Context) (core.Link, error) 
 }
 
 func (comp *Compressor) Recv(msg *core.Message) error {
-	payload, err := comp.coder(msg.Payload, comp.level)
+	payload, err := comp.coder(msg.Payload(), comp.level)
 	if err != nil {
 		return msg.AckFailed()
 	}

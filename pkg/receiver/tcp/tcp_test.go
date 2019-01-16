@@ -53,8 +53,8 @@ func TestTCP_recv(t *testing.T) {
 		t.Fatalf("Timed out to receive the message")
 	}
 
-	if !reflect.DeepEqual(rcvLink.LastMsg().Payload, payload) {
+	if !reflect.DeepEqual(rcvLink.LastMsg().Payload(), payload) {
 		t.Fatalf("Unexpected receiver last message: got %q, want: %q",
-			rcvLink.LastMsg().Payload, payload)
+			rcvLink.LastMsg().Payload(), payload)
 	}
 }

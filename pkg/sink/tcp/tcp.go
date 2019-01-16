@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/cenk/backoff"
 )
@@ -69,7 +69,7 @@ func (tcp *TCP) Recv(msg *core.Message) error {
 	tcp.Lock()
 	defer tcp.Unlock()
 	tcp.conn.SetDeadline(time.Now().Add(TcpWriteDeadline))
-	if _, err := tcp.conn.Write(append(msg.Payload, '\r', '\n')); err != nil {
+	if _, err := tcp.conn.Write(append(msg.Payload(), '\r', '\n')); err != nil {
 		metrics.GetCounter("sink.tcp.msg.failed").Inc(1)
 		log.Warnf("Failed to send TCP packet to %s: %s", tcp.addr, err.Error())
 		go tcp.connect()

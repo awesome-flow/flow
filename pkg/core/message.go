@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -39,19 +40,9 @@ const (
 	CmdCodeStop
 )
 
-type MsgMeta sync.Map
-
-type Message struct {
-	meta     *sync.Map
-	Payload  []byte
-	ackCh    chan MsgStatus
-	attempts uint32
-	mx       sync.Mutex
-}
-
 type Cmd struct {
 	Code    CmdCode
-	Payload []byte
+	payload []byte
 }
 
 type CmdPropagation uint8
@@ -61,8 +52,16 @@ const (
 	CmdPpgtTopDwn
 )
 
+type Message struct {
+	meta     map[string]interface{}
+	payload  []byte
+	ackCh    chan MsgStatus
+	attempts uint32
+	mx       sync.Mutex
+}
+
 func NewMessage(payload []byte) *Message {
-	return NewMessageWithMeta(nil, payload)
+	return NewMessageWithMeta(make(map[string]interface{}), payload)
 }
 
 func NewMessageWithMeta(meta map[string]interface{}, payload []byte) *Message {
@@ -70,102 +69,99 @@ func NewMessageWithMeta(meta map[string]interface{}, payload []byte) *Message {
 }
 
 func NewMessageWithAckCh(ackCh chan MsgStatus, meta map[string]interface{}, payload []byte) *Message {
-	msg := &Message{
-		Payload: payload,
-	}
-	if meta != nil {
-		syncMeta := &sync.Map{}
-		for k, v := range meta {
-			syncMeta.Store(k, v)
-		}
-		msg.meta = syncMeta
-	}
 	if ackCh == nil {
 		ackCh = make(chan MsgStatus, 1)
 	}
-	msg.ackCh = ackCh
+	msg := &Message{
+		payload: payload,
+		meta:    meta,
+		ackCh:   ackCh,
+		mx:      sync.Mutex{},
+	}
+
 	return msg
 }
 
-func (m *Message) GetMeta(key string) (interface{}, bool) {
-	if m.meta == nil {
-		return nil, false
-	}
-	return m.meta.Load(key)
+func (msg *Message) GetMeta(key string) (interface{}, bool) {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	return msg.getMetaUnsafe(key)
+
 }
 
-func (m *Message) GetMetaOrDef(key string, def interface{}) (interface{}, bool) {
-	if v, ok := m.GetMeta(key); ok {
+func (msg *Message) getMetaUnsafe(key string) (interface{}, bool) {
+	v, ok := msg.meta[key]
+	return v, ok
+}
+
+func (msg *Message) GetMetaOrDef(key string, def interface{}) (interface{}, bool) {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	if v, ok := msg.getMetaUnsafe(key); ok {
 		return v, true
 	}
+
 	return def, false
 }
 
-func (m *Message) GetMetaAll() map[string]interface{} {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-	res := make(map[string]interface{})
-	if m.meta != nil {
-		m.meta.Range(func(key, val interface{}) bool {
-			res[key.(string)] = val
-			return true
-		})
-	}
-	return res
+func (msg *Message) GetMetaAll() map[string]interface{} {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	return msg.getMetaAllUnsafe()
 }
 
-func (m *Message) SetMeta(key string, val interface{}) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-	if m.meta == nil {
-		m.meta = &sync.Map{}
+func (msg *Message) getMetaAllUnsafe() map[string]interface{} {
+	mapcp := make(map[string]interface{})
+	for k, v := range msg.meta {
+		mapcp[k] = v
 	}
-	m.meta.Store(key, val)
+	return mapcp
 }
 
-func (m *Message) SetMetaAll(extMeta map[string]interface{}) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-	if m.meta == nil {
-		m.meta = &sync.Map{}
-	}
-	for k, v := range extMeta {
-		m.meta.Store(k, v)
+func (msg *Message) SetMeta(key string, val interface{}) {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	msg.meta[key] = val
+}
+
+func (msg *Message) SetMetaAll(extMeta map[string]interface{}) {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	for key, val := range extMeta {
+		msg.meta[key] = val
 	}
 }
 
-func (m *Message) UnsetMeta(key string) (interface{}, bool) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-	if m.meta != nil {
-		v, ok := m.meta.Load(key)
-		m.meta.Delete(key)
-		return v, ok
-	}
-	return nil, false
+func (msg *Message) UnsetMeta(key string) {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	delete(msg.meta, key)
 }
 
-func (m *Message) UnsetMetaAll() map[string]interface{} {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-	res := make(map[string]interface{})
-	if m.meta != nil {
-		m.meta.Range(func(key, val interface{}) bool {
-			res[key.(string)] = val
-			return true
-		})
-		m.meta = nil
-	}
-	return res
+func (msg *Message) SetPayload(payload []byte) {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	msg.payload = payload
 }
 
-func (m *Message) GetAckCh() chan MsgStatus {
-	return m.ackCh
+func (msg *Message) Payload() []byte {
+	return msg.payload
 }
 
-func (m *Message) finalize() {
-	if m.ackCh != nil {
-		close(m.ackCh)
+func (msg *Message) GetAckCh() chan MsgStatus {
+	return msg.ackCh
+}
+
+func (msg *Message) finalize() {
+	if msg.ackCh != nil {
+		close(msg.ackCh)
 	}
 }
 
@@ -244,21 +240,25 @@ func (m *Message) BumpAttempts() error {
 	return fmt.Errorf("Failed to bump message attempts")
 }
 
-func (m *Message) GetAttempts() uint32 {
+func (m *Message) Attempts() uint32 {
 	return atomic.LoadUint32(&m.attempts)
 }
 
-func CpMessage(m *Message) *Message {
+func CpMessage(msg *Message) *Message {
+	msg.mx.Lock()
+	defer msg.mx.Unlock()
+
+	var buf bytes.Buffer
+	buf.Write(msg.payload)
+
 	return &Message{
-		meta:    m.meta,
-		Payload: m.Payload,
+		payload: buf.Bytes(),
+		meta:    msg.getMetaAllUnsafe(),
 		ackCh:   make(chan MsgStatus, 1),
 	}
 }
 
-var (
-	msgMetaSyncValues = map[string]bool{"true": true, "1": true}
-)
+var msgMetaSyncValues = map[string]bool{"true": true, "1": true}
 
 func MsgIsSync(msg *Message) bool {
 	if sync, ok := msg.GetMeta(MsgMetaKeySync); sync != nil && ok {
