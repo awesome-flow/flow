@@ -2,30 +2,13 @@ package metrics
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
-	"sync/atomic"
-	"time"
 
-	graphite "github.com/marpaia/graphite-golang"
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/config"
 )
 
-type Counter struct {
-	v int64
-}
-
-func (cntr *Counter) Inc(delta int64) {
-	atomic.AddInt64(&cntr.v, delta)
-}
-
 var (
-	namespace    = ""
-	counters     = &sync.Map{}
-	sendInterval = 1 * time.Second
-
-	grph *graphite.Graphite = nil
+	counters = &sync.Map{}
 )
 
 func Initialize(sysCfg *config.CfgBlockSystem) error {
@@ -39,68 +22,35 @@ func Initialize(sysCfg *config.CfgBlockSystem) error {
 	}
 
 	// TODO: refactor this module and make it backend-agnostic
-	// TODO: Initialization should happen exactly once
 
-	grphHost, _ := sysCfg.Metrics.Receiver.Params["host"]
-	grphPortStr, _ := sysCfg.Metrics.Receiver.Params["port"]
-	grphPort, err := strconv.Atoi(grphPortStr)
+	err := RunGraphiteReceiver(sysCfg.Metrics.Receiver.Params, sysCfg.Metrics.Interval)
 	if err != nil {
-		return err
+		return fmt.Errorf("Can not run metrics receiver: %v", err)
 	}
-
-	namespace = sysCfg.Metrics.Receiver.Params["namespace"]
-	sendInterval = time.Duration(sysCfg.Metrics.Interval) * time.Second
-
-	grph, err = graphite.NewGraphite(grphHost, grphPort)
-	if err != nil {
-		return err
-	}
-
-	chIn := make(chan bool, 1)
-
-	go func() {
-		for {
-			<-chIn
-			if err := sendMetrics(); err != nil {
-				log.Warnf("Metrics module failed to send metrics: %s", err)
-			}
-			chIn <- true
-		}
-	}()
-	chIn <- true
 
 	return nil
 }
 
-func sendMetrics() error {
-	time.Sleep(sendInterval)
-	metrics := make([]graphite.Metric, 0)
-	now := time.Now().Unix()
-	counters.Range(func(key interface{}, value interface{}) bool {
-		metrics = append(metrics, graphite.NewMetric(
-			namespace+"."+key.(string),
-			strconv.FormatInt(value.(*Counter).v, 10),
-			now))
-		return true
-	})
-	if len(metrics) > 0 {
-		log.Debug("Sending graphite metrics now")
-		if err := grph.SendMetrics(metrics); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
+//Given same name returns same pointer to Counter,
+// which can be used whole program lifetime.
 func GetCounter(name string) *Counter {
 	cntr, _ := counters.LoadOrStore(name, &Counter{})
 	return cntr.(*Counter)
 }
 
-func GetAll() map[string]int64 {
+//Given same name returns same pointer to Counter,
+// which can be used whole program lifetime.
+func GetGauge(name string) *Gauge {
+	gauge, _ := counters.LoadOrStore(name, &Gauge{})
+	return gauge.(*Gauge)
+}
+
+func GetAllCounters() map[string]int64 {
 	res := make(map[string]int64)
 	counters.Range(func(k interface{}, val interface{}) bool {
-		res[k.(string)] = val.(*Counter).v
+		if cntr, ok := val.(*Counter); ok {
+			res[k.(string)] = cntr.get()
+		}
 		return true
 	})
 	return res

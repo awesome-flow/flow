@@ -14,7 +14,7 @@ func init() {
 		NewDummyWebAgent(
 			"/metrics",
 			func(rw http.ResponseWriter, req *http.Request) {
-				mtrx := metrics.GetAll()
+				mtrx := metrics.GetAllCounters()
 				respChunks := make([]string, 0)
 				for k, v := range mtrx {
 					respChunks = append(respChunks, fmt.Sprintf("%s: %d", k, v))
