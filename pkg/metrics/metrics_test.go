@@ -20,8 +20,8 @@ func TestCountersConcurrency(t *testing.T) {
 				for i := 0; i < iterations_per_counter; i++ {
 					c := GetCounter(fmt.Sprintf("counter_%d", n))
 					c.Inc(1)
-					_ = c.get()
-					GetAllCounters()
+					_ = c.Get()
+					GetAllMetrics()
 
 					g := GetGauge(fmt.Sprintf("counter_%d_gauge", n))
 					g.Set(int64(i))
@@ -36,16 +36,19 @@ func TestCountersConcurrency(t *testing.T) {
 
 	for n := 0; n < iterations; n++ {
 		c := GetCounter(fmt.Sprintf("counter_%d", n))
-		value := c.get()
+		value := c.Get()
 		if value != int64(routines*iterations_per_counter) {
 			t.Errorf("Number of values does not equal %d != %d", value, routines)
 			return
 		}
 	}
-	for _, value := range GetAllCounters() {
-		if value != int64(routines*iterations_per_counter) {
-			t.Errorf("Number of values does not equal %d != %d", value, routines)
-			return
+	for _, metric := range GetAllMetrics() {
+		if counter, ok := metric.(*Counter); ok {
+			value := counter.Get()
+			if value != int64(routines*iterations_per_counter) {
+				t.Errorf("Number of values does not equal %d != %d", value, routines)
+				return
+			}
 		}
 	}
 

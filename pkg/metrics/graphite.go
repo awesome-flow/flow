@@ -46,12 +46,23 @@ func sendMetrics(grph *graphite.Graphite, namespace string) error {
 	metrics := make([]graphite.Metric, 0)
 	now := time.Now().Unix()
 
-	for key, value := range GetAllCounters() {
-		metrics = append(metrics, graphite.NewMetric(
-			namespace+"."+key,
-			strconv.FormatInt(value, 10),
-			now))
+	for key, metric := range GetAllMetrics() {
+		switch metric := metric.(type) {
+
+		case *Counter:
+			metrics = append(metrics, graphite.NewMetric(
+				namespace+"."+key,
+				strconv.FormatInt(metric.Get(), 10),
+				now))
+		case *Gauge: //Same as counter
+			metrics = append(metrics, graphite.NewMetric(
+				namespace+"."+key,
+				strconv.FormatInt(metric.Get(), 10),
+				now))
+		default:
+		}
 	}
+
 	if len(metrics) > 0 {
 		log.Debug("Sending graphite metrics now")
 		if err := grph.SendMetrics(metrics); err != nil {

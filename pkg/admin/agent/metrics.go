@@ -14,10 +14,18 @@ func init() {
 		NewDummyWebAgent(
 			"/metrics",
 			func(rw http.ResponseWriter, req *http.Request) {
-				mtrx := metrics.GetAllCounters()
+				mtrx := metrics.GetAllMetrics()
 				respChunks := make([]string, 0)
-				for k, v := range mtrx {
-					respChunks = append(respChunks, fmt.Sprintf("%s: %d", k, v))
+				for k, metric := range mtrx {
+					switch metric := metric.(type) {
+
+					case *metrics.Counter:
+						respChunks = append(respChunks, fmt.Sprintf("%s: %d", k, metric.Get()))
+					case *metrics.Gauge: //Same as counter
+						respChunks = append(respChunks, fmt.Sprintf("%s: %d", k, metric.Get()))
+					default:
+					}
+
 				}
 				sort.Strings(respChunks)
 				rw.WriteHeader(http.StatusOK)

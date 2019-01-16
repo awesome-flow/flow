@@ -11,6 +11,8 @@ var (
 	counters = &sync.Map{}
 )
 
+type Metric interface{}
+
 func Initialize(sysCfg *config.CfgBlockSystem) error {
 
 	if !sysCfg.Metrics.Enabled {
@@ -46,11 +48,13 @@ func GetGauge(name string) *Gauge {
 	return gauge.(*Gauge)
 }
 
-func GetAllCounters() map[string]int64 {
-	res := make(map[string]int64)
+func GetAllMetrics() map[string]Metric {
+
+	res := make(map[string]Metric)
+
 	counters.Range(func(k interface{}, val interface{}) bool {
-		if cntr, ok := val.(*Counter); ok {
-			res[k.(string)] = cntr.get()
+		if metric, ok := val.(Metric); ok {
+			res[k.(string)] = metric
 		}
 		return true
 	})
