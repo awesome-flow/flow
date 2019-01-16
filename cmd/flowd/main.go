@@ -65,9 +65,10 @@ func main() {
 	}
 	log.Info("Pipeline successfully activated")
 
+	var adminhttp *admin.HTTP
 	if sysCfg.Admin.Enabled {
 		log.Infof("Starting admin interface on %s", sysCfg.Admin.BindAddr)
-		_, err := admin.NewHTTP(sysCfg)
+		adminhttp, err = admin.NewHTTP(sysCfg)
 		if err != nil {
 			log.Fatalf("Failed to start admin interface: %s", err)
 		}
@@ -77,6 +78,12 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	<-c
 	log.Info("Terminating the pipeline")
+	if adminhttp != nil {
+		log.Info("Stopping admin interface")
+		if err := adminhttp.Stop(); err != nil {
+			log.Errorf("Error while stopping admin interface: %s", err.Error())
+		}
+	}
 	stopErr := pipeline.Stop()
 	if stopErr != nil {
 		log.Fatalf("Failed to stop the pipeline: %s", stopErr)

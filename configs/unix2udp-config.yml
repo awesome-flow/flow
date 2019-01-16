@@ -10,11 +10,21 @@ components:
     params:
       bind_addr: /tmp/flow.sock
       backend: evio
+  demux:
+    module: link.demux
   udp_sink:
     module: sink.udp
     params:
       bind_addr: :7722
+  dumper:
+    module: sink.dumper
+    params:
+      out: STDOUT
 
 pipeline:
   unix_rcv:
-    connect: udp_sink
+    connect: demux
+  demux:
+    links:
+      - udp_sink
+      - dumper

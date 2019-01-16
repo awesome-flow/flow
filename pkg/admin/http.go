@@ -44,3 +44,8 @@ func NewHTTP(cfg *config.CfgBlockSystem) (*HTTP, error) {
 
 	return h, nil
 }
+
+func (h *HTTP) Stop() error {
+	// TODO(olegs): shut down the agents gracefully
+	return nil
+}

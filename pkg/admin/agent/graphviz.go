@@ -4,9 +4,10 @@ import (
 	"html/template"
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/awesome-flow/flow/pkg/global"
 	"github.com/awesome-flow/flow/pkg/pipeline"
-	"github.com/k8s.io/kubernetes/pkg/kubelet/kubeletconfig/util/log"
 )
 
 const GraphVizTemplate = `
