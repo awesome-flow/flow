@@ -17,8 +17,9 @@ var (
 )
 
 type HTTP struct {
-	Name   string
-	Server *http.Server
+	Name     string
+	bindaddr string
+	Server   *http.Server
 	*core.Connector
 }
 
@@ -29,7 +30,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		return nil, fmt.Errorf("HTTP parameters are missing bind_addr")
 	}
 
-	h := &HTTP{name, nil, core.NewConnector()}
+	h := &HTTP{name, httpAddr.(string), nil, core.NewConnector()}
 
 	srvMx := http.NewServeMux()
 	srvMx.HandleFunc("/send", func(rw http.ResponseWriter, req *http.Request) {
@@ -39,9 +40,6 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	srv := &http.Server{
 		Addr:    httpAddr.(string),
 		Handler: srvMx,
-		// ReadTimeout: from params,
-		// WriteTimeout: from params,
-		// MaxHeaderBytes: from params
 	}
 	h.Server = srv
 
@@ -139,4 +137,8 @@ func status2resp(s core.MsgStatus) (int, []byte) {
 	default:
 		return http.StatusTeapot, []byte("This should not happen")
 	}
+}
+
+func (h *HTTP) String() string {
+	return fmt.Sprintf("%s[%s]", h.Name, h.bindaddr)
 }

@@ -21,11 +21,19 @@ type Context struct {
 	storage *sync.Map
 }
 
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func NewContext() *Context {
-	threadiness, _ := config.GetOrDefault("global.system.maxprocs", runtime.GOMAXPROCS(-1))
-	msgChannels := make([]chan *Message, threadiness.(int))
-	for i := 0; i < threadiness.(int); i++ {
-		msgChannels[i] = make(chan *Message)
+	th, _ := config.GetOrDefault("global.system.maxprocs", runtime.GOMAXPROCS(-1))
+	threadiness := maxInt(th.(int), 1)
+	msgChannels := make([]chan *Message, 0, threadiness)
+	for i := 0; i < threadiness; i++ {
+		msgChannels = append(msgChannels, make(chan *Message))
 	}
 	return &Context{
 		msgCh:   msgChannels,
