@@ -1,0 +1,18 @@
+system:
+  admin:
+    enabled: true
+    bind_addr: :8080
+
+components:
+  http_rcv:
+    module: receiver.http
+    params:
+      bind_addr: :7071
+  dumper:
+    module: sink.dumper
+    params:
+      out: STDOUT
+
+pipeline:
+  http_rcv:
+    connect: dumper

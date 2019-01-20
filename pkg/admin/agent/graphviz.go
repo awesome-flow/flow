@@ -40,14 +40,6 @@ func NewGraphVizAgent() (*GraphVizAgent, error) {
 	return &GraphVizAgent{tmpl}, nil
 }
 
-const graphvizmock = `
-digraph G {
-  "Welcome" -> "To"
-  "To" -> "Web"
-  "To" -> "GraphViz!"
-}
-`
-
 func (ga *GraphVizAgent) renderGraphViz(rw http.ResponseWriter, req *http.Request) {
 
 	pipelineitf, ok := global.Get("pipeline")
@@ -89,7 +81,7 @@ func init() {
 	}
 	RegisterWebAgent(
 		NewDummyWebAgent(
-			"/graphviz",
+			"/pipeline/describe",
 			graphvizagent.renderGraphViz,
 		),
 	)
