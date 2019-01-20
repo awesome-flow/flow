@@ -9,9 +9,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/tidwall/evio"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/tidwall/evio"
 )
 
 type transpMode uint8
@@ -127,7 +127,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 					}
 					continue
 				}
-				sync, ok := msg.GetMeta("sync")
+				sync, ok := msg.Meta("sync")
 				isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
 				if isSync && replySupported {
 					select {

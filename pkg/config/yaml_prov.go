@@ -11,25 +11,31 @@ type yamlProv struct {
 }
 
 type CfgBlockComponent struct {
-	Module      string
-	Plugin      string
 	Constructor string
+	Module      string
 	Params      map[string]interface{}
+	Plugin      string
 }
 
 type CfgBlockPipeline struct {
-	Links   []string
 	Connect string
+	Links   []string
 	Routes  map[string]string
 }
 
+func (cbp CfgBlockPipeline) IsDisconnected() bool {
+	return len(cbp.Links) == 0 &&
+		len(cbp.Connect) == 0 &&
+		len(cbp.Routes) == 0
+}
+
 type CfgBlockSystemAdmin struct {
-	Enabled  bool
 	BindAddr string `yaml:"bind_addr"`
+	Enabled  bool
 }
 type CfgBlockSystemMetricsReceiver struct {
-	Type   string
 	Params map[string]string
+	Type   string
 }
 type CfgBlockSystemMetrics struct {
 	Enabled  bool
@@ -37,15 +43,15 @@ type CfgBlockSystemMetrics struct {
 	Receiver CfgBlockSystemMetricsReceiver
 }
 type CfgBlockSystem struct {
-	Maxprocs int
 	Admin    CfgBlockSystemAdmin
+	Maxprocs int
 	Metrics  CfgBlockSystemMetrics
 }
 
 type YAMLConfig struct {
-	System     *CfgBlockSystem
 	Components map[string]CfgBlockComponent
 	Pipeline   map[string]CfgBlockPipeline
+	System     *CfgBlockSystem
 }
 
 var (

@@ -184,8 +184,8 @@ func TestCompressGzip(t *testing.T) {
 			}
 
 			expected := compress([]byte(testcase.payload), testcase.coder, testcase.level)
-			if !reflect.DeepEqual(rcv.lastmsg.Payload, expected) {
-				t.Fatalf("payload mismatch: got: %s, want: %s", rcv.lastmsg.Payload, expected)
+			if !reflect.DeepEqual(rcv.lastmsg.Payload(), expected) {
+				t.Fatalf("payload mismatch: got: %s, want: %s", rcv.lastmsg.Payload(), expected)
 			}
 		})
 	}

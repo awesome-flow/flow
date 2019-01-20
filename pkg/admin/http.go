@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/admin/agent"
 	"github.com/awesome-flow/flow/pkg/config"
+	log "github.com/sirupsen/logrus"
 )
 
-type HTTP struct {
+type HttpMux struct {
 	server *http.Server
 }
 
@@ -23,13 +23,13 @@ func newAdminSrvMx(cfg *config.CfgBlockSystem) *http.ServeMux {
 	return srvMx
 }
 
-func NewHTTP(cfg *config.CfgBlockSystem) (*HTTP, error) {
+func NewHttpMux(cfg *config.CfgBlockSystem) (*HttpMux, error) {
 	srvMx := newAdminSrvMx(cfg)
 	server := &http.Server{
 		Addr:    cfg.Admin.BindAddr,
 		Handler: srvMx,
 	}
-	h := &HTTP{server}
+	h := &HttpMux{server}
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
@@ -43,4 +43,9 @@ func NewHTTP(cfg *config.CfgBlockSystem) (*HTTP, error) {
 	}()
 
 	return h, nil
+}
+
+func (h *HttpMux) Stop() error {
+	// TODO(olegs): shut down the agents gracefully
+	return nil
 }

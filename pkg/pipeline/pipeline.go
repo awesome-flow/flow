@@ -9,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/awesome-flow/flow/pkg/admin"
 	"github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/util/data"
@@ -37,10 +36,9 @@ import (
 )
 
 type Pipeline struct {
-	pplCfg    map[string]config.CfgBlockPipeline
-	compsCfg  map[string]config.CfgBlockComponent
-	compTree  *data.NTree
-	adminHttp *admin.HTTP
+	pplCfg   map[string]config.CfgBlockPipeline
+	compsCfg map[string]config.CfgBlockComponent
+	compTree *data.NTree
 }
 
 type ConstrFunc func(string, core.Params, *core.Context) (core.Link, error)
@@ -141,10 +139,9 @@ func NewPipeline(
 	}
 
 	pipeline := &Pipeline{
-		pplCfg:    pplCfg,
-		compsCfg:  compsCfg,
-		compTree:  buildCompTree(pplCfg, compPool),
-		adminHttp: nil,
+		pplCfg:   pplCfg,
+		compsCfg: compsCfg,
+		compTree: buildCompTree(pplCfg, compPool),
 	}
 
 	pipeline.applySysCfg()
@@ -179,33 +176,9 @@ func buildComp(compName string, cfg config.CfgBlockComponent, context *core.Cont
 	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
 }
 
-func (ppl *Pipeline) Explain() string {
-	relTmpl := "    %s -> %s\n"
-	relLblTmpl := "    %s -> %s [label=\"%s\"]\n"
-	graphViz := "digraph G {\n"
-	for compName, compCfg := range ppl.pplCfg {
-		if len(compCfg.Connect) != 0 {
-			graphViz += fmt.Sprintf(relTmpl, compName, compCfg.Connect)
-		}
-		if len(compCfg.Links) != 0 {
-			for _, link := range compCfg.Links {
-				if len(compCfg.Connect) > 0 {
-					graphViz += fmt.Sprintf(relTmpl, link, compName)
-				} else {
-					graphViz += fmt.Sprintf(relTmpl, compName, link)
-				}
-			}
-		}
-		if len(compCfg.Routes) != 0 {
-			for key, route := range compCfg.Routes {
-				graphViz += fmt.Sprintf(relLblTmpl, compName, route, key)
-			}
-		}
-	}
-
-	graphViz += "}"
-
-	return graphViz
+func (ppl *Pipeline) Explain() (string, error) {
+	dotexplain := &DotExplainer{}
+	return dotexplain.Explain(ppl)
 }
 
 func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
@@ -250,14 +223,6 @@ func (ppl *Pipeline) applySysCfg() error {
 	log.Infof("Setting GOMAXPROCS to %d", sysCfg.Maxprocs)
 	runtime.GOMAXPROCS(sysCfg.Maxprocs)
 
-	if sysCfg.Admin.Enabled {
-		log.Infof("Starting admin interface on %s", sysCfg.Admin.BindAddr)
-		admHttp, err := admin.NewHTTP(sysCfg)
-		if err != nil {
-			return err
-		}
-		ppl.adminHttp = admHttp
-	}
 	return nil
 }
 

@@ -177,9 +177,9 @@ func TestHTTP_handleSendV1(t *testing.T) {
 				t.Fatalf("Failed to receive the message")
 			}
 
-			if bytes.Compare(testCase.expectedPayload, rcvLink.LastMsg().Payload) != 0 {
+			if bytes.Compare(testCase.expectedPayload, rcvLink.LastMsg().Payload()) != 0 {
 				t.Errorf("Unexpected last message content: %s, want: %s",
-					rcvLink.LastMsg().Payload, testCase.expectedPayload)
+					rcvLink.LastMsg().Payload(), testCase.expectedPayload)
 			}
 			httpRcv.ExecCmd(&core.Cmd{Code: core.CmdCodeStop})
 		})

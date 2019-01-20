@@ -51,7 +51,7 @@ func TestUnix_unixRecv(t *testing.T) {
 		t.Fatalf("timed out to receive the message")
 	}
 
-	if !reflect.DeepEqual(testRcv.LastMsg().Payload, payload) {
-		t.Fatalf("Unexpected contents in receiver last message: %s", testRcv.LastMsg().Payload)
+	if !reflect.DeepEqual(testRcv.LastMsg().Payload(), payload) {
+		t.Fatalf("Unexpected contents in receiver last message: %s", testRcv.LastMsg().Payload())
 	}
 }

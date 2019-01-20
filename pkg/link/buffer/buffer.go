@@ -96,7 +96,7 @@ func (buf *Buffer) ConnectTo(link core.Link) error {
 	for _, ch := range buf.context.GetMsgCh() {
 		go func(ch chan *core.Message) {
 			for msg := range ch {
-				if msg.GetAttempts() >= uint32(buf.maxRetry) {
+				if msg.Attempts() >= uint32(buf.maxRetry) {
 					metrics.GetCounter(
 						"links.buffer," + buf.Name + "_max_attempts").Inc(1)
 					msg.AckFailed()

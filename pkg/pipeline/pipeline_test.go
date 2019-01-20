@@ -6,6 +6,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/core"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestPipeline_buildComp(t *testing.T) {
@@ -102,4 +103,13 @@ func TestPipeline_buildComp(t *testing.T) {
 			}
 		})
 	}
+}
+
+func cfgFromYaml(body []byte) (*config.YAMLConfig, error) {
+	cfg := &config.YAMLConfig{}
+	err := yaml.Unmarshal(body, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

@@ -40,7 +40,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 func (d *Dumper) Recv(msg *core.Message) error {
 	d.Write([]byte(fmt.Sprintf("Message:\n"+
 		"    meta: %+v\n"+
-		"    payload: %s\n", msg.GetMetaAll(), msg.Payload)))
+		"    payload: %s\n", msg.MetaAll(), msg.Payload())))
 	if flushErr := d.Flush(); flushErr != nil {
 		return msg.AckFailed()
 	}

@@ -83,22 +83,20 @@ func TestMetaParser_Recv(t *testing.T) {
 			}
 
 			select {
-			case s := <-msg.GetAckCh():
-				// do something
-				t.Logf("msg status: %d", s)
+			case <-msg.GetAckCh():
 			case <-time.After(100 * time.Millisecond):
 				t.Errorf("Timed out to send message")
 			}
 
-			msgMeta := testRcv.lastMsg.GetMetaAll()
+			msgMeta := testRcv.lastMsg.MetaAll()
 			if !reflect.DeepEqual(msgMeta, testCase.expMeta) {
 				t.Errorf("Unexpected message meta: %+v, want: %+v",
 					msgMeta, testCase.expMeta)
 			}
 
-			if bytes.Compare(testRcv.lastMsg.Payload, testCase.expPayload) != 0 {
+			if bytes.Compare(testRcv.lastMsg.Payload(), testCase.expPayload) != 0 {
 				t.Errorf("Unexpected message payload: %s, want: %s",
-					testRcv.lastMsg.Payload, testCase.expPayload)
+					testRcv.lastMsg.Payload(), testCase.expPayload)
 			}
 		})
 	}
