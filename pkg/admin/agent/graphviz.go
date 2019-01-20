@@ -63,12 +63,19 @@ func (ga *GraphVizAgent) renderGraphViz(rw http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	explanation, err := pipeline.Explain()
+	if err != nil {
+		log.Errorf("Failed to explain the pipeline: %s", err.Error())
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	data := struct {
 		Title    string
 		GraphViz string
 	}{
 		Title:    "Flowd pipeline render",
-		GraphViz: pipeline.Explain(),
+		GraphViz: explanation,
 	}
 	rw.Header().Set("Content-Type", "text/html")
 	ga.tmpl.Execute(rw, data)

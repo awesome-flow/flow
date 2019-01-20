@@ -55,8 +55,12 @@ func main() {
 	global.Store("pipeline", pipeline)
 	log.Info("Pipeline initalization is complete")
 
-	log.Info("Pipeline GraphViz diagram (plot using https://www.planttext.com):")
-	fmt.Println(pipeline.Explain())
+	if explanation, err := pipeline.Explain(); err != nil {
+		log.Errorf("Failed to explain the pipeline: %s", err.Error())
+	} else {
+		log.Info("Pipeline GraphViz diagram (plot using https://www.planttext.com):")
+		fmt.Println(explanation)
+	}
 
 	log.Info("Activating the pipeline")
 	startErr := pipeline.Start()

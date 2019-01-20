@@ -176,7 +176,12 @@ func buildComp(compName string, cfg config.CfgBlockComponent, context *core.Cont
 	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
 }
 
-func (ppl *Pipeline) Explain() string {
+func (ppl *Pipeline) Explain() (string, error) {
+	dotexplain := &DotExplainer{}
+	return dotexplain.Explain(ppl)
+}
+
+func (ppl *Pipeline) Explain_DEPRECATED() string {
 	relTmpl := "    %s -> %s\n"
 	relLblTmpl := "    %s -> %s [label=\"%s\"]\n"
 	graphViz := "digraph G {\n"
