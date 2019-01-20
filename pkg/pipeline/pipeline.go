@@ -181,35 +181,6 @@ func (ppl *Pipeline) Explain() (string, error) {
 	return dotexplain.Explain(ppl)
 }
 
-func (ppl *Pipeline) Explain_DEPRECATED() string {
-	relTmpl := "    %s -> %s\n"
-	relLblTmpl := "    %s -> %s [label=\"%s\"]\n"
-	graphViz := "digraph G {\n"
-	for compName, compCfg := range ppl.pplCfg {
-		if len(compCfg.Connect) != 0 {
-			graphViz += fmt.Sprintf(relTmpl, compName, compCfg.Connect)
-		}
-		if len(compCfg.Links) != 0 {
-			for _, link := range compCfg.Links {
-				if len(compCfg.Connect) > 0 {
-					graphViz += fmt.Sprintf(relTmpl, link, compName)
-				} else {
-					graphViz += fmt.Sprintf(relTmpl, compName, link)
-				}
-			}
-		}
-		if len(compCfg.Routes) != 0 {
-			for key, route := range compCfg.Routes {
-				graphViz += fmt.Sprintf(relLblTmpl, compName, route, key)
-			}
-		}
-	}
-
-	graphViz += "}"
-
-	return graphViz
-}
-
 func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
 	var stack []interface{}
 	switch cmdPpgt {
