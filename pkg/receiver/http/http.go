@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
@@ -20,6 +21,7 @@ type HTTP struct {
 	Name     string
 	bindaddr string
 	Server   *http.Server
+	once     sync.Once
 	*core.Connector
 }
 
@@ -30,7 +32,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		return nil, fmt.Errorf("HTTP parameters are missing bind_addr")
 	}
 
-	h := &HTTP{name, httpAddr.(string), nil, core.NewConnector()}
+	h := &HTTP{name, httpAddr.(string), nil, sync.Once{}, core.NewConnector()}
 
 	srvMx := http.NewServeMux()
 	srvMx.HandleFunc("/send", func(rw http.ResponseWriter, req *http.Request) {
@@ -43,18 +45,24 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	}
 	h.Server = srv
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			switch err {
-			case http.ErrServerClosed:
-				log.Info(err.Error())
-			default:
-				panic(fmt.Sprintf("HTTP server critical error: %s", err))
-			}
-		}
-	}()
-
 	return h, nil
+}
+
+func (h *HTTP) Connect() error {
+	h.once.Do(func() {
+		go func() {
+			if err := h.Server.ListenAndServe(); err != nil {
+				switch err {
+				case http.ErrServerClosed:
+					log.Error(err.Error())
+				default:
+					panic(fmt.Sprintf("HTTP server critical error: %s", err))
+				}
+			}
+		}()
+	})
+
+	return nil
 }
 
 func (h *HTTP) ExecCmd(cmd *core.Cmd) error {
@@ -63,8 +71,11 @@ func (h *HTTP) ExecCmd(cmd *core.Cmd) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		return h.Server.Shutdown(ctx)
+	case core.CmdCodeStart:
+		return h.Connect()
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
