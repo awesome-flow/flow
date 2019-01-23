@@ -22,7 +22,10 @@ func TestTCP_recv(t *testing.T) {
 
 	tcp, err := New("test_tcp", core.Params{"bind_addr": tcpAddr}, core.NewContext())
 	if err != nil {
-		t.Fatalf("Failed to start a TCP listener: %s", err)
+		t.Fatalf("Failed to initialize a TCP listener: %s", err)
+	}
+	if err := tcp.ExecCmd(core.NewCmdStart()); err != nil {
+		t.Fatalf("Failed to start the TCP listener: %s", err)
 	}
 	rcvLink := testutils.NewRememberAndReply("rar", testutils.ReplyDone)
 	tcp.ConnectTo(rcvLink)

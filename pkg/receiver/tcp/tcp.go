@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
@@ -44,9 +45,12 @@ var (
 )
 
 type TCP struct {
-	Name string
-	mode replyMode
-	srv  net.Listener
+	Name    string
+	mode    replyMode
+	addr    string
+	srv     net.Listener
+	once    sync.Once
+	lasterr error
 	*core.Connector
 }
 
@@ -80,15 +84,41 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 
 	log.Info("Instantiating standard backend for TCP receiver")
 
-	//net := &gracenet.Net{}
-	srv, err := net.Listen("tcp", tcpAddr.(string))
-	if err != nil {
-		return nil, err
+	tcp := &TCP{
+		name + "@" + tcpAddr.(string),
+		mode,
+		tcpAddr.(string),
+		nil,
+		sync.Once{},
+		nil,
+		core.NewConnector(),
 	}
-	tcp := &TCP{name + "@" + tcpAddr.(string), mode, srv, core.NewConnector()}
-	go tcp.handleListener()
 
 	return tcp, nil
+}
+
+func (tcp *TCP) ExecCmd(cmd *core.Cmd) error {
+	switch cmd.Code {
+	case core.CmdCodeStart:
+		return tcp.Connect()
+	default:
+		return nil
+	}
+}
+
+func (tcp *TCP) Connect() error {
+	tcp.once.Do(func() {
+		tcp.lasterr = nil
+		tcp.srv = nil
+		srv, err := net.Listen("tcp", tcp.addr)
+		if err != nil {
+			tcp.lasterr = err
+			return
+		}
+		tcp.srv = srv
+		go tcp.handleListener()
+	})
+	return tcp.lasterr
 }
 
 func (tcp *TCP) handleListener() {

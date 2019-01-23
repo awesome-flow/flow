@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -35,9 +36,12 @@ var (
 )
 
 type Evio struct {
-	Name   string
-	mode   transpMode
-	events *evio.Events
+	Name      string
+	mode      transpMode
+	listeners []string
+	events    *evio.Events
+	once      sync.Once
+	lasterr   error
 	*core.Connector
 }
 
@@ -54,6 +58,10 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	listIntf, ok := params["listeners"]
 	if !ok {
 		return nil, fmt.Errorf("Failed to initialize evio: missing listeners")
+	}
+	listeners := make([]string, 0, len(listIntf.([]interface{})))
+	for _, li := range listIntf.([]interface{}) {
+		listeners = append(listeners, li.(string))
 	}
 
 	log.Infof(
@@ -74,7 +82,10 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	ev := &Evio{
 		name,
 		mode,
+		listeners,
 		events,
+		sync.Once{},
+		nil,
 		core.NewConnector(),
 	}
 
@@ -154,17 +165,30 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		return
 	}
 
-	listeners := make([]string, len(listIntf.([]interface{})))
-	for ix, li := range listIntf.([]interface{}) {
-		listeners[ix] = li.(string)
-	}
-	go func() {
-		if err := evio.Serve(*events, listeners...); err != nil {
-			log.Fatalf("Failed to start evio: %s", err)
-		}
-	}()
-
 	return ev, nil
+}
+
+func (ev *Evio) ExecCmd(cmd *core.Cmd) error {
+	switch cmd.Code {
+	case core.CmdCodeStart:
+		return ev.Connect()
+	default:
+		return nil
+	}
+}
+
+func (ev *Evio) Connect() error {
+	ev.once.Do(func() {
+		ev.lasterr = nil
+		go func() {
+			if err := evio.Serve(*ev.events, ev.listeners...); err != nil {
+				ev.lasterr = fmt.Errorf("Failed to start evio: %s", err)
+				return
+			}
+		}()
+	})
+
+	return ev.lasterr
 }
 
 func status2resp(s core.MsgStatus) []byte {
