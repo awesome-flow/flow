@@ -65,6 +65,9 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	return buf, nil
 }
 
+func (buf *Buffer) SetUp() error    { return nil }
+func (buf *Buffer) TearDown() error { return nil }
+
 func (buf *Buffer) GetContext() *core.Context {
 	return buf.context
 }

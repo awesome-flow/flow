@@ -52,6 +52,14 @@ const (
 	CmdPpgtTopDwn
 )
 
+func NewCmdStart() *Cmd {
+	return &Cmd{Code: CmdCodeStart}
+}
+
+func NewCmdStop() *Cmd {
+	return &Cmd{Code: CmdCodeStop}
+}
+
 type Message struct {
 	meta     map[string]interface{}
 	payload  []byte

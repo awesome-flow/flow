@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
@@ -20,8 +21,13 @@ type HTTP struct {
 	Name     string
 	bindaddr string
 	Server   *http.Server
+	once     sync.Once
 	*core.Connector
 }
+
+const (
+	ShutdownTimeout = 5 * time.Second
+)
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 
@@ -30,7 +36,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		return nil, fmt.Errorf("HTTP parameters are missing bind_addr")
 	}
 
-	h := &HTTP{name, httpAddr.(string), nil, core.NewConnector()}
+	h := &HTTP{name, httpAddr.(string), nil, sync.Once{}, core.NewConnector()}
 
 	srvMx := http.NewServeMux()
 	srvMx.HandleFunc("/send", func(rw http.ResponseWriter, req *http.Request) {
@@ -43,8 +49,15 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	}
 	h.Server = srv
 
+	h.OnSetUp(h.SetUp)
+	h.OnTearDown(h.TearDown)
+
+	return h, nil
+}
+
+func (h *HTTP) SetUp() error {
 	go func() {
-		if err := srv.ListenAndServe(); err != nil {
+		if err := h.Server.ListenAndServe(); err != nil {
 			switch err {
 			case http.ErrServerClosed:
 				log.Info(err.Error())
@@ -54,17 +67,13 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		}
 	}()
 
-	return h, nil
+	return nil
 }
 
-func (h *HTTP) ExecCmd(cmd *core.Cmd) error {
-	switch cmd.Code {
-	case core.CmdCodeStop:
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		return h.Server.Shutdown(ctx)
-	}
-	return nil
+func (h *HTTP) TearDown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+	defer cancel()
+	return h.Server.Shutdown(ctx)
 }
 
 func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {

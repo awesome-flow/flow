@@ -58,35 +58,32 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	}
 
 	ux := &Unix{name, path.(string), lstnr, core.NewConnector()}
-	go func() {
-		ux.connect()
-	}()
+
+	ux.OnSetUp(ux.SetUp)
+	ux.OnTearDown(ux.TearDown)
+
 	return ux, nil
 }
 
-func (ux *Unix) connect() error {
-	if err := backoff.Retry(func() error {
-		conn, err := ux.listener.Accept()
-		if err != nil {
-			return err
+func (ux *Unix) SetUp() error {
+	go func() {
+		if err := backoff.Retry(func() error {
+			conn, err := ux.listener.Accept()
+			if err != nil {
+				return err
+			}
+			go ux.unixRecv(conn)
+			return nil
+		}, backoff.NewExponentialBackOff()); err != nil {
+			// Unrecoverable error, giving up
+			panic(err.Error())
 		}
-		go ux.unixRecv(conn)
-		return nil
-	}, backoff.NewExponentialBackOff()); err != nil {
-		// Unrecoverable error, giving up
-		return err
-	}
+	}()
 	return nil
 }
 
-func (ux *Unix) ExecCmd(cmd *core.Cmd) error {
-	switch cmd.Code {
-	case core.CmdCodeStop:
-		if err := ux.listener.Close(); err != nil {
-			log.Warnf("Failed to close unix socket properly: %s", err.Error())
-		}
-	}
-	return nil
+func (ux *Unix) TearDown() error {
+	return ux.listener.Close()
 }
 
 func (ux *Unix) unixRecv(conn net.Conn) {
@@ -102,7 +99,7 @@ func (ux *Unix) unixRecv(conn net.Conn) {
 			}
 			log.Warnf("Unix conn Read failed: %s", err)
 			metrics.GetCounter("receiver.unix.msg.failed").Inc(1)
-			if err := ux.connect(); err != nil {
+			if err := ux.Reset(); err != nil {
 				panic(err.Error())
 			}
 			return

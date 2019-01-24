@@ -27,6 +27,7 @@ type Demux struct {
 func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	links := make([]core.Link, 0)
 	demux := &Demux{name, links, core.NewConnectorWithContext(context), &sync.Mutex{}}
+
 	for _, ch := range demux.GetMsgCh() {
 		go func(ch chan *core.Message) {
 			for msg := range ch {
@@ -40,14 +41,15 @@ func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 	return demux, nil
 }
 
-func (dedemux *Demux) ConnectTo(core.Link) error {
+func (demux *Demux) ConnectTo(core.Link) error {
 	panic("Demux link is not supposed to be connected directly")
 }
 
-func (dedemux *Demux) LinkTo(links []core.Link) error {
-	dedemux.Lock()
-	defer dedemux.Unlock()
-	dedemux.links = append(dedemux.links, links...)
+func (demux *Demux) LinkTo(links []core.Link) error {
+	demux.Lock()
+	defer demux.Unlock()
+	demux.links = append(demux.links, links...)
+
 	return nil
 }
 

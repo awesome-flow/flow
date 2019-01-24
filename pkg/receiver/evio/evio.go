@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -35,9 +36,12 @@ var (
 )
 
 type Evio struct {
-	Name   string
-	mode   transpMode
-	events *evio.Events
+	Name      string
+	mode      transpMode
+	listeners []string
+	events    *evio.Events
+	once      sync.Once
+	lasterr   error
 	*core.Connector
 }
 
@@ -54,6 +58,10 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	listIntf, ok := params["listeners"]
 	if !ok {
 		return nil, fmt.Errorf("Failed to initialize evio: missing listeners")
+	}
+	listeners := make([]string, 0, len(listIntf.([]interface{})))
+	for _, li := range listIntf.([]interface{}) {
+		listeners = append(listeners, li.(string))
 	}
 
 	log.Infof(
@@ -74,9 +82,15 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	ev := &Evio{
 		name,
 		mode,
+		listeners,
 		events,
+		sync.Once{},
+		nil,
 		core.NewConnector(),
 	}
+
+	ev.OnSetUp(ev.SetUp)
+	ev.OnTearDown(ev.TearDown)
 
 	events.Opened = func(ec evio.Conn) (out []byte, opts evio.Options, action evio.Action) {
 		log.Infof("Opened a new connection: %s", ec.RemoteAddr().Network())
@@ -154,17 +168,20 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		return
 	}
 
-	listeners := make([]string, len(listIntf.([]interface{})))
-	for ix, li := range listIntf.([]interface{}) {
-		listeners[ix] = li.(string)
-	}
+	return ev, nil
+}
+
+func (ev *Evio) SetUp() error {
 	go func() {
-		if err := evio.Serve(*events, listeners...); err != nil {
-			log.Fatalf("Failed to start evio: %s", err)
+		if err := evio.Serve(*ev.events, ev.listeners...); err != nil {
+			panic(fmt.Sprintf("Failed to start evio: %s", err))
 		}
 	}()
+	return nil
+}
 
-	return ev, nil
+func (ev *Evio) TearDown() error {
+	return nil
 }
 
 func status2resp(s core.MsgStatus) []byte {

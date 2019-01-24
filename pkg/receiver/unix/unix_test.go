@@ -25,6 +25,10 @@ func TestUnix_unixRecv(t *testing.T) {
 		t.Fatalf("Failed to initialize unix receiver: %s", err.Error())
 	}
 
+	if err := unix.ExecCmd(core.NewCmdStart()); err != nil {
+		t.Fatalf("Failed to start unix link: %s", err)
+	}
+
 	unix.ConnectTo(testRcv)
 
 	conn, connErr := net.Dial("unix", path)

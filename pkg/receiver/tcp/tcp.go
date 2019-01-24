@@ -46,6 +46,7 @@ var (
 type TCP struct {
 	Name string
 	mode replyMode
+	addr string
 	srv  net.Listener
 	*core.Connector
 }
@@ -80,15 +81,36 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 
 	log.Info("Instantiating standard backend for TCP receiver")
 
-	//net := &gracenet.Net{}
-	srv, err := net.Listen("tcp", tcpAddr.(string))
-	if err != nil {
-		return nil, err
+	tcp := &TCP{
+		name + "@" + tcpAddr.(string),
+		mode,
+		tcpAddr.(string),
+		nil,
+		core.NewConnector(),
 	}
-	tcp := &TCP{name + "@" + tcpAddr.(string), mode, srv, core.NewConnector()}
-	go tcp.handleListener()
+
+	tcp.OnSetUp(tcp.SetUp)
+	tcp.OnTearDown(tcp.TearDown)
 
 	return tcp, nil
+}
+
+func (tcp *TCP) SetUp() error {
+	srv, err := net.Listen("tcp", tcp.addr)
+	if err != nil {
+		return err
+	}
+	tcp.srv = srv
+	go tcp.handleListener()
+
+	return nil
+}
+
+func (tcp *TCP) TearDown() error {
+	if tcp.srv == nil {
+		return fmt.Errorf("tcp listener is empty")
+	}
+	return tcp.srv.Close()
 }
 
 func (tcp *TCP) handleListener() {

@@ -34,9 +34,20 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	udp := &UDP{
 		name, udpAddr.(string), nil, core.NewConnector(), &sync.Mutex{},
 	}
-	go udp.connect()
 
 	return udp, nil
+}
+
+func (udp *UDP) SetUp() error {
+	go udp.connect()
+	return nil
+}
+
+func (udp *UDP) TearDown() error {
+	if udp.conn == nil {
+		return fmt.Errorf("udp conn is empty")
+	}
+	return udp.conn.Close()
 }
 
 func (udp *UDP) connect() {

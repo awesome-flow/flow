@@ -81,6 +81,9 @@ func (c *C) ExecCmd(cmd *Cmd) error {
 	return nil
 }
 
+func (c *C) SetUp() error    { return nil }
+func (c *C) TearDown() error { return nil }
+
 func (c *C) String() string { return "a C instance" }
 
 func (c *C) GetContext() *Context { return nil }
@@ -114,58 +117,49 @@ func Test3ConnectedLinks(t *testing.T) {
 	}
 }
 
-// ===== Benchmarks =====
+type link struct {
+	setup    int
+	teardown int
+	*Connector
+}
 
-// type consumer struct {
-// 	cnt uint64
-// 	*Connector
-// }
-//
-// func newConsumer(ctx *Context) *consumer {
-// 	return &consumer{0, NewConnectorWithContext(ctx)}
-// }
-//
-// func (c *consumer) Recv(msg *Message) error {
-// 	c.cnt++
-// 	return nil
-// }
-//
-// func BenchmarkSendRecvUno(b *testing.B) {
-// 	doBenchmarkSendRecv(b, 1, 1)
-// }
-//
-// func BenchmarkSendRecvDuo(b *testing.B) {
-// 	doBenchmarkSendRecv(b, 2, 1)
-// }
-//
-// func BenchmarkSendRecvQuadro(b *testing.B) {
-// 	doBenchmarkSendRecv(b, 4, 1)
-// }
-//
-// func BenchmarkSendRecvOcta(b *testing.B) {
-// 	doBenchmarkSendRecv(b, 8, 1)
-// }
-//
-// func doBenchmarkSendRecv(b *testing.B, threadiness int, bufSize int) {
-//
-// 	contexts := make([]*Context, threadiness+1) // +1 for the receiver
-// 	for i := 0; i < threadiness+1; i++ {
-// 		msgChannels := make([]chan *Message, threadiness)
-// 		for i := 0; i < threadiness; i++ {
-// 			msgChannels[i] = make(chan *Message, bufSize)
-// 		}
-// 		contexts[i] = NewContextUnsafe(msgChannels, make(chan *Cmd), make(chan *Cmd), &sync.Map{})
-// 	}
-// 	receiver := NewConnectorWithContext(contexts[threadiness]) // the last one
-// 	consumers := make([]*consumer, threadiness)
-// 	for i := 0; i < threadiness; i++ {
-// 		consumers[i] = newConsumer(contexts[i])
-// 		receiver.ConnectTo(consumers[i])
-// 	}
-// 	for i := 0; i < b.N; i++ {
-// 		msg := NewMessage(test.RandStringBytes(1024))
-// 		if err := receiver.Recv(msg); err != nil {
-// 			panic(err)
-// 		}
-// 	}
-// }
+func newLink() *link {
+	l := &link{0, 0, NewConnector()}
+	l.OnSetUp(l.SetUp)
+	l.OnTearDown(l.TearDown)
+	return l
+}
+
+func (l *link) SetUp() error {
+	l.setup++
+	return nil
+}
+
+func (l *link) TearDown() error {
+	l.teardown++
+	return nil
+}
+
+// Start should call SetUp only once
+func TestStart(t *testing.T) {
+	l := newLink()
+	if l.setup != 0 {
+		t.Fatalf("unexpected setup counter: %d, want: 0", l.setup)
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			if err := l.Start(); err != nil {
+				t.Fatalf("Failed to start link: %s", err)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	if l.setup != 1 {
+		t.Fatalf("unexpected setup counter: %d, want: 1", l.setup)
+	}
+}

@@ -132,6 +132,11 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to create an HTTP receiver: %s", err)
 			}
+
+			if err := httpRcv.ExecCmd(core.NewCmdStart()); err != nil {
+				t.Fatal(err.Error())
+			}
+
 			time.Sleep(10 * time.Millisecond)
 			rcvLink := testutils.NewRememberAndReply("rar", testCase.reply)
 			httpRcv.ConnectTo(rcvLink)

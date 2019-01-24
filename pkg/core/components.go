@@ -75,6 +75,8 @@ func (c *Context) SetVal(key string, value interface{}) {
 }
 
 type Link interface {
+	SetUp() error
+	TearDown() error
 	String() string
 	Recv(*Message) error
 	Send(*Message) error
@@ -86,6 +88,15 @@ type Link interface {
 }
 
 type Connector struct {
+	onsetup    func() error
+	onteardown func() error
+
+	startonce sync.Once
+	stoponce  sync.Once
+
+	starterr error
+	stoperr  error
+
 	context *Context
 }
 
@@ -94,9 +105,53 @@ func NewConnector() *Connector {
 }
 
 func NewConnectorWithContext(context *Context) *Connector {
-	return &Connector{
-		context: context,
+	connector := &Connector{context: context}
+	connector.onsetup = connector.SetUp
+	connector.onteardown = connector.TearDown
+
+	return connector
+}
+
+func (cn *Connector) OnSetUp(onsetup func() error) {
+	cn.onsetup = onsetup
+}
+
+func (cn *Connector) OnTearDown(onteardown func() error) {
+	cn.onteardown = onteardown
+}
+
+func (cn *Connector) Start() error {
+	cn.startonce.Do(func() {
+		cn.starterr = cn.onsetup()
+	})
+	return cn.starterr
+}
+
+func (cn *Connector) SetUp() error {
+	return nil
+}
+
+func (cn *Connector) Stop() error {
+	cn.stoponce.Do(func() {
+		cn.stoperr = cn.onteardown()
+	})
+	return cn.stoperr
+}
+
+func (cn *Connector) TearDown() error {
+	return nil
+}
+
+func (cn *Connector) Reset() error {
+	cn.stoponce = sync.Once{}
+	if err := cn.Stop(); err != nil {
+		return err
 	}
+	cn.startonce = sync.Once{}
+	if err := cn.Start(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (cn *Connector) Recv(msg *Message) error {
@@ -110,7 +165,14 @@ func (cn *Connector) Send(msg *Message) error {
 }
 
 func (cn *Connector) ExecCmd(cmd *Cmd) error {
-	return nil
+	switch cmd.Code {
+	case CmdCodeStart:
+		return cn.Start()
+	case CmdCodeStop:
+		return cn.Stop()
+	default:
+		return nil
+	}
 }
 
 func (cn *Connector) ConnectTo(l Link) error {
