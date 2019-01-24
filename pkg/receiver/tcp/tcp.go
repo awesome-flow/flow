@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
@@ -45,12 +44,10 @@ var (
 )
 
 type TCP struct {
-	Name    string
-	mode    replyMode
-	addr    string
-	srv     net.Listener
-	once    sync.Once
-	lasterr error
+	Name string
+	mode replyMode
+	addr string
+	srv  net.Listener
 	*core.Connector
 }
 
@@ -89,36 +86,31 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		mode,
 		tcpAddr.(string),
 		nil,
-		sync.Once{},
-		nil,
 		core.NewConnector(),
 	}
+
+	tcp.OnSetUp(tcp.SetUp)
+	tcp.OnTearDown(tcp.TearDown)
 
 	return tcp, nil
 }
 
-func (tcp *TCP) ExecCmd(cmd *core.Cmd) error {
-	switch cmd.Code {
-	case core.CmdCodeStart:
-		return tcp.Connect()
-	default:
-		return nil
+func (tcp *TCP) SetUp() error {
+	srv, err := net.Listen("tcp", tcp.addr)
+	if err != nil {
+		return err
 	}
+	tcp.srv = srv
+	go tcp.handleListener()
+
+	return nil
 }
 
-func (tcp *TCP) Connect() error {
-	tcp.once.Do(func() {
-		tcp.lasterr = nil
-		tcp.srv = nil
-		srv, err := net.Listen("tcp", tcp.addr)
-		if err != nil {
-			tcp.lasterr = err
-			return
-		}
-		tcp.srv = srv
-		go tcp.handleListener()
-	})
-	return tcp.lasterr
+func (tcp *TCP) TearDown() error {
+	if tcp.srv == nil {
+		return fmt.Errorf("tcp listener is empty")
+	}
+	return tcp.srv.Close()
 }
 
 func (tcp *TCP) handleListener() {

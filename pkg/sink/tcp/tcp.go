@@ -34,8 +34,22 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	tcp := &TCP{
 		name, tcpAddr.(string), nil, core.NewConnector(), &sync.Mutex{},
 	}
-	go tcp.connect()
+	tcp.OnSetUp(tcp.SetUp)
+	tcp.OnTearDown(tcp.TearDown)
+
 	return tcp, nil
+}
+
+func (tcp *TCP) SetUp() error {
+	go tcp.connect()
+	return nil
+}
+
+func (tcp *TCP) TearDown() error {
+	if tcp.conn == nil {
+		return fmt.Errorf("tcp connection is empty")
+	}
+	return tcp.conn.Close()
 }
 
 func (tcp *TCP) connect() {

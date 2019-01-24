@@ -7,10 +7,10 @@ import (
 	"net"
 	"runtime"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -20,6 +20,7 @@ var (
 
 type UDP struct {
 	Name string
+	addr *net.UDPAddr
 	conn *net.UDPConn
 	*core.Connector
 }
@@ -46,20 +47,27 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 
 	log.Info("Instantiating standard backend for UDP receiver")
 
-	udp := &UDP{
-		name,
-		nil,
-		core.NewConnector(),
-	}
-
 	addr, addrErr := net.ResolveUDPAddr("udp", udpAddr.(string))
 	if addrErr != nil {
 		return nil, addrErr
 	}
 
-	conn, connErr := net.ListenUDP("udp", addr)
-	if connErr != nil {
-		return nil, connErr
+	udp := &UDP{
+		name,
+		addr,
+		nil,
+		core.NewConnector(),
+	}
+	udp.OnSetUp(udp.SetUp)
+	udp.OnTearDown(udp.TearDown)
+
+	return udp, nil
+}
+
+func (udp *UDP) SetUp() error {
+	conn, err := net.ListenUDP("udp", udp.addr)
+	if err != nil {
+		return err
 	}
 
 	udp.conn = conn
@@ -68,7 +76,15 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		go udp.recv()
 	}
 
-	return udp, nil
+	return nil
+}
+
+func (udp *UDP) TearDown() error {
+	if udp.conn == nil {
+		return fmt.Errorf("udp listener is empty")
+	}
+
+	return udp.conn.Close()
 }
 
 func (udp *UDP) recv() {

@@ -56,6 +56,7 @@ func TestDemux_multiplex(t *testing.T) {
 	for _, tstCase := range tests {
 		t.Run(tstCase.descr, func(t *testing.T) {
 			demux, err := New("demux", nil, core.NewContext())
+			demux.ExecCmd(core.NewCmdStart())
 			if err != nil {
 				t.Errorf("Unexpected demux init error: %s", err.Error())
 			}

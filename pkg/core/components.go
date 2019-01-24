@@ -88,11 +88,16 @@ type Link interface {
 }
 
 type Connector struct {
+	onsetup    func() error
+	onteardown func() error
+
 	startonce sync.Once
-	starterr  error
 	stoponce  sync.Once
-	stoperr   error
-	context   *Context
+
+	starterr error
+	stoperr  error
+
+	context *Context
 }
 
 func NewConnector() *Connector {
@@ -100,14 +105,24 @@ func NewConnector() *Connector {
 }
 
 func NewConnectorWithContext(context *Context) *Connector {
-	return &Connector{
-		context: context,
-	}
+	connector := &Connector{context: context}
+	connector.onsetup = connector.SetUp
+	connector.onteardown = connector.TearDown
+
+	return connector
+}
+
+func (cn *Connector) OnSetUp(onsetup func() error) {
+	cn.onsetup = onsetup
+}
+
+func (cn *Connector) OnTearDown(onteardown func() error) {
+	cn.onteardown = onteardown
 }
 
 func (cn *Connector) Start() error {
 	cn.startonce.Do(func() {
-		cn.starterr = cn.SetUp()
+		cn.starterr = cn.onsetup()
 	})
 	return cn.starterr
 }
@@ -118,12 +133,24 @@ func (cn *Connector) SetUp() error {
 
 func (cn *Connector) Stop() error {
 	cn.stoponce.Do(func() {
-		cn.stoperr = cn.TearDown()
+		cn.stoperr = cn.onteardown()
 	})
 	return cn.stoperr
 }
 
 func (cn *Connector) TearDown() error {
+	return nil
+}
+
+func (cn *Connector) Reset() error {
+	cn.stoponce = sync.Once{}
+	if err := cn.Stop(); err != nil {
+		return err
+	}
+	cn.startonce = sync.Once{}
+	if err := cn.Start(); err != nil {
+		return err
+	}
 	return nil
 }
 

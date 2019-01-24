@@ -24,6 +24,11 @@ func TestUDP_recv(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start a UDP listener: %s", err.Error())
 	}
+
+	if err := udp.ExecCmd(core.NewCmdStart()); err != nil {
+		t.Fatalf("Failed to send start command: %s", err)
+	}
+
 	rcvLink := testutils.NewRememberAndReply("rar", testutils.ReplyDone)
 
 	udp.ConnectTo(rcvLink)

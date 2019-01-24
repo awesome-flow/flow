@@ -89,6 +89,9 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		core.NewConnector(),
 	}
 
+	ev.OnSetUp(ev.SetUp)
+	ev.OnTearDown(ev.TearDown)
+
 	events.Opened = func(ec evio.Conn) (out []byte, opts evio.Options, action evio.Action) {
 		log.Infof("Opened a new connection: %s", ec.RemoteAddr().Network())
 		metrics.GetCounter("receiver.evio.conn.opened").Inc(1)
@@ -168,27 +171,17 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	return ev, nil
 }
 
-func (ev *Evio) ExecCmd(cmd *core.Cmd) error {
-	switch cmd.Code {
-	case core.CmdCodeStart:
-		return ev.Connect()
-	default:
-		return nil
-	}
+func (ev *Evio) SetUp() error {
+	go func() {
+		if err := evio.Serve(*ev.events, ev.listeners...); err != nil {
+			panic(fmt.Sprintf("Failed to start evio: %s", err))
+		}
+	}()
+	return nil
 }
 
-func (ev *Evio) Connect() error {
-	ev.once.Do(func() {
-		ev.lasterr = nil
-		go func() {
-			if err := evio.Serve(*ev.events, ev.listeners...); err != nil {
-				ev.lasterr = fmt.Errorf("Failed to start evio: %s", err)
-				return
-			}
-		}()
-	})
-
-	return ev.lasterr
+func (ev *Evio) TearDown() error {
+	return nil
 }
 
 func status2resp(s core.MsgStatus) []byte {

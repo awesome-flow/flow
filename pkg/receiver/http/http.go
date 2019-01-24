@@ -25,6 +25,10 @@ type HTTP struct {
 	*core.Connector
 }
 
+const (
+	ShutdownTimeout = 5 * time.Second
+)
+
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 
 	httpAddr, ok := params["bind_addr"]
@@ -45,37 +49,31 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	}
 	h.Server = srv
 
+	h.OnSetUp(h.SetUp)
+	h.OnTearDown(h.TearDown)
+
 	return h, nil
 }
 
-func (h *HTTP) Connect() error {
-	h.once.Do(func() {
-		go func() {
-			if err := h.Server.ListenAndServe(); err != nil {
-				switch err {
-				case http.ErrServerClosed:
-					log.Error(err.Error())
-				default:
-					panic(fmt.Sprintf("HTTP server critical error: %s", err))
-				}
+func (h *HTTP) SetUp() error {
+	go func() {
+		if err := h.Server.ListenAndServe(); err != nil {
+			switch err {
+			case http.ErrServerClosed:
+				log.Info(err.Error())
+			default:
+				panic(fmt.Sprintf("HTTP server critical error: %s", err))
 			}
-		}()
-	})
+		}
+	}()
 
 	return nil
 }
 
-func (h *HTTP) ExecCmd(cmd *core.Cmd) error {
-	switch cmd.Code {
-	case core.CmdCodeStop:
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		return h.Server.Shutdown(ctx)
-	case core.CmdCodeStart:
-		return h.Connect()
-	default:
-		return nil
-	}
+func (h *HTTP) TearDown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+	defer cancel()
+	return h.Server.Shutdown(ctx)
 }
 
 func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
