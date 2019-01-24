@@ -81,6 +81,9 @@ func (c *C) ExecCmd(cmd *Cmd) error {
 	return nil
 }
 
+func (c *C) SetUp() error    { return nil }
+func (c *C) TearDown() error { return nil }
+
 func (c *C) String() string { return "a C instance" }
 
 func (c *C) GetContext() *Context { return nil }
