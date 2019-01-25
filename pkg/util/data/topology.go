@@ -4,114 +4,67 @@ import (
 	"fmt"
 )
 
-type TopologyNode interface {
-	GetName() string
-}
+type TopologyNode interface{}
 
-type edge struct {
-	from string
-	to   string
+type TopologyEdge struct {
+	From TopologyNode
+	To   TopologyNode
 }
 
 type Topology struct {
-	nodes []TopologyNode
-	edges []*edge
+	Edges []TopologyEdge
+	Nodes []TopologyNode
 }
 
-func NewTopology(extNodes ...TopologyNode) *Topology {
+func NewTopology(nodes ...TopologyNode) *Topology {
 	return &Topology{
-		edges: make([]*edge, 0),
-		nodes: extNodes,
+		Edges: make([]TopologyEdge, 0),
+		Nodes: nodes,
 	}
 }
 
-func (top *Topology) Connect(from string, to string) {
-	top.edges = append(top.edges, &edge{from, to})
+func (top *Topology) Connect(from, to TopologyNode) {
+	top.Edges = append(top.Edges, TopologyEdge{From: from, To: to})
 }
 
 func (top *Topology) Sort() ([]TopologyNode, error) {
-	// Adjacency matrix has an extra field indicating the total
-	// number of edges to this node (S)
-	// Semantics: row index is node FROM, col index is node TO.
-	// Example:
-	//   0 1 2 3
-	// 0 X 1 0 1
-	// 1 0 X 1 0
-	// 2 0 0 X 0
-	// 3 1 0 1 X
-	//
-	// S 1 1 2 1
-	//
-	// Node 1 is connected to node 2, so does node 3. Total
-	// number of incoming edges to node 2 is also 2.
-	//
-	lenNodes := len(top.nodes)
-	adjMx := make([][]uint16, lenNodes+1)
-	nameToIx := make(map[string]int)
-	res := make([]TopologyNode, 0)
-	ixSet := make(map[int]bool)
-	emptyRes := []TopologyNode{}
-
-	for ix := 0; ix <= lenNodes; ix++ {
-		adjMx[ix] = make([]uint16, lenNodes)
-		if ix < lenNodes {
-			nameToIx[top.nodes[ix].GetName()] = ix
+	temp := make(map[TopologyNode]bool)
+	perm := make(map[TopologyNode]bool)
+	outs := make(map[TopologyNode][]TopologyNode)
+	for _, edge := range top.Edges {
+		if _, ok := outs[edge.From]; !ok {
+			outs[edge.From] = make([]TopologyNode, 0, 1)
 		}
+		outs[edge.From] = append(outs[edge.From], edge.To)
 	}
 
-	for _, edge := range top.edges {
-		fromIx, ok := nameToIx[edge.from]
-		if !ok {
-			return emptyRes, fmt.Errorf("Unknown node connecting from: %s", edge.from)
-		}
-		toIx, ok := nameToIx[edge.to]
-		if !ok {
-			return emptyRes, fmt.Errorf("Unknown node connecting to: %s", edge.to)
-		}
-		adjMx[fromIx][toIx] = 1
-		adjMx[lenNodes][toIx]++
-	}
-	for ix, v := range adjMx[lenNodes] {
-		if v == 0 {
-			ixSet[ix] = true
-		}
-	}
-
-	ixList := make([]int, 0)
-	visited := make([]bool, lenNodes)
-	for len(ixSet) > 0 {
-		var fromIx int
-		for ix := range ixSet {
-			fromIx = ix
-			break
-		}
-		if visited[fromIx] {
-			return emptyRes, fmt.Errorf("Cycle detected on node %s",
-				top.nodes[fromIx].GetName())
-		}
-		delete(ixSet, fromIx)
-		ixList = append(ixList, fromIx)
-		visited[fromIx] = true
-		for toIx := 0; toIx < lenNodes; toIx++ {
-			if adjMx[fromIx][toIx] > 0 {
-				adjMx[fromIx][toIx] = 0
-				adjMx[lenNodes][toIx]--
-				if adjMx[lenNodes][toIx] == 0 {
-					ixSet[toIx] = true
-				}
+	var visitAll func([]TopologyNode) ([]TopologyNode, error)
+	visitAll = func(nodes []TopologyNode) ([]TopologyNode, error) {
+		res := make([]TopologyNode, 0)
+		for _, node := range nodes {
+			if perm[node] {
+				continue
 			}
+			if temp[node] {
+				return nil, fmt.Errorf("Detected graph cycle on node %#v", node)
+			}
+			temp[node] = true
+			if subs, ok := outs[node]; ok {
+				subsorted, err := visitAll(subs)
+				if err != nil {
+					return nil, err
+				}
+				res = append(res, subsorted...)
+			}
+			perm[node] = true
+			res = append(res, node)
 		}
-	}
-	for ix, cnt := range adjMx[lenNodes] {
-		if cnt > 0 {
-			return make([]TopologyNode, 0),
-				fmt.Errorf("Node %s contains unresolved edges",
-					top.nodes[ix].GetName())
-		}
-	}
-	for _, ix := range ixList {
-		res = append(res, top.nodes[ix])
+		return res, nil
 	}
 
-	return res, nil
+	if res, err := visitAll(top.Nodes); err != nil {
+		return nil, err
+	} else {
+		return res, nil
+	}
 }

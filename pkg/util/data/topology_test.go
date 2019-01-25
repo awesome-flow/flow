@@ -47,16 +47,20 @@ func TestTopology_SortSingle(t *testing.T) {
 	}
 }
 
+type StringerNode string
+
 func TestTopology_SortUnresolvable(t *testing.T) {
 	nodes := []TopologyNode{
-		newNode("1"),
-		newNode("2"),
-		newNode("3"),
+		StringerNode("1"),
+		StringerNode("2"),
+		StringerNode("3"),
 	}
+
 	top := NewTopology(nodes...)
-	top.Connect("1", "2")
-	top.Connect("2", "3")
-	top.Connect("3", "1")
+	top.Connect(nodes[0], nodes[1])
+	top.Connect(nodes[1], nodes[2])
+	top.Connect(nodes[2], nodes[0])
+
 	sorted, err := top.Sort()
 	if err == nil {
 		t.Errorf("Expected an error from a cycled graph")
@@ -64,68 +68,87 @@ func TestTopology_SortUnresolvable(t *testing.T) {
 	if l := len(sorted); l != 0 {
 		t.Errorf("Unexpected length of the sorted result: %d (want 0)", l)
 	}
-	res := make([]string, len(sorted))
-	for ix, node := range sorted {
-		res[ix] = node.GetName()
+	res := make([]string, 0, len(sorted))
+	for _, node := range sorted {
+		res = append(res, string(node.(StringerNode)))
 	}
 	t.Log(strings.Join(res, " -> "))
 }
 
+/*
+https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Directed_acyclic_graph_2.svg/1280px-Directed_acyclic_graph_2.svg.png
+
+   (5)  (7) (3)
+    |  / |  /
+    v /  v /
+   (11) (8)
+	| \ \|
+	v  \ v \
+   (2)  (9) (10)
+
+*/
 func TestTopology_Sort(t *testing.T) {
-	nodes := []TopologyNode{
-		newNode("5"),
-		newNode("7"),
-		newNode("3"),
-		newNode("11"),
-		newNode("8"),
-		newNode("2"),
-		newNode("9"),
-		newNode("10"),
+	node2, node3, node5, node7, node8, node9, node10, node11 :=
+		StringerNode("2"),
+		StringerNode("3"),
+		StringerNode("5"),
+		StringerNode("7"),
+		StringerNode("8"),
+		StringerNode("9"),
+		StringerNode("10"),
+		StringerNode("11")
+
+	connections := map[StringerNode][]StringerNode{
+		node11: {node5, node7},
+		node8:  {node7, node3},
+		node2:  {node11},
+		node9:  {node11, node8},
+		node10: {node3, node11},
 	}
-	connectsTo := map[string][]string{
-		"5":  []string{"11"},
-		"7":  []string{"11", "8"},
-		"3":  []string{"8", "10"},
-		"11": []string{"2", "9", "10"},
-		"8":  []string{"9"},
-	}
-	deps := make(map[string][]string)
-	top := NewTopology(nodes...)
-	for from, tos := range connectsTo {
+
+	top := NewTopology(node2, node3, node5, node7, node8, node9, node10, node11)
+
+	for from, tos := range connections {
 		for _, to := range tos {
 			top.Connect(from, to)
-			if _, ok := deps[to]; !ok {
-				deps[to] = make([]string, 0)
-			}
-			deps[to] = append(deps[to], from)
 		}
 	}
+
 	sorted, err := top.Sort()
 	if err != nil {
-		t.Errorf("Failed to sort the topology: %s", err)
+		t.Fatalf("Failed to perform topological sort of the graph: %s", err)
 	}
-	if len(sorted) != len(nodes) {
-		t.Errorf("Unexpected length of the sorted list: %d (want %d).\n"+
-			"List contents: %+v", len(sorted), len(nodes), sorted)
-	}
-	resolved := make(map[string]bool)
 
-	res := make([]string, len(nodes))
-	for ix, node := range sorted {
-		if node.GetName() == "" {
-			t.Errorf("Unnamed node, most probably an empty node is returned")
+	correct := [][]string{
+		{"5", "7", "3", "11", "8", "2", "9", "10"},
+		{"3", "5", "7", "8", "11", "2", "9", "10"},
+		{"5", "7", "3", "8", "11", "10", "9", "2"},
+		{"7", "5", "11", "3", "10", "8", "9", "2"},
+		{"5", "7", "11", "2", "3", "8", "9", "10"},
+		{"3", "7", "8", "5", "11", "10", "2", "9"},
+	}
+
+	match := func(got []TopologyNode, exp []string) bool {
+		if len(got) != len(exp) {
+			return false
 		}
-		res[ix] = node.GetName()
-		resolved[node.GetName()] = true
-		ds, ok := deps[node.GetName()]
-		if !ok {
-			continue
-		}
-		for _, d := range ds {
-			if _, ok := resolved[d]; !ok {
-				t.Errorf("Node %s has been resolved before node %s",
-					node.GetName(), d)
+		for i, maxi := 0, len(got)-1; i <= maxi; i++ {
+			if string(got[i].(StringerNode)) != exp[i] {
+				return false
 			}
 		}
+		return true
+	}
+
+	matched := false
+	for _, corr := range correct {
+		if match(sorted, corr) {
+			matched = true
+			break
+		}
+	}
+
+	if !matched {
+		t.Fatalf("Unexpected sorting result: %#v", sorted)
 	}
 }
