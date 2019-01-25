@@ -96,11 +96,12 @@ func TestThrottler_Recv_Parallel(t *testing.T) {
 			cntCh := make(chan int)
 
 			var wg sync.WaitGroup
-			wg.Add(1)
+			wg.Add(test.parallelRequests)
 
 			for i := 0; i < test.parallelRequests; i++ {
 				go func() {
 					message := core.NewMessage([]byte(""))
+					wg.Done()
 					wg.Wait()
 					err := th.Recv(message)
 
@@ -114,8 +115,6 @@ func TestThrottler_Recv_Parallel(t *testing.T) {
 					}
 				}()
 			}
-
-			wg.Done()
 
 			for i := 0; i < test.parallelRequests; i++ {
 				cnt += <-cntCh
