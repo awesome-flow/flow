@@ -1,11 +1,35 @@
 package devenv
 
-type Fragment interface {
-	Extract(*Context) interface{}
-}
+import (
+	"bytes"
+	"html/template"
+)
+
+type Fragment interface{}
 
 type DockerComposeFragment string
 
-func (dcf DockerComposeFragment) Extract(context *Context) interface{} {
-	return string(dcf)
+func DockerComposeBuilder(fragments []DockerComposeFragment) (string, error) {
+	dockercompose, err := template.New("docker-compose").Parse(`
+version: '3'
+
+services:
+{{- range .Fragments}}
+{{- .}}
+{{- end}}
+`)
+	if err != nil {
+		return "", err
+	}
+
+	data := struct{ Fragments []DockerComposeFragment }{
+		Fragments: fragments,
+	}
+
+	var buf bytes.Buffer
+	if err := dockercompose.Execute(&buf, data); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }

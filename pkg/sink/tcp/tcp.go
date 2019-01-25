@@ -34,6 +34,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	if _, ok := params["bind_addr"]; !ok {
 		return nil, fmt.Errorf("TCP sink parameters are missing bind_addr")
 	}
+
 	tcpaddr, err := net.ResolveTCPAddr("tcp", params["bind_addr"].(string))
 	if err != nil {
 		return nil, err
@@ -130,5 +131,7 @@ func (tcp *TCP) DevEnv(context *devenv.Context) ([]devenv.Fragment, error) {
 		return nil, err
 	}
 
-	return []devenv.Fragment{devenv.DockerComposeFragment(buf.String())}, err
+	return []devenv.Fragment{
+		devenv.DockerComposeFragment(buf.String()),
+	}, nil
 }

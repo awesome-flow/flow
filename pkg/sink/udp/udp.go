@@ -1,10 +1,14 @@
 package sink
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/awesome-flow/flow/pkg/devenv"
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
@@ -20,20 +24,28 @@ const (
 
 type UDP struct {
 	Name string
-	addr string
+	addr *net.UDPAddr
 	conn net.Conn
 	*core.Connector
 	*sync.Mutex
 }
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
-	udpAddr, ok := params["bind_addr"]
-	if !ok {
+	if _, ok := params["bind_addr"]; !ok {
 		return nil, fmt.Errorf("UDP sink parameters are missing bind_addr")
 	}
-	udp := &UDP{
-		name, udpAddr.(string), nil, core.NewConnector(), &sync.Mutex{},
+
+	udpaddr, err := net.ResolveUDPAddr("udp", params["bind_addr"].(string))
+	if err != nil {
+		return nil, err
 	}
+
+	udp := &UDP{
+		name, udpaddr, nil, core.NewConnector(), &sync.Mutex{},
+	}
+
+	udp.OnSetUp(udp.SetUp)
+	udp.OnTearDown(udp.TearDown)
 
 	return udp, nil
 }
@@ -55,8 +67,7 @@ func (udp *UDP) connect() {
 	defer udp.Unlock()
 	udp.conn = nil
 	bckSub := func() error {
-		//tell.Infof("Connecting to %s", udp.addr)
-		conn, connErr := net.DialTimeout("udp4", udp.addr, UdpConnTimeout)
+		conn, connErr := net.DialTimeout("udp", udp.addr.String(), UdpConnTimeout)
 		if connErr != nil {
 			log.Warnf("Unable to connect to %s: %s", udp.addr, connErr.Error())
 			return connErr
@@ -93,4 +104,29 @@ func (udp *UDP) Recv(msg *core.Message) error {
 
 func (udp *UDP) ConnectTo(core.Link) error {
 	panic("UDP sink is not supposed to be connnected")
+}
+
+func (udp *UDP) DevEnv(context *devenv.Context) ([]devenv.Fragment, error) {
+	dockercompose, err := template.New("udp-sink-docker-compose").Parse(`
+  udp_rcv_{{.Port}}
+	image: flow/udp_server
+	ports:
+	  - "{{.Port}}:{{.Port}}/udp"
+	environment:
+      UDP_SERVER_PORT: {{.Port}}
+`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	data := struct{ Port int }{Port: udp.addr.Port}
+	if err := dockercompose.Execute(&buf, data); err != nil {
+		return nil, err
+	}
+
+	return []devenv.Fragment{
+		devenv.DockerComposeFragment(buf.String()),
+	}, nil
 }
