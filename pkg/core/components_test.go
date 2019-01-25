@@ -4,6 +4,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/awesome-flow/flow/pkg/devenv"
 	//"github.com/awesome-flow/flow/pkg/util/test"
 )
 
@@ -87,6 +89,8 @@ func (c *C) TearDown() error { return nil }
 func (c *C) String() string { return "a C instance" }
 
 func (c *C) GetContext() *Context { return nil }
+
+func (c *C) DevEnv(context *devenv.Context) ([]devenv.Fragment, error) { return nil, nil }
 
 func Test2ConnectedLinks(t *testing.T) {
 	a := NewA()

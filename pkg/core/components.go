@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/awesome-flow/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/devenv"
 )
 
 type Params map[string]interface{}
@@ -85,6 +86,7 @@ type Link interface {
 	RouteTo(map[string]Link) error
 	ExecCmd(*Cmd) error
 	GetContext() *Context
+	DevEnv(*devenv.Context) ([]devenv.Fragment, error)
 }
 
 type Connector struct {
@@ -204,4 +206,8 @@ func (cn *Connector) String() string {
 
 func (cn *Connector) GetContext() *Context {
 	return cn.context
+}
+
+func (cn *Connector) DevEnv(ctx *devenv.Context) ([]devenv.Fragment, error) {
+	return nil, nil
 }

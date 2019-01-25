@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/devenv"
 	"github.com/awesome-flow/flow/pkg/metrics"
 )
 
@@ -71,6 +72,8 @@ func (buf *Buffer) TearDown() error { return nil }
 func (buf *Buffer) GetContext() *core.Context {
 	return buf.context
 }
+
+func (buf *Buffer) DevEnv(context *devenv.Context) ([]devenv.Fragment, error) { return nil, nil }
 
 func (buf *Buffer) Recv(msg *core.Message) error {
 	return buf.Send(msg)

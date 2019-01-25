@@ -18,3 +18,7 @@ func RandStringBytes(n int) []byte {
 	}
 	return b
 }
+
+func RandInt(n int) int {
+	return rand.Intn(n)
+}

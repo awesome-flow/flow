@@ -1,10 +1,14 @@
 package sink
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/awesome-flow/flow/pkg/devenv"
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
@@ -20,19 +24,24 @@ const (
 
 type TCP struct {
 	Name string
-	addr string
+	addr *net.TCPAddr
 	conn net.Conn
 	*core.Connector
 	*sync.Mutex
 }
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
-	tcpAddr, ok := params["bind_addr"]
-	if !ok {
+	if _, ok := params["bind_addr"]; !ok {
 		return nil, fmt.Errorf("TCP sink parameters are missing bind_addr")
 	}
+
+	tcpaddr, err := net.ResolveTCPAddr("tcp", params["bind_addr"].(string))
+	if err != nil {
+		return nil, err
+	}
+
 	tcp := &TCP{
-		name, tcpAddr.(string), nil, core.NewConnector(), &sync.Mutex{},
+		name, tcpaddr, nil, core.NewConnector(), &sync.Mutex{},
 	}
 	tcp.OnSetUp(tcp.SetUp)
 	tcp.OnTearDown(tcp.TearDown)
@@ -57,8 +66,7 @@ func (tcp *TCP) connect() {
 	defer tcp.Unlock()
 	tcp.conn = nil
 	bckSub := func() error {
-		//tell.Infof("Connecting to tcp://%s", tcp.addr)
-		conn, connErr := net.DialTimeout("tcp4", tcp.addr, TcpConnTimeout)
+		conn, connErr := net.DialTimeout("tcp", tcp.addr.String(), TcpConnTimeout)
 		if connErr != nil {
 			log.Warnf("Unable to connect to %s: %s", tcp.addr, connErr.Error())
 			return connErr
@@ -101,4 +109,29 @@ func (tcp *TCP) ConnectTo(core.Link) error {
 
 func (tcp *TCP) String() string {
 	return tcp.Name
+}
+
+func (tcp *TCP) DevEnv(context *devenv.Context) ([]devenv.Fragment, error) {
+	dockercompose, err := template.New("tcp-sink-docker-compose").Parse(`
+  tcp_rcv_{{.Port}}:
+    image: flow/tcp_server
+    ports:
+      - "{{.Port}}:{{.Port}}"
+    environment:
+      TCP_SERVER_PORT: {{.Port}}
+`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	data := struct{ Port int }{Port: tcp.addr.Port}
+	if err := dockercompose.Execute(&buf, data); err != nil {
+		return nil, err
+	}
+
+	return []devenv.Fragment{
+		devenv.DockerComposeFragment(buf.String()),
+	}, nil
 }
