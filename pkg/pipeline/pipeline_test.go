@@ -88,7 +88,7 @@ func TestPipeline_buildComp(t *testing.T) {
 			"UDP sink",
 			&config.CfgBlockComponent{
 				Module: "sink.udp",
-				Params: core.Params{"bind_addr": "13102"},
+				Params: core.Params{"bind_addr": ":13102"},
 			},
 		},
 	}
