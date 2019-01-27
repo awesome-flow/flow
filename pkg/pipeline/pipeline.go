@@ -181,6 +181,14 @@ func (ppl *Pipeline) Explain() (string, error) {
 	return dotexplain.Explain(ppl)
 }
 
+func (ppl *Pipeline) Links() []core.Link {
+	links := make([]core.Link, 0)
+	for _, link := range ppl.compTree.PreTraversal() {
+		links = append(links, link.(core.Link))
+	}
+	return links
+}
+
 func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
 	var stack []interface{}
 	switch cmdPpgt {

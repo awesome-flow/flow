@@ -2,7 +2,7 @@ package devenv
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 )
 
 type Fragment interface{}

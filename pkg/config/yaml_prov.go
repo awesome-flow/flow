@@ -127,7 +127,7 @@ func (y *yamlProv) Resolve() error {
 	pathIntf, ok := Get("config.file")
 	if !ok {
 		panic("Could not resolve the config file: config.file setting is missing. " +
-			"Provide as a cli argument -config_file=... or env variable CONFIG_FILE=...")
+			"Provide as a cli argument -config-file=... or env variable CONFIG_FILE=...")
 	}
 
 	path := pathIntf.(string)
