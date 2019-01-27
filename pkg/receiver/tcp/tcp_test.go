@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
 
@@ -27,7 +28,7 @@ func TestTCP_recv(t *testing.T) {
 	if err := tcp.ExecCmd(core.NewCmdStart()); err != nil {
 		t.Fatalf("Failed to start the TCP listener: %s", err)
 	}
-	rcvLink := testutils.NewRememberAndReply("rar", testutils.ReplyDone)
+	rcvLink := core_test.NewRememberAndReply("rar", core_test.ReplyDone)
 	tcp.ConnectTo(rcvLink)
 
 	conn, connErr := net.DialTimeout("tcp", tcpAddr, 1*time.Second)

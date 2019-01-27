@@ -7,3 +7,4 @@ internal/app/remote_http_file_test/remote_http_file_test
 internal/app/volatile_file_test/volatile_file_test
 .idea
 *.iml
+.vscode

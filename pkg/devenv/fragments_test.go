@@ -18,8 +18,7 @@ func Test_DockerComposeBuilder(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := `
-version: '3'
+	expected := `version: '3'
 
 services:
   foo:

@@ -2,7 +2,7 @@ package devenv
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 )
 
 type Fragment interface{}
@@ -10,8 +10,7 @@ type Fragment interface{}
 type DockerComposeFragment string
 
 func DockerComposeBuilder(fragments []DockerComposeFragment) (string, error) {
-	dockercompose, err := template.New("docker-compose").Parse(`
-version: '3'
+	dockercompose, err := template.New("docker-compose").Parse(`version: '3'
 
 services:
 {{- range .Fragments}}

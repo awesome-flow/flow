@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
 
@@ -29,7 +30,7 @@ func TestUDP_recv(t *testing.T) {
 		t.Fatalf("Failed to send start command: %s", err)
 	}
 
-	rcvLink := testutils.NewRememberAndReply("rar", testutils.ReplyDone)
+	rcvLink := core_test.NewRememberAndReply("rar", core_test.ReplyDone)
 
 	udp.ConnectTo(rcvLink)
 	conn, connErr := net.DialTimeout("udp", udpAddr, 1*time.Second)

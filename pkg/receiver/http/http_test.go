@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
-	testutils "github.com/awesome-flow/flow/pkg/util/test"
+	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 )
 
 func TestHTTP_handleSendV1(t *testing.T) {
 	tests := []struct {
 		name               string
 		bindAddr           string
-		reply              testutils.ReplyType
+		reply              core_test.ReplyType
 		payload            []byte
 		extra              string
 		expectedStatusCode int
@@ -26,7 +26,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync empty",
 			":17101",
-			testutils.ReplyDone,
+			core_test.ReplyDone,
 			[]byte{},
 			"",
 			http.StatusBadRequest,
@@ -37,7 +37,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"async successful",
 			":17102",
-			testutils.ReplyDone,
+			core_test.ReplyDone,
 			[]byte("hello world"),
 			"",
 			http.StatusAccepted,
@@ -48,7 +48,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync successful",
 			":17103",
-			testutils.ReplyDone,
+			core_test.ReplyDone,
 			[]byte("hello world"),
 			"?sync=true",
 			http.StatusOK,
@@ -59,7 +59,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync partial",
 			":17104",
-			testutils.ReplyPartialSend,
+			core_test.ReplyPartialSend,
 			[]byte("hello world"),
 			"?sync=true",
 			http.StatusConflict,
@@ -70,7 +70,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync invalid",
 			":17105",
-			testutils.ReplyInvalid,
+			core_test.ReplyInvalid,
 			[]byte("hello world"),
 			"?sync=true",
 			http.StatusBadRequest,
@@ -81,7 +81,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync failed",
 			":17106",
-			testutils.ReplyFailed,
+			core_test.ReplyFailed,
 			[]byte("hello world"),
 			"?sync=true",
 			http.StatusInternalServerError,
@@ -92,7 +92,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync timeout",
 			":17107",
-			testutils.ReplyTimedOut,
+			core_test.ReplyTimedOut,
 			[]byte("hello world"),
 			"?sync=true",
 			http.StatusGatewayTimeout,
@@ -103,7 +103,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync unroutable",
 			":17108",
-			testutils.ReplyUnroutable,
+			core_test.ReplyUnroutable,
 			[]byte("hello world"),
 			"?sync=true",
 			http.StatusNotAcceptable,
@@ -114,7 +114,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		{
 			"sync throttled",
 			":17109",
-			testutils.ReplyThrottled,
+			core_test.ReplyThrottled,
 			[]byte("hello world"),
 			"?sync=true",
 			http.StatusTooManyRequests,
@@ -138,7 +138,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 			}
 
 			time.Sleep(10 * time.Millisecond)
-			rcvLink := testutils.NewRememberAndReply("rar", testCase.reply)
+			rcvLink := core_test.NewRememberAndReply("rar", testCase.reply)
 			httpRcv.ConnectTo(rcvLink)
 			buf := bytes.NewReader(testCase.payload)
 			resp, err := http.Post(

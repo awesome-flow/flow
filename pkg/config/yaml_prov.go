@@ -10,6 +10,8 @@ type yamlProv struct {
 	cfg *YAMLConfig
 }
 
+var _ Provider = &yamlProv{}
+
 type CfgBlockComponent struct {
 	Constructor string
 	Module      string
@@ -85,7 +87,7 @@ func (y *yamlProv) Setup() error {
 }
 
 func (y *yamlProv) GetOptions() ProviderOptions {
-	return 0
+	return ProviderOptionsNone
 }
 
 func (y *yamlProv) GetValue(key string) (interface{}, bool) {
@@ -127,10 +129,15 @@ func (y *yamlProv) Resolve() error {
 	pathIntf, ok := Get("config.file")
 	if !ok {
 		panic("Could not resolve the config file: config.file setting is missing. " +
-			"Provide as a cli argument -config_file=... or env variable CONFIG_FILE=...")
+			"Provide as a cli argument -config-file=... or env variable CONFIG_FILE=...")
 	}
 
-	path := pathIntf.(string)
+	var path string
+	if v, ok := pathIntf.(string); ok {
+		path = v
+	} else if v, ok := pathIntf.(*string); ok {
+		path = *v
+	}
 
 	data, readErr := ioutil.ReadFile(path)
 	if readErr != nil {

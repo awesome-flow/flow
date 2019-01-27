@@ -3,18 +3,17 @@ package sink
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"net"
 	"sync"
+	"text/template"
 	"time"
 
-	"github.com/awesome-flow/flow/pkg/devenv"
-
-	"github.com/awesome-flow/flow/pkg/core"
-	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/cenk/backoff"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/cenk/backoff"
+	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/devenv"
+	"github.com/awesome-flow/flow/pkg/metrics"
 )
 
 const (

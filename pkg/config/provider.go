@@ -5,6 +5,8 @@ type ProviderOptions uint64
 const (
 	ProviderOptionsFileCache ProviderOptions = 1 << iota
 	ProviderOptionsTrustOldCache
+
+	ProviderOptionsNone = 0
 )
 
 type Provider interface {

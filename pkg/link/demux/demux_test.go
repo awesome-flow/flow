@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
-	test "github.com/awesome-flow/flow/pkg/util/test"
+	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
+	testutil "github.com/awesome-flow/flow/pkg/util/test"
 )
 
 func TestDemux_multiplex(t *testing.T) {
@@ -17,37 +18,37 @@ func TestDemux_multiplex(t *testing.T) {
 	}{
 		{
 			"succ send",
-			test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyDone,
-				"B": test.ReplyDone,
-				"C": test.ReplyDone,
+			core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyDone,
+				"B": core_test.ReplyDone,
+				"C": core_test.ReplyDone,
 			}),
 			core.MsgStatusDone,
 		},
 		{
 			"part send",
-			test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyFailed,
-				"B": test.ReplyDone,
-				"C": test.ReplyDone,
+			core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyFailed,
+				"B": core_test.ReplyDone,
+				"C": core_test.ReplyDone,
 			}),
 			core.MsgStatusPartialSend,
 		},
 		{
 			"fail send",
-			test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyFailed,
-				"B": test.ReplyFailed,
-				"C": test.ReplyFailed,
+			core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyFailed,
+				"B": core_test.ReplyFailed,
+				"C": core_test.ReplyFailed,
 			}),
 			core.MsgStatusFailed,
 		},
 		{
 			"time out",
-			test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyDone,
-				"B": test.ReplyDone,
-				"C": test.ReplyContinue,
+			core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyDone,
+				"B": core_test.ReplyDone,
+				"C": core_test.ReplyContinue,
 			}),
 			core.MsgStatusTimedOut,
 		},
@@ -95,10 +96,10 @@ func Test_Demultiplex(t *testing.T) {
 	}{
 		{
 			name: "succ send",
-			links: test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyDone,
-				"B": test.ReplyDone,
-				"C": test.ReplyDone,
+			links: core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyDone,
+				"B": core_test.ReplyDone,
+				"C": core_test.ReplyDone,
 			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusDone,
@@ -106,10 +107,10 @@ func Test_Demultiplex(t *testing.T) {
 		},
 		{
 			name: "part send",
-			links: test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyDone,
-				"B": test.ReplyDone,
-				"C": test.ReplyFailed,
+			links: core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyDone,
+				"B": core_test.ReplyDone,
+				"C": core_test.ReplyFailed,
 			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusPartialSend,
@@ -117,10 +118,10 @@ func Test_Demultiplex(t *testing.T) {
 		},
 		{
 			name: "fail send",
-			links: test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyFailed,
-				"B": test.ReplyFailed,
-				"C": test.ReplyFailed,
+			links: core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyFailed,
+				"B": core_test.ReplyFailed,
+				"C": core_test.ReplyFailed,
 			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusFailed,
@@ -128,10 +129,10 @@ func Test_Demultiplex(t *testing.T) {
 		},
 		{
 			name: "time out",
-			links: test.InitCountAndReplySet(map[string]test.ReplyType{
-				"A": test.ReplyDone,
-				"B": test.ReplyDone,
-				"C": test.ReplyContinue,
+			links: core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+				"A": core_test.ReplyDone,
+				"B": core_test.ReplyDone,
+				"C": core_test.ReplyContinue,
 			}),
 			expectedCnts:   []int{1, 1, 1},
 			expectedStatus: core.MsgStatusTimedOut,
@@ -165,7 +166,7 @@ func Test_Demultiplex(t *testing.T) {
 				t.Errorf("Timed out to receive an ack from message")
 			}
 			for ix, link := range testCase.links {
-				linkRcvCnt := link.(*test.CountAndReply).RcvCnt()
+				linkRcvCnt := link.(*core_test.CountAndReply).RcvCnt()
 				if linkRcvCnt != testCase.expectedCnts[ix] {
 					t.Errorf("Unexpected rcv count: %d, want: %d",
 						linkRcvCnt, testCase.expectedCnts[ix])
@@ -178,19 +179,19 @@ func Test_Demultiplex(t *testing.T) {
 // ===== Benchmarks =====
 
 func BenchmarkDemultiplexSync(b *testing.B) {
-	links := test.InitCountAndReplySet(map[string]test.ReplyType{
-		"A": test.ReplyDone,
-		"B": test.ReplyDone,
-		"C": test.ReplyDone,
-		"D": test.ReplyDone,
-		"E": test.ReplyDone,
+	links := core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+		"A": core_test.ReplyDone,
+		"B": core_test.ReplyDone,
+		"C": core_test.ReplyDone,
+		"D": core_test.ReplyDone,
+		"E": core_test.ReplyDone,
 	})
 	for i := 0; i < b.N; i++ {
 		msg := core.NewMessageWithMeta(
 			map[string]interface{}{
 				core.MsgMetaKeySync: "true",
 			},
-			test.RandStringBytes(1024),
+			testutil.RandStringBytes(1024),
 		)
 		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
 			b.Error(err)
@@ -199,15 +200,15 @@ func BenchmarkDemultiplexSync(b *testing.B) {
 }
 
 func BenchmarkDemultiplexAsyncNoMeta(b *testing.B) {
-	links := test.InitCountAndReplySet(map[string]test.ReplyType{
-		"A": test.ReplyDone,
-		"B": test.ReplyDone,
-		"C": test.ReplyDone,
-		"D": test.ReplyDone,
-		"E": test.ReplyDone,
+	links := core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+		"A": core_test.ReplyDone,
+		"B": core_test.ReplyDone,
+		"C": core_test.ReplyDone,
+		"D": core_test.ReplyDone,
+		"E": core_test.ReplyDone,
 	})
 	for i := 0; i < b.N; i++ {
-		msg := core.NewMessage(test.RandStringBytes(1024))
+		msg := core.NewMessage(testutil.RandStringBytes(1024))
 		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
 			b.Error(err)
 		}
@@ -215,17 +216,17 @@ func BenchmarkDemultiplexAsyncNoMeta(b *testing.B) {
 }
 
 func BenchmarkDemultiplexAsyncCpMeta(b *testing.B) {
-	links := test.InitCountAndReplySet(map[string]test.ReplyType{
-		"A": test.ReplyDone,
-		"B": test.ReplyDone,
-		"C": test.ReplyDone,
-		"D": test.ReplyDone,
-		"E": test.ReplyDone,
+	links := core_test.InitCountAndReplySet(map[string]core_test.ReplyType{
+		"A": core_test.ReplyDone,
+		"B": core_test.ReplyDone,
+		"C": core_test.ReplyDone,
+		"D": core_test.ReplyDone,
+		"E": core_test.ReplyDone,
 	})
 	for i := 0; i < b.N; i++ {
 		msg := core.NewMessageWithMeta(
 			map[string]interface{}{},
-			test.RandStringBytes(1024),
+			testutil.RandStringBytes(1024),
 		)
 		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
 			b.Error(err)
