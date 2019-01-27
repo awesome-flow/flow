@@ -151,9 +151,15 @@ func NewPipeline(
 
 func buildComp(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
 	if cfg.Plugin != "" {
-		pluginPath, _ := config.Get("flow.plugin.path")
-		p, pErr := plugin.Open(fmt.Sprintf("%s/%s/%s.so",
-			pluginPath.(string), cfg.Plugin, cfg.Plugin))
+		pluginpathintf, _ := config.Get("flow.plugin.path")
+		var pluginpath string
+		if v, ok := pluginpathintf.(string); ok {
+			pluginpath = v
+		} else if v, ok := pluginpathintf.(*string); ok {
+			pluginpath = *v
+		}
+
+		p, pErr := plugin.Open(fmt.Sprintf("%s/%s/%s.so", pluginpath, cfg.Plugin, cfg.Plugin))
 		if pErr != nil {
 			return nil, pErr
 		}

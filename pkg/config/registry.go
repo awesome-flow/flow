@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -26,6 +27,7 @@ func Register(key string, prov Provider) error {
 	defer registry.lock.Unlock()
 	keyProvs, _ := registry.storage.LoadOrStore(key, make([]Provider, 0))
 	v := append(keyProvs.([]Provider), prov)
+	sort.Sort(sort.Reverse(ProviderList(v)))
 	registry.storage.Store(key, v)
 	registry.providers[prov.GetName()] = prov
 
@@ -36,10 +38,10 @@ func Resolve() error {
 	registry.lock.Lock()
 	defer registry.lock.Unlock()
 
-	registry.storage.Range(func(key interface{}, value interface{}) bool {
-		sort.Sort(sort.Reverse(ProviderList(value.([]Provider))))
-		return true
-	})
+	// registry.storage.Range(func(key interface{}, value interface{}) bool {
+	// 	sort.Sort(sort.Reverse(ProviderList(value.([]Provider))))
+	// 	return true
+	// })
 
 	traversed, err := traverseProviders()
 	if err != nil {
@@ -61,6 +63,7 @@ func Get(key string) (interface{}, bool) {
 	}
 	for _, prov := range provChain.([]Provider) {
 		if v, ok := prov.GetValue(key); ok {
+			fmt.Printf("Serving config key %s from provider %#v\n", key, prov)
 			return v, ok
 		}
 	}

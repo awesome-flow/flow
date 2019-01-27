@@ -23,6 +23,15 @@ var dockerCmd = &cobra.Command{
 var flowconfig string
 var outfile string
 var pluginpath string
+var pluginpathprov config.Provider
+var flowconfigprov config.Provider
+
+func init() {
+	pluginpathprov = config.NewSimpleProv("flow.plugin.path", &pluginpath)
+	pluginpathprov.Setup()
+	flowconfigprov = config.NewSimpleProv("config.file", &flowconfig)
+	flowconfigprov.Setup()
+}
 
 var dockerComposeCmd = &cobra.Command{
 	Use:   "compose",
@@ -35,6 +44,10 @@ var dockerComposeCmd = &cobra.Command{
 		can template their definition parameters (names, ports)
 		in order to not interfere with their siblings.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		// if err := config.Resolve(); err != nil {
+		// 	return err
+		// }
 
 		data, err := ioutil.ReadFile(flowconfig)
 		if err != nil {
