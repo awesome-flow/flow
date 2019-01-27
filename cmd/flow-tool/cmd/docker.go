@@ -45,10 +45,6 @@ var dockerComposeCmd = &cobra.Command{
 		in order to not interfere with their siblings.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		// if err := config.Resolve(); err != nil {
-		// 	return err
-		// }
-
 		data, err := ioutil.ReadFile(flowconfig)
 		if err != nil {
 			return err
