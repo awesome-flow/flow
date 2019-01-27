@@ -10,6 +10,8 @@ type yamlProv struct {
 	cfg *YAMLConfig
 }
 
+var _ Provider = &yamlProv{}
+
 type CfgBlockComponent struct {
 	Constructor string
 	Module      string
@@ -85,7 +87,7 @@ func (y *yamlProv) Setup() error {
 }
 
 func (y *yamlProv) GetOptions() ProviderOptions {
-	return 0
+	return ProviderOptionsNone
 }
 
 func (y *yamlProv) GetValue(key string) (interface{}, bool) {

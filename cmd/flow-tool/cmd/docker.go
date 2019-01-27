@@ -22,6 +22,7 @@ var dockerCmd = &cobra.Command{
 
 var flowconfig string
 var outfile string
+var pluginpath string
 
 var dockerComposeCmd = &cobra.Command{
 	Use:   "compose",
@@ -92,7 +93,8 @@ func init() {
 	dockerCmd.AddCommand(dockerComposeCmd)
 	rootCmd.AddCommand(dockerCmd)
 
-	dockerComposeCmd.Flags().StringVarP(&flowconfig, "flow-config", "c", "", "Source YAML flowd config")
+	dockerComposeCmd.Flags().StringVarP(&flowconfig, "config", "c", "", "Source YAML flowd config")
 	dockerComposeCmd.Flags().StringVarP(&outfile, "out", "o", "", "Output to file (STDOUT by default")
-	dockerComposeCmd.MarkFlagRequired("flow-config")
+	dockerComposeCmd.Flags().StringVarP(&pluginpath, "plugin-path", "p", "", "Flow plugin path")
+	dockerComposeCmd.MarkFlagRequired("config")
 }

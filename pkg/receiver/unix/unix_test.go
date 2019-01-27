@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
 
@@ -18,7 +19,7 @@ const (
 func TestUnix_unixRecv(t *testing.T) {
 	path := "/tmp/flow.sock"
 	defer os.Remove(path)
-	testRcv := testutils.NewRememberAndReply("rar", testutils.ReplyDone)
+	testRcv := core_test.NewRememberAndReply("rar", core_test.ReplyDone)
 	payload := append(testutils.RandStringBytes(DefaultMessageSize), '\n')
 	unix, err := New("test_unix", core.Params{"path": path}, core.NewContext())
 	if err != nil {
