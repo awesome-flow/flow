@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"sort"
 	"sync"
 
@@ -63,7 +62,6 @@ func Get(key string) (interface{}, bool) {
 	}
 	for _, prov := range provChain.([]Provider) {
 		if v, ok := prov.GetValue(key); ok {
-			fmt.Printf("Serving config key %s from provider %#v\n", key, prov)
 			return v, ok
 		}
 	}
