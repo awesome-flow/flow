@@ -38,10 +38,10 @@ func Resolve() error {
 	registry.lock.Lock()
 	defer registry.lock.Unlock()
 
-	// registry.storage.Range(func(key interface{}, value interface{}) bool {
-	// 	sort.Sort(sort.Reverse(ProviderList(value.([]Provider))))
-	// 	return true
-	// })
+	registry.storage.Range(func(key interface{}, value interface{}) bool {
+		sort.Sort(sort.Reverse(ProviderList(value.([]Provider))))
+		return true
+	})
 
 	traversed, err := traverseProviders()
 	if err != nil {
