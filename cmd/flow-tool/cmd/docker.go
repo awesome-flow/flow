@@ -102,8 +102,8 @@ func init() {
 	dockerCmd.AddCommand(dockerComposeCmd)
 	rootCmd.AddCommand(dockerCmd)
 
-	dockerComposeCmd.Flags().StringVarP(&flowconfig, "config", "c", "", "Source YAML flowd config")
+	dockerComposeCmd.Flags().StringVarP(&flowconfig, "flow-config", "c", "", "Source YAML flowd config")
 	dockerComposeCmd.Flags().StringVarP(&outfile, "out", "o", "", "Output to file (STDOUT by default")
 	dockerComposeCmd.Flags().StringVarP(&pluginpath, "plugin-path", "p", "", "Flow plugin path")
-	dockerComposeCmd.MarkFlagRequired("config")
+	dockerComposeCmd.MarkFlagRequired("flow-config")
 }
