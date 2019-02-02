@@ -44,7 +44,7 @@ type Pipeline struct {
 type ConstrFunc func(string, core.Params, *core.Context) (core.Link, error)
 
 var (
-	compBuilders = map[string]ConstrFunc{
+	CompBuilders = map[string]ConstrFunc{
 		"receiver.tcp":  tcp_rcv.New,
 		"receiver.udp":  udp_rcv.New,
 		"receiver.http": http_rcv.New,
@@ -176,7 +176,7 @@ func buildComp(compName string, cfg config.CfgBlockComponent, context *core.Cont
 		}
 		return comp, err
 	}
-	if builder, ok := compBuilders[cfg.Module]; ok {
+	if builder, ok := CompBuilders[cfg.Module]; ok {
 		return builder(compName, cfg.Params, context)
 	}
 	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)

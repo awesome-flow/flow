@@ -15,9 +15,6 @@ import (
 var dockerCmd = &cobra.Command{
 	Use:   "docker [command]",
 	Short: "Docker dev env related toolkit",
-	Run: func(cmd *cobra.Command, args []string) {
-
-	},
 }
 
 var flowconfig string
