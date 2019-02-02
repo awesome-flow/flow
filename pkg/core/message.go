@@ -164,7 +164,7 @@ func (msg *Message) Payload() []byte {
 	return msg.payload
 }
 
-func (msg *Message) GetAckCh() chan MsgStatus {
+func (msg *Message) AckCh() chan MsgStatus {
 	return msg.ackCh
 }
 

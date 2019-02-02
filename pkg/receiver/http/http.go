@@ -114,7 +114,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	select {
-	case s := <-msg.GetAckCh():
+	case s := <-msg.AckCh():
 		httpCode, httpResp := status2resp(s)
 		metrics.GetCounter(
 			"receiver.http." + fmt.Sprintf("ack_%d", httpCode)).Inc(1)

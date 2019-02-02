@@ -37,7 +37,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	m1 := core.NewMessageWithMeta(map[string]interface{}{"sender": "a1"}, []byte(""))
 	r.Send(m1)
 	select {
-	case <-m1.GetAckCh():
+	case <-m1.AckCh():
 	case <-time.After(100 * time.Millisecond):
 		t.Errorf("Timed out to receive an ack from m1")
 	}
@@ -50,7 +50,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	m2 := core.NewMessageWithMeta(map[string]interface{}{"sender": "a2"}, []byte(""))
 	r.Send(m2)
 	select {
-	case <-m2.GetAckCh():
+	case <-m2.AckCh():
 	case <-time.After(100 * time.Millisecond):
 		t.Errorf("Timed out to receive an ack from m2")
 	}
@@ -64,7 +64,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	r.Send(m3)
 
 	select {
-	case s := <-m3.GetAckCh():
+	case s := <-m3.AckCh():
 		if s != core.MsgStatusUnroutable {
 			t.Errorf("Unexpected msg return status: %d", s)
 		}

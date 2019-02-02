@@ -75,7 +75,7 @@ func TestDemux_multiplex(t *testing.T) {
 				t.Errorf("Unexpected rcv error: %s", rcvErr.Error())
 			}
 			select {
-			case s := <-msg.GetAckCh():
+			case s := <-msg.AckCh():
 				if s != tstCase.expSts {
 					t.Errorf("Unexpected msg status: %d Vs %d", s, tstCase.expSts)
 				}
@@ -157,7 +157,7 @@ func Test_Demultiplex(t *testing.T) {
 			}
 			var status core.MsgStatus
 			select {
-			case status = <-msg.GetAckCh():
+			case status = <-msg.AckCh():
 				if status != testCase.expectedStatus {
 					t.Errorf("Unexpected status from message: %d, want: %d",
 						status, testCase.expectedStatus)
@@ -193,7 +193,7 @@ func BenchmarkDemultiplexSync(b *testing.B) {
 			},
 			testutil.RandStringBytes(1024),
 		)
-		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
+		if err := Demultiplex(msg, DemuxMaskAll, links, 2*MsgSendTimeout); err != nil {
 			b.Error(err)
 		}
 	}
@@ -209,7 +209,7 @@ func BenchmarkDemultiplexAsyncNoMeta(b *testing.B) {
 	})
 	for i := 0; i < b.N; i++ {
 		msg := core.NewMessage(testutil.RandStringBytes(1024))
-		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
+		if err := Demultiplex(msg, DemuxMaskAll, links, 2*MsgSendTimeout); err != nil {
 			b.Error(err)
 		}
 	}
@@ -228,7 +228,7 @@ func BenchmarkDemultiplexAsyncCpMeta(b *testing.B) {
 			map[string]interface{}{},
 			testutil.RandStringBytes(1024),
 		)
-		if err := Demultiplex(msg, DemuxMaskAll, links, 2*DemuxMsgSendTimeout); err != nil {
+		if err := Demultiplex(msg, DemuxMaskAll, links, 2*MsgSendTimeout); err != nil {
 			b.Error(err)
 		}
 	}

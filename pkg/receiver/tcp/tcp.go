@@ -195,7 +195,7 @@ func (tcp *TCP) handleConnection(conn net.Conn) {
 		}
 
 		select {
-		case s := <-msg.GetAckCh():
+		case s := <-msg.AckCh():
 			metrics.GetCounter(TcpMetricsMsgStatusMap[s]).Inc(1)
 			conn.SetWriteDeadline(time.Now().Add(ConnWriteTimeout))
 			tcp.replyWith(conn, MsgStatusToTcpResp[s])

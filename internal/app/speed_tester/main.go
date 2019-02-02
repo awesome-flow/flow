@@ -38,6 +38,9 @@ func main() {
 	cntr = 0
 
 	go reportCnt()
+	if err := repl.SetUp(); err != nil {
+		panic(err.Error())
+	}
 	if err := tcprcv.SetUp(); err != nil {
 		panic(err.Error())
 	}

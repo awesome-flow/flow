@@ -46,7 +46,7 @@ func TestMux_Demultiplex(t *testing.T) {
 		t.Errorf("Unexpected a1 send error: %s", sendErr1.Error())
 	}
 	select {
-	case s := <-msg1.GetAckCh():
+	case s := <-msg1.AckCh():
 		if s != core.MsgStatusDone {
 			t.Errorf("Unexpected message status: %d", s)
 		}
@@ -62,7 +62,7 @@ func TestMux_Demultiplex(t *testing.T) {
 		t.Errorf("Unexpected a2 send error: %s", sendErr2.Error())
 	}
 	select {
-	case s := <-msg2.GetAckCh():
+	case s := <-msg2.AckCh():
 		if s != core.MsgStatusDone {
 			t.Errorf("Unexpected message status: %d", s)
 		}

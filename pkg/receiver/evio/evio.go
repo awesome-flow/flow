@@ -145,7 +145,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 				isSync := ok && (sync.(string) == "true" || sync.(string) == "1")
 				if isSync && replySupported {
 					select {
-					case s := <-msg.GetAckCh():
+					case s := <-msg.AckCh():
 						metrics.GetCounter(
 							"receiver.evio.msg.sent_" + strings.ToLower(string(status2resp(s)))).Inc(1)
 						out = status2resp(s)

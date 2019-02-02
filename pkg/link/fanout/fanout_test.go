@@ -39,7 +39,7 @@ func TestFanout_Send(t *testing.T) {
 		wg.Add(1)
 		msg := core.NewMessage([]byte{})
 		go func() {
-			<-msg.GetAckCh()
+			<-msg.AckCh()
 			wg.Done()
 		}()
 		ft.Send(msg)
@@ -65,7 +65,7 @@ func TestFanout_Recv(t *testing.T) {
 		wg.Add(1)
 		msg := core.NewMessage([]byte{})
 		go func() {
-			<-msg.GetAckCh()
+			<-msg.AckCh()
 			wg.Done()
 		}()
 		ft.Send(msg)

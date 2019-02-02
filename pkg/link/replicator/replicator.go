@@ -24,7 +24,7 @@ type Replicator struct {
 }
 
 const (
-	ReplMsgSendTimeout = 50 * time.Millisecond
+	MsgSendTimeout = 50 * time.Millisecond
 )
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
@@ -53,11 +53,25 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		repl.hashKey = hashKey.(string)
 	}
 
+	repl.OnSetUp(repl.SetUp)
+	repl.OnTearDown(repl.TearDown)
+
+	return repl, nil
+}
+
+func (repl *Replicator) SetUp() error {
 	for _, ch := range repl.GetMsgCh() {
 		go repl.replicate(ch)
 	}
 
-	return repl, nil
+	return nil
+}
+
+func (repl *Replicator) TearDown() error {
+	for _, ch := range repl.GetMsgCh() {
+		close(ch)
+	}
+	return nil
 }
 
 func (repl *Replicator) LinkTo(links []core.Link) error {
@@ -77,6 +91,7 @@ func (repl *Replicator) AddLink(link core.Link) error {
 }
 
 func (repl *Replicator) RemoveLink(link core.Link) error {
+	//TODO (olegs)
 	panic("Not implemented")
 }
 
@@ -84,7 +99,11 @@ func (repl *Replicator) replicate(ch chan *core.Message) {
 	var msgKey []byte
 	for msg := range ch {
 		if repl.hashKey == "" {
-			msgKey = msg.Payload()
+			if v := msg.Payload(); len(v) > 128 {
+				msgKey = v[:128]
+			} else {
+				msgKey = v
+			}
 		} else {
 			if v, ok := msg.Meta(repl.hashKey); ok {
 				if vConv, convOk := v.([]byte); convOk {
@@ -106,7 +125,7 @@ func (repl *Replicator) replicate(ch chan *core.Message) {
 			log.Errorf("Failed to get a list of links for key %s: %s", msgKey, err)
 		}
 
-		if err := demux.Demultiplex(msg, linksIxs, repl.links, ReplMsgSendTimeout); err != nil {
+		if err := demux.Demultiplex(msg, linksIxs, repl.links, MsgSendTimeout); err != nil {
 			log.Errorf("Replicator failed to send message: %q", err)
 		}
 	}
