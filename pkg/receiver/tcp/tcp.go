@@ -8,10 +8,11 @@ import (
 	"net"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
-	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
-	log "github.com/sirupsen/logrus"
+	eviorcv "github.com/awesome-flow/flow/pkg/receiver/evio"
 )
 
 const (
@@ -76,16 +77,22 @@ type replyMode uint8
 type TCP struct {
 	Name string
 	mode replyMode
-	addr string
+	addr *net.TCPAddr
 	srv  net.Listener
 	*core.Connector
 }
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
-	tcpAddr, ok := params["bind_addr"]
+	bindaddr, ok := params["bind_addr"]
 	if !ok {
-		return nil, fmt.Errorf("TCP receiver parameters are missing bind_addr")
+		return nil, fmt.Errorf("TCP receiver is missing bind_addr")
 	}
+
+	tcpaddr, err := net.ResolveTCPAddr("tcp", bindaddr.(string))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse TCP bind_addr: %s", err)
+	}
+
 	mode := replyModeTalkative
 	if alterMode, ok := params["mode"]; ok {
 		switch alterMode {
@@ -102,7 +109,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 			params["listeners"] = []interface{}{
 				"tcp://" + params["bind_addr"].(string),
 			}
-			return evio_rcv.New(name, params, context)
+			return eviorcv.New(name, params, context)
 		case "std":
 		default:
 			return nil, fmt.Errorf("Unknown backend: %s", backend)
@@ -112,9 +119,9 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	log.Info("Instantiating standard backend for TCP receiver")
 
 	tcp := &TCP{
-		name + "@" + tcpAddr.(string),
+		name + "@" + bindaddr.(string),
 		mode,
-		tcpAddr.(string),
+		tcpaddr,
 		nil,
 		core.NewConnector(),
 	}
@@ -126,7 +133,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 }
 
 func (tcp *TCP) SetUp() error {
-	srv, err := net.Listen("tcp", tcp.addr)
+	srv, err := net.Listen("tcp", tcp.addr.String())
 	if err != nil {
 		return err
 	}
@@ -138,7 +145,7 @@ func (tcp *TCP) SetUp() error {
 
 func (tcp *TCP) TearDown() error {
 	if tcp.srv == nil {
-		return fmt.Errorf("tcp listener is empty")
+		return fmt.Errorf("TCP listener is empty on tear down")
 	}
 	return tcp.srv.Close()
 }
@@ -157,7 +164,6 @@ func (tcp *TCP) handleListener() {
 
 func (tcp *TCP) handleConnection(conn net.Conn) {
 	reader := bufio.NewReader(conn)
-
 	metrics.GetCounter(TcpMetricsConnOpnd).Inc(1)
 
 	for {
