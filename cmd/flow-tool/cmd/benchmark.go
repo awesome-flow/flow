@@ -19,11 +19,10 @@ import (
 var benchmarkCmd = &cobra.Command{
 	Use:   "benchmark [command]",
 	Short: "Embeds the component in a test pipeline and benchmarks it",
-	// Run: func(cmd *cobra.Command, args []string) {
-	// },
 }
 
 var linkname string
+var constructor string
 var linkto int
 var routeto string
 var options *[]string
@@ -65,6 +64,18 @@ var benchmarkLinkCmd = &cobra.Command{
 			}
 		}
 
+		benchlink := config.CfgBlockComponent{
+			Params: params,
+		}
+
+		if strings.HasPrefix(linkname, "plugin.") {
+			benchlink.Plugin = linkname
+		} else {
+			benchlink.Module = linkname
+		}
+		benchlink.Constructor = constructor
+		benchlink.Params = params
+
 		ppl, err := pipeline.NewPipeline(
 			map[string]config.CfgBlockComponent{
 				"tcp_rcv": {
@@ -76,12 +87,7 @@ var benchmarkLinkCmd = &cobra.Command{
 						"backend":   "std",
 					},
 				},
-				//TODO (olegs): plugin support
-				"bench_link": {
-					Module:      linkname,
-					Constructor: "New",
-					Params:      params,
-				},
+				"bench_link": benchlink,
 			},
 			map[string]config.CfgBlockPipeline{
 				"tcp_rcv": {Connect: "bench_link"},
@@ -128,6 +134,7 @@ func init() {
 
 	benchmarkLinkCmd.Flags().StringVarP(&linkname, "link", "l", "", "Link name")
 	benchmarkLinkCmd.Flags().IntVarP(&linkto, "link-to", "", -1, "")
+	benchmarkLinkCmd.Flags().StringVarP(&constructor, "constructor", "n", "New", "Constructor function name")
 	options = benchmarkLinkCmd.Flags().StringSliceP("options", "o", []string{}, "Link options")
 	benchmarkLinkCmd.MarkFlagRequired("link")
 }
