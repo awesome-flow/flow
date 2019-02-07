@@ -178,7 +178,7 @@ func TestCompressGzip(t *testing.T) {
 			if err := cmp.Recv(msg); err != nil {
 				t.Fatalf(err.Error())
 			}
-			<-msg.GetAckCh()
+			<-msg.AckCh()
 
 			if rcv.lastmsg == nil {
 				t.Fatalf("empty message in the receiver")
@@ -205,7 +205,7 @@ func BenchmarkCompressorGzipBestSpeed(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over gzip link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -222,7 +222,7 @@ func BenchmarkCompressorGzipBestCompression(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over gzip link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -239,7 +239,7 @@ func BenchmarkCompressorFlateBestSpeed(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -256,7 +256,7 @@ func BenchmarkCompressorFlateBestCompression(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -273,7 +273,7 @@ func BenchmarkCompressorLZW(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -290,7 +290,7 @@ func BenchmarkCompressionZLIBestSpeed(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -307,7 +307,7 @@ func BenchmarkCompressionZLIBestCompression(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -324,7 +324,7 @@ func BenchmarkCompressionZSTDBestSpeed(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -341,7 +341,7 @@ func BenchmarkCompressionZSTDBestCompression(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }
 
@@ -358,6 +358,6 @@ func BenchmarkCompressionSnappy(b *testing.B) {
 		if err := rcv.Recv(msg); err != nil {
 			panic("Error on sending over flate link")
 		}
-		<-msg.GetAckCh()
+		<-msg.AckCh()
 	}
 }

@@ -117,7 +117,7 @@ func (buf *Buffer) ConnectTo(link core.Link) error {
 					continue
 				}
 				select {
-				case upd := <-msgCp.GetAckCh():
+				case upd := <-msgCp.AckCh():
 					if upd != core.MsgStatusDone {
 						metrics.GetCounter(
 							"links.buffer." + buf.Name + "_retry").Inc(1)

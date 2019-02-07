@@ -50,7 +50,7 @@ var Coders = map[string]CoderFunc{
 	},
 	"lzw": func(payload []byte, _ int) ([]byte, error) {
 		var b bytes.Buffer
-		// The final digit is the literal codew width. Varies from 2 to
+		// The final digit is the literal coder width. Varies from 2 to
 		// 8 bits. We are using 8 by default here.
 		// See https://golang.org/src/compress/lzw/writer.go#L241
 		// for more details.
@@ -121,7 +121,7 @@ func (comp *Compressor) Recv(msg *core.Message) error {
 	if err != nil {
 		return msg.AckFailed()
 	}
-	msgcp := core.NewMessageWithAckCh(msg.GetAckCh(), msg.MetaAll(), payload)
+	msgcp := core.NewMessageWithAckCh(msg.AckCh(), msg.MetaAll(), payload)
 
 	return comp.Send(msgcp)
 }

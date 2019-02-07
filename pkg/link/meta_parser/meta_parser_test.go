@@ -83,7 +83,7 @@ func TestMetaParser_Recv(t *testing.T) {
 			}
 
 			select {
-			case <-msg.GetAckCh():
+			case <-msg.AckCh():
 			case <-time.After(100 * time.Millisecond):
 				t.Errorf("Timed out to send message")
 			}

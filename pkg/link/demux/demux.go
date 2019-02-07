@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DemuxMsgSendTimeout = 50 * time.Millisecond
+	MsgSendTimeout = 50 * time.Millisecond
 
 	DemuxMaskAll  uint64 = 0xFFFFFFFFFFFFFFFF
 	DemuxMaskNone uint64 = 0x0
@@ -20,25 +20,42 @@ const (
 type Demux struct {
 	Name  string
 	links []core.Link
-	*core.Connector
 	*sync.Mutex
+	*core.Connector
 }
 
 func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
-	links := make([]core.Link, 0)
-	demux := &Demux{name, links, core.NewConnectorWithContext(context), &sync.Mutex{}}
+	demux := &Demux{
+		name,
+		nil,
+		&sync.Mutex{},
+		core.NewConnectorWithContext(context),
+	}
 
+	demux.OnSetUp(demux.SetUp)
+	demux.OnTearDown(demux.TearDown)
+
+	return demux, nil
+}
+
+func (demux *Demux) SetUp() error {
 	for _, ch := range demux.GetMsgCh() {
 		go func(ch chan *core.Message) {
 			for msg := range ch {
-				if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, DemuxMsgSendTimeout); sendErr != nil {
+				if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, MsgSendTimeout); sendErr != nil {
 					logrus.Warnf("Failed to multiplex message: %q", sendErr)
 				}
 			}
 		}(ch)
 	}
+	return nil
+}
 
-	return demux, nil
+func (demux *Demux) TearDown() error {
+	for _, ch := range demux.GetMsgCh() {
+		close(ch)
+	}
+	return nil
 }
 
 func (demux *Demux) ConnectTo(core.Link) error {
@@ -76,7 +93,7 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 	wgAck := sync.WaitGroup{}
 
 	for ix := range links {
-		if (active>>uint(ix))&1 == 0 {
+		if (active & (1 << uint(ix))) == 0 {
 			continue
 		}
 		wgSend.Add(1)
@@ -91,7 +108,7 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 			if err != nil {
 				atomic.AddUint32(&failCnt, 1)
 			} else {
-				status := <-msgCp.GetAckCh()
+				status := <-msgCp.AckCh()
 				if status != core.MsgStatusDone {
 					atomic.AddUint32(&failCnt, 1)
 				}
@@ -104,12 +121,11 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 
 	if msgIsSync {
 		done := make(chan uint32)
+		defer close(done)
 		go func() {
-			defer close(done)
 			wgAck.Wait()
 			done <- totalCnt - failCnt
 		}()
-		brk := time.After(timeout)
 		select {
 		case succCnt := <-done:
 			if succCnt < totalCnt {
@@ -119,7 +135,7 @@ func Demultiplex(msg *core.Message, active uint64, links []core.Link, timeout ti
 				return msg.AckPartialSend()
 			}
 			return msg.AckDone()
-		case <-brk:
+		case <-time.After(timeout):
 			return msg.AckTimedOut()
 		}
 	}

@@ -13,6 +13,10 @@ type Params map[string]interface{}
 
 type RoutingFunc func(*Message) (string, error)
 
+const (
+	BufChanSize = 65535
+)
+
 // Context is there to provide a current state of the link.
 // Anything but linkContent should remain stateless.
 type Context struct {
@@ -20,6 +24,7 @@ type Context struct {
 	cmdIn   chan *Cmd
 	cmdOut  chan *Cmd
 	storage *sync.Map
+	thrdns  int
 }
 
 func maxInt(a, b int) int {
@@ -33,14 +38,16 @@ func NewContext() *Context {
 	th, _ := config.GetOrDefault("global.system.maxprocs", runtime.GOMAXPROCS(-1))
 	threadiness := maxInt(th.(int), 1)
 	msgChannels := make([]chan *Message, 0, threadiness)
+
 	for i := 0; i < threadiness; i++ {
-		msgChannels = append(msgChannels, make(chan *Message))
+		msgChannels = append(msgChannels, make(chan *Message, BufChanSize))
 	}
 	return &Context{
 		msgCh:   msgChannels,
 		cmdIn:   make(chan *Cmd),
 		cmdOut:  make(chan *Cmd),
 		storage: &sync.Map{},
+		thrdns:  threadiness,
 	}
 }
 
@@ -76,8 +83,6 @@ func (c *Context) SetVal(key string, value interface{}) {
 }
 
 type Link interface {
-	SetUp() error
-	TearDown() error
 	String() string
 	Recv(*Message) error
 	Send(*Message) error
@@ -161,7 +166,7 @@ func (cn *Connector) Recv(msg *Message) error {
 }
 
 func (cn *Connector) Send(msg *Message) error {
-	rnd := rand.Intn(len(cn.context.msgCh))
+	rnd := rand.Intn(cn.context.thrdns)
 	cn.context.msgCh[rnd] <- msg
 	return nil
 }
