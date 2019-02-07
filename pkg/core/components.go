@@ -13,6 +13,10 @@ type Params map[string]interface{}
 
 type RoutingFunc func(*Message) (string, error)
 
+const (
+	BufChanSize = 65535
+)
+
 // Context is there to provide a current state of the link.
 // Anything but linkContent should remain stateless.
 type Context struct {
@@ -34,7 +38,7 @@ func NewContext() *Context {
 	threadiness := maxInt(th.(int), 1)
 	msgChannels := make([]chan *Message, 0, threadiness)
 	for i := 0; i < threadiness; i++ {
-		msgChannels = append(msgChannels, make(chan *Message))
+		msgChannels = append(msgChannels, make(chan *Message, BufChanSize))
 	}
 	return &Context{
 		msgCh:   msgChannels,

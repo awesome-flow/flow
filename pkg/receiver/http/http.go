@@ -13,10 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	HttpMsgSendTimeout = 100 * time.Millisecond
-)
-
 type HTTP struct {
 	Name     string
 	bindaddr string
@@ -25,9 +21,39 @@ type HTTP struct {
 	*core.Connector
 }
 
+type codetext struct {
+	code int
+	text []byte
+}
+
 const (
-	ShutdownTimeout = 5 * time.Second
+	ShutdownTimeout  = 5 * time.Second
+	SendEndpointPath = "/send"
 )
+
+const (
+	HttpMetricsPref = "receiver.http.msg"
+
+	HttpMetricsConnOpnd        = "receiver.http.conn.received"
+	HttpMetricsMsgBadResp      = "receiver.http.msg.bad_request"
+	HttpMetricsMsgSendErr      = "receiver.http.msg.send_error"
+	HttpMetricsMsgSendAccepted = "receiver.http.msg.accepted"
+	HttpMetricsMsgTimeout      = "receiver.http.msg.timeout"
+)
+
+var (
+	HttpMsgSendTimeout = 100 * time.Millisecond
+)
+
+var MsgStatusToHttpResp = map[core.MsgStatus]codetext{
+	core.MsgStatusDone:        {http.StatusOK, []byte("OK")},
+	core.MsgStatusPartialSend: {http.StatusConflict, []byte("Partial send")},
+	core.MsgStatusInvalid:     {http.StatusBadRequest, []byte("Invalid message")},
+	core.MsgStatusFailed:      {http.StatusInternalServerError, []byte("Failed to send")},
+	core.MsgStatusTimedOut:    {http.StatusGatewayTimeout, []byte("Timed out to send message")},
+	core.MsgStatusUnroutable:  {http.StatusNotAcceptable, []byte("Unknown destination")},
+	core.MsgStatusThrottled:   {http.StatusTooManyRequests, []byte("Message throttled")},
+}
 
 func New(name string, params core.Params, context *core.Context) (core.Link, error) {
 
@@ -39,9 +65,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	h := &HTTP{name, httpAddr.(string), nil, sync.Once{}, core.NewConnector()}
 
 	srvMx := http.NewServeMux()
-	srvMx.HandleFunc("/send", func(rw http.ResponseWriter, req *http.Request) {
-		h.handleSendV1(rw, req)
-	})
+	srvMx.HandleFunc(SendEndpointPath, h.handleSendV1)
 
 	srv := &http.Server{
 		Addr:    httpAddr.(string),
@@ -78,7 +102,7 @@ func (h *HTTP) TearDown() error {
 
 func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 
-	metrics.GetCounter("receiver.http.received").Inc(1)
+	metrics.GetCounter(HttpMetricsConnOpnd).Inc(1)
 
 	cl := req.ContentLength
 	if cl <= 0 {
@@ -93,7 +117,7 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 	body, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 	if err != nil {
-		metrics.GetCounter("receiver.http.bad_request").Inc(1)
+		metrics.GetCounter(HttpMetricsMsgBadResp).Inc(1)
 		http.Error(rw, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -101,13 +125,13 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 	msg := core.NewMessageWithMeta(msgMeta, body)
 
 	if sendErr := h.Send(msg); sendErr != nil {
-		metrics.GetCounter("receiver.http.send_error").Inc(1)
+		metrics.GetCounter(HttpMetricsMsgSendErr).Inc(1)
 		http.Error(rw, "Failed to send message", http.StatusInternalServerError)
 		return
 	}
 
 	if !core.MsgIsSync(msg) {
-		metrics.GetCounter("receiver.http.accepted").Inc(1)
+		metrics.GetCounter(HttpMetricsMsgSendAccepted).Inc(1)
 		rw.WriteHeader(http.StatusAccepted)
 		rw.Write([]byte("Accepted"))
 		return
@@ -115,36 +139,19 @@ func (h *HTTP) handleSendV1(rw http.ResponseWriter, req *http.Request) {
 
 	select {
 	case s := <-msg.AckCh():
-		httpCode, httpResp := status2resp(s)
+		coderesp, ok := MsgStatusToHttpResp[s]
+		if !ok {
+			coderesp = codetext{http.StatusTeapot, []byte("This should not happen")}
+		}
+		httpCode, httpResp := coderesp.code, coderesp.text
 		metrics.GetCounter(
-			"receiver.http." + fmt.Sprintf("ack_%d", httpCode)).Inc(1)
+			HttpMetricsPref + fmt.Sprintf(".resp_%d", httpCode)).Inc(1)
 		rw.WriteHeader(httpCode)
 		rw.Write(httpResp)
 	case <-time.After(HttpMsgSendTimeout):
-		metrics.GetCounter("receiver.http.timeout").Inc(1)
+		metrics.GetCounter(HttpMetricsMsgTimeout).Inc(1)
 		rw.WriteHeader(http.StatusGatewayTimeout)
 		rw.Write([]byte("Timed out to send message"))
-	}
-}
-
-func status2resp(s core.MsgStatus) (int, []byte) {
-	switch s {
-	case core.MsgStatusDone:
-		return http.StatusOK, []byte("OK")
-	case core.MsgStatusPartialSend:
-		return http.StatusConflict, []byte("Partial send")
-	case core.MsgStatusInvalid:
-		return http.StatusBadRequest, []byte("Invalid message")
-	case core.MsgStatusFailed:
-		return http.StatusInternalServerError, []byte("Failed to send")
-	case core.MsgStatusTimedOut:
-		return http.StatusGatewayTimeout, []byte("Timed out to send message")
-	case core.MsgStatusUnroutable:
-		return http.StatusNotAcceptable, []byte("Unknown destination")
-	case core.MsgStatusThrottled:
-		return http.StatusTooManyRequests, []byte("Message throttled")
-	default:
-		return http.StatusTeapot, []byte("This should not happen")
 	}
 }
 

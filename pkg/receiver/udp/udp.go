@@ -13,6 +13,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	UpdMetricsConnFailed = "receiver.udp.conn.failed"
+
+	UdpMetricsMsgReceived = "receiver.udp.msg.received"
+	UdpMetricsMsgSent     = "receiver.udp.msg.sent"
+	UpdMetricsMsgFailed   = "receiver.udp.msg.failed"
+)
+
 var (
 	ErrMalformedDgram = fmt.Errorf("Malformed datagram")
 	ErrEmptyBody      = fmt.Errorf("Empty message body")
@@ -91,22 +99,23 @@ func (udp *UDP) recv() {
 	buf := bufio.NewReader(udp.conn)
 	for {
 		data, err := buf.ReadBytes('\n')
-		metrics.GetCounter("receiver.udp.received").Inc(1)
+		metrics.GetCounter(UdpMetricsMsgReceived).Inc(1)
 		if err != nil {
 			if nerr, ok := err.(net.Error); ok && (nerr.Temporary() || nerr.Timeout()) {
-				metrics.GetCounter("receiver.udp.failed").Inc(1)
+				metrics.GetCounter(UpdMetricsMsgFailed).Inc(1)
 				continue
+			} else {
+				metrics.GetCounter(UpdMetricsConnFailed).Inc(1)
+				return
 			}
-			return
 		}
 
-		data = bytes.TrimRight(data, "\r\n")
-		msg := core.NewMessage(data)
+		msg := core.NewMessage(bytes.TrimRight(data, "\r\n"))
 
 		if sendErr := udp.Send(msg); sendErr != nil {
 			log.Errorf("UDP failed to accept message: %s", sendErr.Error())
 		} else {
-			metrics.GetCounter("receiver.udp.sent").Inc(1)
+			metrics.GetCounter(UdpMetricsMsgSent).Inc(1)
 		}
 
 	}
