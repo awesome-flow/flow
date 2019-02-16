@@ -41,10 +41,10 @@ type Pipeline struct {
 	compTree *data.NTree
 }
 
-type ConstrFunc func(string, core.Params, *core.Context) (core.Link, error)
+type Constructor func(string, core.Params, *core.Context) (core.Link, error)
 
 var (
-	CompBuilders = map[string]ConstrFunc{
+	CompBuilders = map[string]Constructor{
 		"receiver.tcp":  tcp_rcv.New,
 		"receiver.udp":  udp_rcv.New,
 		"receiver.http": http_rcv.New,
