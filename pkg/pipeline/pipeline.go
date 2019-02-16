@@ -39,6 +39,7 @@ type Pipeline struct {
 	pplCfg   map[string]config.CfgBlockPipeline
 	compsCfg map[string]config.CfgBlockComponent
 	compTree *data.NTree
+	compTop  *data.Topology
 }
 
 type Constructor func(string, core.Params, *core.Context) (core.Link, error)
@@ -146,10 +147,16 @@ func NewPipeline(
 		}
 	}
 
+	topology, err := buildPipelineTopology(pplCfg, components)
+	if err != nil {
+		return nil, err
+	}
+
 	pipeline := &Pipeline{
 		pplCfg:   pplCfg,
 		compsCfg: compsCfg,
 		compTree: buildComponentTree(pplCfg, components),
+		compTop:  topology,
 	}
 
 	pipeline.applySysCfg()
@@ -204,6 +211,30 @@ func (ppl *Pipeline) Links() []core.Link {
 }
 
 func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
+	sorted, err := ppl.compTop.Sort()
+	if err != nil {
+		return err
+	}
+	switch cmdPpgt {
+	case core.CmdPpgtTopDwn:
+	case core.CmdPpgtBtmUp:
+		l := len(sorted)
+		for i := 0; i < l/2; i++ {
+			sorted[i], sorted[l-1-i] = sorted[l-1-i], sorted[i]
+		}
+	default:
+		return fmt.Errorf("Unknown command propagation: %d", cmdPpgt)
+	}
+	for _, topNode := range sorted {
+		if err := topNode.(core.Link).ExecCmd(cmd); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ppl *Pipeline) ExecCmd_bak(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
 	var stack []interface{}
 	switch cmdPpgt {
 	case core.CmdPpgtBtmUp:
@@ -248,7 +279,8 @@ func (ppl *Pipeline) applySysCfg() error {
 	return nil
 }
 
-func buildPipelineTopology(cfg map[string]config.CfgBlockPipeline, components map[string]core.Link) *data.Topology {
+func buildPipelineTopology(cfg map[string]config.CfgBlockPipeline,
+	components map[string]core.Link) (*data.Topology, error) {
 	top := data.NewTopology()
 
 	for _, component := range components {
@@ -256,10 +288,52 @@ func buildPipelineTopology(cfg map[string]config.CfgBlockPipeline, components ma
 	}
 
 	for name, blockcfg := range cfg {
-
+		hasConnection := blockHasConnection(blockcfg)
+		hasLinks := blockHasLinks(blockcfg)
+		hasRoutes := blockHasRoutes(blockcfg)
+		if hasConnection {
+			connectTo, ok := components[blockcfg.Connect]
+			if !ok {
+				return nil, fmt.Errorf(
+					"Component %q defined a connection to an unknown component %q",
+					name,
+					blockcfg.Connect)
+			}
+			top.Connect(components[name], connectTo)
+		}
+		if hasLinks {
+			for _, linkName := range blockcfg.Links {
+				linkTo, ok := components[linkName]
+				if !ok {
+					return nil, fmt.Errorf(
+						"Component %q defined a link to an unknown component %q",
+						name,
+						linkName)
+				}
+				if hasConnection {
+					// Link is incoming is connectTo is defined
+					top.Connect(linkTo, components[name])
+				} else {
+					// Link is outcoming otherwise
+					top.Connect(components[name], linkTo)
+				}
+			}
+		}
+		if hasRoutes {
+			for _, routeName := range blockcfg.Routes {
+				routeTo, ok := components[routeName]
+				if !ok {
+					return nil, fmt.Errorf(
+						"Component %q defined a route to an unknown component %q",
+						name,
+						routeName)
+				}
+				top.Connect(components[name], routeTo)
+			}
+		}
 	}
 
-	return nil
+	return top, nil
 }
 
 func blockHasConnection(blockcfg config.CfgBlockPipeline) bool {

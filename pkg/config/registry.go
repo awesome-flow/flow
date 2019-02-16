@@ -97,7 +97,7 @@ func traverseProviders() ([]Provider, error) {
 	top := data.NewTopology(provList...)
 	for name, prov := range registry.providers {
 		for _, dep := range prov.DependsOn() {
-			top.Connect(dep, name)
+			top.Connect(registry.providers[name], registry.providers[dep])
 		}
 	}
 	resolved, err := top.Sort()
