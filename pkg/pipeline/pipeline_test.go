@@ -9,7 +9,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func TestPipeline_buildComp(t *testing.T) {
+func TestPipeline_buildComponents(t *testing.T) {
 	tests := []struct {
 		name string
 		cfg  *config.CfgBlockComponent
@@ -94,7 +94,7 @@ func TestPipeline_buildComp(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			comp, err := buildComp(testCase.cfg.Module, *testCase.cfg, core.NewContext())
+			comp, err := buildComponent(testCase.cfg.Module, *testCase.cfg, core.NewContext())
 			if err != nil {
 				t.Errorf("Failed to build component %s: %s", testCase.cfg.Module, err)
 			} else {

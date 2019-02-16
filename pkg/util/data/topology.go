@@ -23,6 +23,10 @@ func NewTopology(nodes ...TopologyNode) *Topology {
 	}
 }
 
+func (top *Topology) AddNode(node TopologyNode) {
+	top.Nodes = append(top.Nodes, node)
+}
+
 func (top *Topology) Connect(from, to TopologyNode) {
 	top.Edges = append(top.Edges, TopologyEdge{From: from, To: to})
 }
