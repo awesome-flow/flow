@@ -38,10 +38,10 @@ func main() {
 	cntr = 0
 
 	go reportCnt()
-	if err := repl.SetUp(); err != nil {
+	if err := repl.(*replicator.Replicator).SetUp(); err != nil {
 		panic(err.Error())
 	}
-	if err := tcprcv.SetUp(); err != nil {
+	if err := tcprcv.(*tcp_rcv.TCP).SetUp(); err != nil {
 		panic(err.Error())
 	}
 

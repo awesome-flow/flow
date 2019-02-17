@@ -38,13 +38,13 @@ import (
 type Pipeline struct {
 	pplCfg   map[string]config.CfgBlockPipeline
 	compsCfg map[string]config.CfgBlockComponent
-	compTree *data.NTree
+	compTop  *data.Topology
 }
 
-type ConstrFunc func(string, core.Params, *core.Context) (core.Link, error)
+type Constructor func(string, core.Params, *core.Context) (core.Link, error)
 
 var (
-	CompBuilders = map[string]ConstrFunc{
+	CompBuilders = map[string]Constructor{
 		"receiver.tcp":  tcp_rcv.New,
 		"receiver.udp":  udp_rcv.New,
 		"receiver.http": http_rcv.New,
@@ -68,39 +68,47 @@ var (
 	}
 )
 
+func buildComponents(cfg map[string]config.CfgBlockComponent) (map[string]core.Link, error) {
+	components := make(map[string]core.Link)
+	for name, params := range cfg {
+		ctx := core.NewContext()
+		if _, ok := components[name]; ok {
+			return nil, fmt.Errorf("Duplicate declaration of component %q", name)
+		}
+		comp, err := buildComponent(name, params, ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		components[name] = comp
+	}
+
+	return components, nil
+}
+
 func NewPipeline(
 	compsCfg map[string]config.CfgBlockComponent,
 	pplCfg map[string]config.CfgBlockPipeline) (*Pipeline, error) {
 
-	compPool := make(map[string]core.Link)
-	for compName, compParams := range compsCfg {
-		context := core.NewContext()
-		comp, compErr := buildComp(compName, compParams, context)
-		if compErr != nil {
-			return nil, compErr
-		}
-		if _, ok := compPool[compName]; ok {
-			return nil,
-				fmt.Errorf(
-					"Duplicate declaration of component called %s", compName)
-		}
-		compPool[compName] = comp
+	components, err := buildComponents(compsCfg)
+	if err != nil {
+		return nil, err
 	}
 
 	for compName, compCfg := range pplCfg {
-		comp, ok := compPool[compName]
+		comp, ok := components[compName]
 		if !ok {
 			return nil, fmt.Errorf(
-				"Undefined component %s in the pipeline", compName)
+				"Pipeline component %q mentioned in the pipeline config but never defined in components section", compName)
 		}
 		if compCfg.Connect != "" {
 			log.Infof("Connecting %s to %s", compName, compCfg.Connect)
-			if _, ok := compPool[compCfg.Connect]; !ok {
+			if _, ok := components[compCfg.Connect]; !ok {
 				return nil, fmt.Errorf(
 					"Failed to connect %s to %s: %s is undefined",
 					compName, compCfg.Connect, compCfg.Connect)
 			}
-			if err := comp.ConnectTo(compPool[compCfg.Connect]); err != nil {
+			if err := comp.ConnectTo(components[compCfg.Connect]); err != nil {
 				return nil, fmt.Errorf("Failed to connect %s to %s: %s",
 					compName, compCfg.Connect, err.Error())
 			}
@@ -109,12 +117,12 @@ func NewPipeline(
 			log.Infof("Linking %s with %s", compName, compCfg.Links)
 			links := make([]core.Link, len(compCfg.Links))
 			for ix, linkName := range compCfg.Links {
-				if _, ok := compPool[linkName]; !ok {
+				if _, ok := components[linkName]; !ok {
 					return nil, fmt.Errorf(
 						"Failed to link %s to %s: %s is undefined",
 						compName, linkName, linkName)
 				}
-				links[ix] = compPool[linkName]
+				links[ix] = components[linkName]
 			}
 			if err := comp.LinkTo(links); err != nil {
 				return nil, fmt.Errorf(
@@ -124,12 +132,12 @@ func NewPipeline(
 		if len(compCfg.Routes) > 0 {
 			routes := make(map[string]core.Link)
 			for rtPath, rtName := range compCfg.Routes {
-				if _, ok := compPool[rtName]; !ok {
+				if _, ok := components[rtName]; !ok {
 					return nil, fmt.Errorf(
 						"Failed to route %s to %s under path %s: %s is undefined",
 						compName, rtName, rtPath, rtName)
 				}
-				routes[rtPath] = compPool[rtName]
+				routes[rtPath] = components[rtName]
 			}
 			if err := comp.RouteTo(routes); err != nil {
 				return nil, fmt.Errorf("Failed to route %s: %s",
@@ -138,10 +146,15 @@ func NewPipeline(
 		}
 	}
 
+	topology, err := buildPipelineTopology(pplCfg, components)
+	if err != nil {
+		return nil, err
+	}
+
 	pipeline := &Pipeline{
 		pplCfg:   pplCfg,
 		compsCfg: compsCfg,
-		compTree: buildCompTree(pplCfg, compPool),
+		compTop:  topology,
 	}
 
 	pipeline.applySysCfg()
@@ -149,7 +162,7 @@ func NewPipeline(
 	return pipeline, nil
 }
 
-func buildComp(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
+func buildComponent(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
 	if cfg.Plugin != "" {
 		pluginpathintf, _ := config.Get("flow.plugin.path")
 		var pluginpath string
@@ -188,28 +201,42 @@ func (ppl *Pipeline) Explain() (string, error) {
 }
 
 func (ppl *Pipeline) Links() []core.Link {
-	links := make([]core.Link, 0)
-	for _, link := range ppl.compTree.PreTraversal() {
-		links = append(links, link.(core.Link))
+	sorted, err := ppl.compTop.Sort()
+	if err != nil {
+		panic(err.Error())
+	}
+	for i := 0; i < len(sorted)/2; i++ {
+		sorted[i], sorted[len(sorted)-1-i] = sorted[len(sorted)-1-i], sorted[i]
+	}
+	links := make([]core.Link, 0, len(sorted))
+	for _, node := range links {
+		links = append(links, node.(core.Link))
 	}
 	return links
 }
 
 func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
-	var stack []interface{}
-	switch cmdPpgt {
-	case core.CmdPpgtBtmUp:
-		stack = ppl.compTree.PostTraversal()
-	case core.CmdPpgtTopDwn:
-		stack = ppl.compTree.PreTraversal()
-	default:
-		panic("This should not happen")
+	sorted, err := ppl.compTop.Sort()
+	if err != nil {
+		return err
 	}
-	for _, link := range stack {
-		if err := link.(core.Link).ExecCmd(cmd); err != nil {
+	switch cmdPpgt {
+	case core.CmdPpgtTopDwn:
+		l := len(sorted)
+		for i := 0; i < l/2; i++ {
+			sorted[i], sorted[l-1-i] = sorted[l-1-i], sorted[i]
+		}
+	case core.CmdPpgtBtmUp:
+	default:
+		return fmt.Errorf("Unknown command propagation: %d", cmdPpgt)
+	}
+
+	for _, topNode := range sorted {
+		if err := topNode.(core.Link).ExecCmd(cmd); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -240,34 +267,71 @@ func (ppl *Pipeline) applySysCfg() error {
 	return nil
 }
 
-func buildCompTree(ppl map[string]config.CfgBlockPipeline,
-	lookup map[string]core.Link) *data.NTree {
+func buildPipelineTopology(cfg map[string]config.CfgBlockPipeline,
+	components map[string]core.Link) (*data.Topology, error) {
+	top := data.NewTopology()
 
-	rootNode := &data.NTree{}
+	for _, component := range components {
+		top.AddNode(component)
+	}
 
-	for name, block := range ppl {
-		ptr := rootNode.FindOrInsert(lookup[name])
-		children := make([]core.Link, 0)
-		if len(block.Connect) > 0 {
-			children = append(children, lookup[block.Connect])
+	for name, blockcfg := range cfg {
+		hasConnection := blockHasConnection(blockcfg)
+		hasLinks := blockHasLinks(blockcfg)
+		hasRoutes := blockHasRoutes(blockcfg)
+		if hasConnection {
+			connectTo, ok := components[blockcfg.Connect]
+			if !ok {
+				return nil, fmt.Errorf(
+					"Component %q defined a connection to an unknown component %q",
+					name,
+					blockcfg.Connect)
+			}
+			top.Connect(components[name], connectTo)
 		}
-		if len(block.Links) > 0 {
-			for _, linkName := range block.Links {
-				children = append(children, lookup[linkName])
+		if hasLinks {
+			for _, linkName := range blockcfg.Links {
+				linkTo, ok := components[linkName]
+				if !ok {
+					return nil, fmt.Errorf(
+						"Component %q defined a link to an unknown component %q",
+						name,
+						linkName)
+				}
+				if hasConnection {
+					// Link is incoming is connectTo is defined
+					top.Connect(linkTo, components[name])
+				} else {
+					// Link is outcoming otherwise
+					top.Connect(components[name], linkTo)
+				}
 			}
 		}
-		if len(block.Routes) > 0 {
-			for _, routeName := range block.Routes {
-				children = append(children, lookup[routeName])
+		if hasRoutes {
+			for _, routeName := range blockcfg.Routes {
+				routeTo, ok := components[routeName]
+				if !ok {
+					return nil, fmt.Errorf(
+						"Component %q defined a route to an unknown component %q",
+						name,
+						routeName)
+				}
+				top.Connect(components[name], routeTo)
 			}
-		}
-		for _, chld := range children {
-			if chldPtr := rootNode.Detach(chld); chldPtr != nil {
-				ptr.FindOrInsert(chldPtr.GetValue())
-			}
-			ptr.FindOrInsert(chld)
 		}
 	}
 
-	return rootNode
+	return top, nil
+}
+
+func blockHasConnection(blockcfg config.CfgBlockPipeline) bool {
+	return len(blockcfg.Connect) > 0
+}
+
+func blockHasLinks(blockcfg config.CfgBlockPipeline) bool {
+	return len(blockcfg.Links) > 0
+}
+
+func blockHasRoutes(blockcfg config.CfgBlockPipeline) bool {
+	return len(blockcfg.Routes) > 0
 }

@@ -87,7 +87,7 @@ https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Directed_acyclic_graph
    (2)  (9) (10)
 
 */
-func TestTopology_Sort(t *testing.T) {
+func TestTopology_SortExample(t *testing.T) {
 	node2, node3, node5, node7, node8, node9, node10, node11 :=
 		StringerNode("2"),
 		StringerNode("3"),
@@ -99,18 +99,20 @@ func TestTopology_Sort(t *testing.T) {
 		StringerNode("11")
 
 	connections := map[StringerNode][]StringerNode{
-		node11: {node5, node7},
-		node8:  {node7, node3},
-		node2:  {node11},
-		node9:  {node11, node8},
-		node10: {node3, node11},
+		node5:  {node11},
+		node7:  {node11, node8},
+		node3:  {node8, node10},
+		node11: {node2, node9, node10},
+		node8:  {node9},
 	}
 
 	top := NewTopology(node2, node3, node5, node7, node8, node9, node10, node11)
 
 	for from, tos := range connections {
 		for _, to := range tos {
-			top.Connect(from, to)
+			if err := top.Connect(from, to); err != nil {
+				t.Fatalf(err.Error())
+			}
 		}
 	}
 
@@ -119,36 +121,19 @@ func TestTopology_Sort(t *testing.T) {
 		t.Fatalf("Failed to perform topological sort of the graph: %s", err)
 	}
 
-	correct := [][]string{
-		{"5", "7", "3", "11", "8", "2", "9", "10"},
-		{"3", "5", "7", "8", "11", "2", "9", "10"},
-		{"5", "7", "3", "8", "11", "10", "9", "2"},
-		{"7", "5", "11", "3", "10", "8", "9", "2"},
-		{"5", "7", "11", "2", "3", "8", "9", "10"},
-		{"3", "7", "8", "5", "11", "10", "2", "9"},
-	}
-
-	match := func(got []TopologyNode, exp []string) bool {
-		if len(got) != len(exp) {
-			return false
-		}
-		for i, maxi := 0, len(got)-1; i <= maxi; i++ {
-			if string(got[i].(StringerNode)) != exp[i] {
-				return false
+	visited := make(map[StringerNode]bool)
+	for _, node := range sorted {
+		if deps, ok := connections[node.(StringerNode)]; ok {
+			for _, dep := range deps {
+				if _, ok := visited[dep]; !ok {
+					t.Fatalf(
+						"Node %#v was expected to be visited after %#v. Full order: %#v\n",
+						node,
+						dep,
+						sorted)
+				}
 			}
 		}
-		return true
-	}
-
-	matched := false
-	for _, corr := range correct {
-		if match(sorted, corr) {
-			matched = true
-			break
-		}
-	}
-
-	if !matched {
-		t.Fatalf("Unexpected sorting result: %#v", sorted)
+		visited[node.(StringerNode)] = true
 	}
 }
