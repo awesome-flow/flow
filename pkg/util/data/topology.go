@@ -12,30 +12,53 @@ type TopologyEdge struct {
 }
 
 type Topology struct {
-	Edges []TopologyEdge
-	Nodes []TopologyNode
+	Edges map[TopologyEdge]struct{}
+	Nodes map[TopologyNode]struct{}
 }
 
 func NewTopology(nodes ...TopologyNode) *Topology {
+	nodeset := make(map[TopologyNode]struct{})
+	for _, node := range nodes {
+		nodeset[node] = struct{}{}
+	}
 	return &Topology{
-		Edges: make([]TopologyEdge, 0),
-		Nodes: nodes,
+		Edges: make(map[TopologyEdge]struct{}),
+		Nodes: nodeset,
 	}
 }
 
 func (top *Topology) AddNode(node TopologyNode) {
-	top.Nodes = append(top.Nodes, node)
+	top.Nodes[node] = struct{}{}
 }
 
-func (top *Topology) Connect(from, to TopologyNode) {
-	top.Edges = append(top.Edges, TopologyEdge{From: from, To: to})
+// ConnectTo creates a directed edge between node "from" to node "to".
+// If a topology represents a dependency graph, this notation should be
+// interpreted as: node "from" depends on node "to", i.e. in a case of a
+// topological sort node "to" would be visited before node "from".
+//
+// Example
+//
+// top := NewTopology(A, B)
+// top.Connect(A, B) // A -> B
+// top.Sort() // returns {B, A}: B has been visited, which satisfies A
+// dependencies.
+func (top *Topology) Connect(from, to TopologyNode) error {
+	if _, ok := top.Nodes[from]; !ok {
+		return fmt.Errorf("Can not connect from unknown node: %#v", from)
+	}
+	if _, ok := top.Nodes[to]; !ok {
+		return fmt.Errorf("Can not connect to unknown node: %#v", to)
+	}
+	top.Edges[TopologyEdge{From: from, To: to}] = struct{}{}
+
+	return nil
 }
 
 func (top *Topology) Sort() ([]TopologyNode, error) {
 	temp := make(map[TopologyNode]bool)
 	perm := make(map[TopologyNode]bool)
 	outs := make(map[TopologyNode][]TopologyNode)
-	for _, edge := range top.Edges {
+	for edge := range top.Edges {
 		if _, ok := outs[edge.From]; !ok {
 			outs[edge.From] = make([]TopologyNode, 0, 1)
 		}
@@ -65,8 +88,12 @@ func (top *Topology) Sort() ([]TopologyNode, error) {
 		}
 		return res, nil
 	}
+	nodes := make([]TopologyNode, 0, len(top.Nodes))
+	for node := range top.Nodes {
+		nodes = append(nodes, node)
+	}
 
-	if res, err := visitAll(top.Nodes); err != nil {
+	if res, err := visitAll(nodes); err != nil {
 		return nil, err
 	} else {
 		return res, nil
