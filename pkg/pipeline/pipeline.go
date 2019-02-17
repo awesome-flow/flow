@@ -38,7 +38,6 @@ import (
 type Pipeline struct {
 	pplCfg   map[string]config.CfgBlockPipeline
 	compsCfg map[string]config.CfgBlockComponent
-	compTree *data.NTree
 	compTop  *data.Topology
 }
 
@@ -155,7 +154,6 @@ func NewPipeline(
 	pipeline := &Pipeline{
 		pplCfg:   pplCfg,
 		compsCfg: compsCfg,
-		compTree: buildComponentTree(pplCfg, components),
 		compTop:  topology,
 	}
 
@@ -203,9 +201,16 @@ func (ppl *Pipeline) Explain() (string, error) {
 }
 
 func (ppl *Pipeline) Links() []core.Link {
-	links := make([]core.Link, 0)
-	for _, link := range ppl.compTree.PreTraversal() {
-		links = append(links, link.(core.Link))
+	sorted, err := ppl.compTop.Sort()
+	if err != nil {
+		panic(err.Error())
+	}
+	for i := 0; i < len(sorted)/2; i++ {
+		sorted[i], sorted[len(sorted)-1-i] = sorted[len(sorted)-1-i], sorted[i]
+	}
+	links := make([]core.Link, 0, len(sorted))
+	for _, node := range links {
+		links = append(links, node.(core.Link))
 	}
 	return links
 }
@@ -217,38 +222,21 @@ func (ppl *Pipeline) ExecCmd(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
 	}
 	switch cmdPpgt {
 	case core.CmdPpgtTopDwn:
-	case core.CmdPpgtBtmUp:
 		l := len(sorted)
 		for i := 0; i < l/2; i++ {
 			sorted[i], sorted[l-1-i] = sorted[l-1-i], sorted[i]
 		}
+	case core.CmdPpgtBtmUp:
 	default:
 		return fmt.Errorf("Unknown command propagation: %d", cmdPpgt)
 	}
+
 	for _, topNode := range sorted {
 		if err := topNode.(core.Link).ExecCmd(cmd); err != nil {
 			return err
 		}
 	}
 
-	return nil
-}
-
-func (ppl *Pipeline) ExecCmd_bak(cmd *core.Cmd, cmdPpgt core.CmdPropagation) error {
-	var stack []interface{}
-	switch cmdPpgt {
-	case core.CmdPpgtBtmUp:
-		stack = ppl.compTree.PostTraversal()
-	case core.CmdPpgtTopDwn:
-		stack = ppl.compTree.PreTraversal()
-	default:
-		panic("This should not happen")
-	}
-	for _, link := range stack {
-		if err := link.(core.Link).ExecCmd(cmd); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -346,36 +334,4 @@ func blockHasLinks(blockcfg config.CfgBlockPipeline) bool {
 
 func blockHasRoutes(blockcfg config.CfgBlockPipeline) bool {
 	return len(blockcfg.Routes) > 0
-}
-
-func buildComponentTree(ppl map[string]config.CfgBlockPipeline,
-	lookup map[string]core.Link) *data.NTree {
-
-	rootNode := &data.NTree{}
-
-	for name, block := range ppl {
-		ptr := rootNode.FindOrInsert(lookup[name])
-		children := make([]core.Link, 0)
-		if len(block.Connect) > 0 {
-			children = append(children, lookup[block.Connect])
-		}
-		if len(block.Links) > 0 {
-			for _, linkName := range block.Links {
-				children = append(children, lookup[linkName])
-			}
-		}
-		if len(block.Routes) > 0 {
-			for _, routeName := range block.Routes {
-				children = append(children, lookup[routeName])
-			}
-		}
-		for _, chld := range children {
-			if chldPtr := rootNode.Detach(chld); chldPtr != nil {
-				ptr.FindOrInsert(chldPtr.GetValue())
-			}
-			ptr.FindOrInsert(chld)
-		}
-	}
-
-	return rootNode
 }
