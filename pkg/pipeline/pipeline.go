@@ -164,6 +164,19 @@ func NewPipeline(
 	return pipeline, nil
 }
 
+func componentIsPlugin(cfg config.CfgBlockComponent) bool {
+	return len(cfg.Plugin) > 0
+}
+
+func buildComponent(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
+	if componentIsPlugin(cfg) {
+		return buildPlugin(compName, cfg, context)
+	}
+	if builder, ok := CompBuilders[cfg.Module]; ok {
+		return builder(compName, cfg.Params, context)
+	}
+	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
+}
 func buildPlugin(name string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
 	if cfg.Plugin == "" {
 		return nil, fmt.Errorf("%q config does not look like a plugin", name)
@@ -208,39 +221,6 @@ func buildPlugin(name string, cfg config.CfgBlockComponent, context *core.Contex
 	}
 
 	return lnk, nil
-}
-
-func buildComponent(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
-	if cfg.Plugin != "" {
-		pluginpathintf, _ := config.Get("flow.plugin.path")
-		var pluginpath string
-		if v, ok := pluginpathintf.(string); ok {
-			pluginpath = v
-		} else if v, ok := pluginpathintf.(*string); ok {
-			pluginpath = *v
-		}
-
-		p, pErr := plugin.Open(fmt.Sprintf("%s/%s/%s.so", pluginpath, cfg.Plugin, cfg.Plugin))
-		if pErr != nil {
-			return nil, pErr
-		}
-		c, cErr := p.Lookup(cfg.Constructor)
-		if cErr != nil {
-			return nil, cErr
-		}
-		comp, err := c.(func(string, core.Params, *core.Context) (core.Link, error))(compName, cfg.Params, context)
-		if err != nil {
-			panic(err.Error())
-		}
-		if comp == nil {
-			panic("Component is nil")
-		}
-		return comp, err
-	}
-	if builder, ok := CompBuilders[cfg.Module]; ok {
-		return builder(compName, cfg.Params, context)
-	}
-	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
 }
 
 func (ppl *Pipeline) Explain() (string, error) {
