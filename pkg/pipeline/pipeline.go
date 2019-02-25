@@ -182,16 +182,16 @@ func buildPlugin(name string, cfg config.CfgBlockComponent, context *core.Contex
 		return nil, fmt.Errorf("%q config does not look like a plugin", name)
 	}
 	var basepath string
-	v, ok := config.Get("flow.plugin.path")
+	v, ok := config.Get("plugin.path")
 	if !ok {
-		return nil, fmt.Errorf("Config is missing flow.plugin.path")
+		return nil, fmt.Errorf("Config is missing plugin.path")
 	}
 	if str, ok := v.(string); ok {
 		basepath = str
 	} else if strptr, ok := v.(*string); ok {
 		basepath = *strptr
 	} else {
-		return nil, fmt.Errorf("flow.plugin.path is not a string value")
+		return nil, fmt.Errorf("plugin.path is not a string value")
 	}
 	// /plugin_base/path/plugin_name/plugin_name.so
 	fullpath := filepath.Join(basepath, cfg.Plugin, fmt.Sprintf("%s.so", cfg.Plugin))

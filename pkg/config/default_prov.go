@@ -11,8 +11,8 @@ func init() {
 
 var (
 	defaultConfigs = map[string]string{
-		"config.file":      "/etc/flowd/flow-config.yml",
-		"flow.plugin.path": "/etc/flowd/plugins",
+		"config.file": "/etc/flowd/flow-config.yml",
+		"plugin.path": "/etc/flowd/plugins",
 	}
 )
 

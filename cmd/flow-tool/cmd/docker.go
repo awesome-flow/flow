@@ -24,7 +24,7 @@ var pluginpathprov config.Provider
 var flowconfigprov config.Provider
 
 func init() {
-	pluginpathprov = config.NewSimpleProv("flow.plugin.path", &pluginpath)
+	pluginpathprov = config.NewSimpleProv("plugin.path", &pluginpath)
 	pluginpathprov.Setup()
 	flowconfigprov = config.NewSimpleProv("config.file", &flowconfig)
 	flowconfigprov.Setup()

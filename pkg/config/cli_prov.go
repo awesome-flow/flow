@@ -25,7 +25,7 @@ var (
 		// The cast is expected to be performed by the client.
 		{"value", "config.file", "config", "",
 			"Location of the config file"},
-		{"value", "flow.plugin.path", "flow-plugin-path", "",
+		{"value", "plugin.path", "plugin-path", "",
 			"Flow plugin path"},
 	}
 )
