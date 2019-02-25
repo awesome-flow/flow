@@ -3,6 +3,8 @@ package pipeline
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"plugin"
 	"runtime"
 	"time"
@@ -162,37 +164,63 @@ func NewPipeline(
 	return pipeline, nil
 }
 
-func buildComponent(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
-	if cfg.Plugin != "" {
-		pluginpathintf, _ := config.Get("flow.plugin.path")
-		var pluginpath string
-		if v, ok := pluginpathintf.(string); ok {
-			pluginpath = v
-		} else if v, ok := pluginpathintf.(*string); ok {
-			pluginpath = *v
-		}
+func componentIsPlugin(cfg config.CfgBlockComponent) bool {
+	return len(cfg.Plugin) > 0
+}
 
-		p, pErr := plugin.Open(fmt.Sprintf("%s/%s/%s.so", pluginpath, cfg.Plugin, cfg.Plugin))
-		if pErr != nil {
-			return nil, pErr
-		}
-		c, cErr := p.Lookup(cfg.Constructor)
-		if cErr != nil {
-			return nil, cErr
-		}
-		comp, err := c.(func(string, core.Params, *core.Context) (core.Link, error))(compName, cfg.Params, context)
-		if err != nil {
-			panic(err.Error())
-		}
-		if comp == nil {
-			panic("Component is nil")
-		}
-		return comp, err
+func buildComponent(compName string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
+	if componentIsPlugin(cfg) {
+		return buildPlugin(compName, cfg, context)
 	}
 	if builder, ok := CompBuilders[cfg.Module]; ok {
 		return builder(compName, cfg.Params, context)
 	}
 	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
+}
+func buildPlugin(name string, cfg config.CfgBlockComponent, context *core.Context) (core.Link, error) {
+	if cfg.Plugin == "" {
+		return nil, fmt.Errorf("%q config does not look like a plugin", name)
+	}
+	var basepath string
+	v, ok := config.Get("plugin.path")
+	if !ok {
+		return nil, fmt.Errorf("Config is missing plugin.path")
+	}
+	if str, ok := v.(string); ok {
+		basepath = str
+	} else if strptr, ok := v.(*string); ok {
+		basepath = *strptr
+	} else {
+		return nil, fmt.Errorf("plugin.path is not a string value")
+	}
+	// /plugin_base/path/plugin_name/plugin_name.so
+	fullpath := filepath.Join(basepath, cfg.Plugin, fmt.Sprintf("%s.so", cfg.Plugin))
+	log.Debugf("Initializing plugin %q from path: %s", cfg.Plugin, fullpath)
+
+	if _, err := os.Stat(fullpath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("Unable to find plugin shared library object under path: %s", fullpath)
+	}
+	pl, err := plugin.Open(fullpath)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Successfully red plugin %q shared library object. Looking up for constructor function %q", cfg.Plugin, cfg.Constructor)
+
+	cnstr, err := pl.Lookup(cfg.Constructor)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find the declared constructor function %q for plugin %s: %s", cfg.Constructor, cfg.Plugin, err)
+	}
+
+	lnk, err := cnstr.(func(string, core.Params, *core.Context) (core.Link, error))(name, cfg.Params, context)
+	if err != nil {
+		return nil, err
+	}
+
+	if lnk == nil {
+		return nil, fmt.Errorf("Plugin %s constructor %s returned a nil object an no error", cfg.Plugin, cfg.Constructor)
+	}
+
+	return lnk, nil
 }
 
 func (ppl *Pipeline) Explain() (string, error) {
