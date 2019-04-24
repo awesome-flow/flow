@@ -16,7 +16,7 @@ type RingLink struct {
 type Fanout struct {
 	Name     string
 	ringHead *RingLink
-	*sync.Mutex
+	*sync.RWMutex
 	*core.Connector
 }
 
@@ -24,7 +24,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 	ft := &Fanout{
 		name,
 		nil,
-		&sync.Mutex{},
+		&sync.RWMutex{},
 		core.NewConnector(),
 	}
 	for _, ch := range ft.GetMsgCh() {
@@ -41,16 +41,16 @@ func (ft *Fanout) ConnectTo(core.Link) error {
 
 func (ft *Fanout) fanout(ch chan *core.Message) {
 	for msg := range ch {
-		ft.Lock()
+		ft.RLock()
 		head := ft.ringHead
 		if head == nil {
 			msg.AckFailed()
-			ft.Unlock()
+			ft.RUnlock()
 			continue
 		}
 		head.self.Recv(msg)
 		ft.ringHead = head.next
-		ft.Unlock()
+		ft.RUnlock()
 	}
 }
 
