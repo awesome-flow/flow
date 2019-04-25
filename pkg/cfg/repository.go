@@ -141,28 +141,28 @@ func (n *node) get(key Key) (*KeyValue, bool) {
 		return nil, false
 	}
 	if len(ptr.children) != 0 {
-		return &KeyValue{key, ptr.getAll(key)}, true
+		return ptr.getAll(key), true
 	}
 	return nil, false
 }
 
-func (n *node) getAll(pref Key) map[string]Value {
+func (n *node) getAll(pref Key) *KeyValue {
 	res := make(map[string]Value)
 	for k, ch := range n.children {
 		key := Key(append(pref, k))
 		if len(ch.providers) > 0 {
 			// Providers are expected to be sorted
 			for _, prov := range ch.providers {
-				if v, ok := prov.Get(key); ok {
-					res[k] = doMap(v).Value
+				if kv, ok := prov.Get(key); ok {
+					res[k] = doMap(kv).Value
 					break
 				}
 			}
 		} else {
-			res[k] = ch.getAll(key)
+			res[k] = ch.getAll(key).Value
 		}
 	}
-	return res
+	return doMap(&KeyValue{pref, res})
 }
 
 type Repository struct {

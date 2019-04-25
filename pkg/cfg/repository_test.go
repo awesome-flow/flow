@@ -1,6 +1,7 @@
 package cfg
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -302,7 +303,7 @@ func Test_getAll(t *testing.T) {
 		},
 		"bar": 20,
 	}
-	got := n.getAll(nil)
+	got := n.getAll(nil).Value
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("Unexpcted traversal value: want: %#v, got: %#v", want, got)
 	}
@@ -322,19 +323,21 @@ func (tm *TestMapper) Map(kv *KeyValue) *KeyValue {
 	return tm.conv(kv)
 }
 
-func Test_DefineMapper(t *testing.T) {
+func Test_DefineMapper_simpleConv(t *testing.T) {
 	// Make sure it's clean
 	mappers = make(map[string]Mapper)
 	mpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
 		v := kv.Value
-		if _, ok := v.(string); ok {
+		if _, ok := v.(int); ok {
+			return kv
+		} else if _, ok := v.(string); ok {
 			convVal, err := strconv.Atoi(v.(string))
 			if err != nil {
 				t.Fatalf("Failed to convert value to int: %s", err)
 			}
 			return &KeyValue{kv.Key, convVal}
 		}
-		return kv
+		panic(fmt.Sprintf("unrecognised value type: %#v", kv.Value))
 	})
 	k := "foo.bar.baz"
 	DefineMapper(k, mpr)
@@ -348,5 +351,77 @@ func Test_DefineMapper(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, 10) {
 		t.Fatalf("Unexpected value: got: %#v, want: %#v", got, want)
+	}
+}
+
+type Compound struct {
+	bar int
+	baz string
+}
+
+func Test_DefineMapper_nestedConv(t *testing.T) {
+	mappers = make(map[string]Mapper)
+	fooBarMpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
+		if _, ok := kv.Value.(int); ok {
+			return kv
+		} else if _, ok := kv.Value.(string); ok {
+			if convVal, err := strconv.Atoi(kv.Value.(string)); err == nil {
+				return &KeyValue{kv.Key, convVal}
+			} else {
+				t.Fatalf("failed to convert value %#v: %s", kv.Value, err)
+			}
+		}
+		panic(fmt.Sprintf("unrecognised value type: %#v", kv.Value))
+	})
+	fooBazMpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
+		if _, ok := kv.Value.(string); ok {
+			return kv
+		} else if _, ok := kv.Value.(int); ok {
+			return &KeyValue{kv.Key, strconv.Itoa(kv.Value.(int))}
+		}
+		panic(fmt.Sprintf("unrecognised value type: %#v", kv.Value))
+	})
+	fooMpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
+		val := &Compound{}
+		if kvMap, ok := kv.Value.(map[string]Value); ok {
+			if bar, ok := kvMap["bar"]; ok {
+				val.bar = bar.(int)
+			}
+			if baz, ok := kvMap["baz"]; ok {
+				val.baz = baz.(string)
+			}
+		} else {
+			t.Fatalf("unrecognised value type: %#v, want: map[string]Value", kv.Value)
+		}
+		return &KeyValue{kv.Key, val}
+	})
+	DefineMapper("foo.bar", fooBarMpr)
+	DefineMapper("foo.baz", fooBazMpr)
+	DefineMapper("foo", fooMpr)
+
+	repo := NewRepository()
+	repo.Register(NewKey("foo.bar"), NewTestProv("42", DefaultWeight))
+	repo.Register(NewKey("foo.baz"), NewTestProv(123, DefaultWeight))
+
+	if v, ok := repo.Get(NewKey("foo.bar")); !ok {
+		t.Fatalf("expected repo to find key foo.bar")
+	} else if v != 42 {
+		t.Fatalf("unexpected value: got: %#v, want: 42", v)
+	}
+
+	if v, ok := repo.Get(NewKey("foo.baz")); !ok {
+		t.Fatalf("expected repo to find key foo.baz")
+	} else if v != "123" {
+		t.Fatalf("unexpected value: got: %#v, want: \"123\"", v)
+	}
+
+	expectedComp := &Compound{
+		bar: 42,
+		baz: "123",
+	}
+	if v, ok := repo.Get(NewKey("foo")); !ok {
+		t.Fatalf("expected repo to find key foo")
+	} else if !reflect.DeepEqual(expectedComp, v) {
+		t.Fatalf("unexpected value: got: %#v, want: %#v", v, expectedComp)
 	}
 }
