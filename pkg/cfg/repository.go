@@ -41,10 +41,6 @@ type Provider interface {
 	Weight() int
 }
 
-type Mapper interface {
-	Map(kv *KeyValue) *KeyValue
-}
-
 var (
 	mappers   map[string]Mapper
 	mappersMx sync.Mutex
@@ -63,11 +59,15 @@ func DefineMapper(path string, mapper Mapper) error {
 	return nil
 }
 
-func doMap(kv *KeyValue) *KeyValue {
+func doMap(kv *KeyValue) (*KeyValue, error) {
 	if mapper, ok := mappers[kv.Key.String()]; ok {
-		return mapper.Map(kv)
+		if mkv, err := mapper.Map(kv); err != nil {
+			return nil, err
+		} else {
+			return mkv, nil
+		}
 	}
-	return kv
+	return kv, nil
 }
 
 type Constructor func(*Repository, int) (Provider, error)
@@ -135,7 +135,11 @@ func (n *node) get(key Key) (*KeyValue, bool) {
 	if len(ptr.providers) != 0 {
 		for _, prov := range ptr.providers {
 			if kv, ok := prov.Get(key); ok {
-				return doMap(kv), ok
+				if mkv, err := doMap(kv); err != nil {
+					panic(err)
+				} else {
+					return mkv, ok
+				}
 			}
 		}
 		return nil, false
@@ -154,7 +158,11 @@ func (n *node) getAll(pref Key) *KeyValue {
 			// Providers are expected to be sorted
 			for _, prov := range ch.providers {
 				if kv, ok := prov.Get(key); ok {
-					res[k] = doMap(kv).Value
+					mkv, err := doMap(kv)
+					if err != nil {
+						panic(err)
+					}
+					res[k] = mkv.Value
 					break
 				}
 			}
@@ -162,7 +170,11 @@ func (n *node) getAll(pref Key) *KeyValue {
 			res[k] = ch.getAll(key).Value
 		}
 	}
-	return doMap(&KeyValue{pref, res})
+	mkv, err := doMap(&KeyValue{pref, res})
+	if err != nil {
+		panic(err)
+	}
+	return mkv
 }
 
 type Repository struct {

@@ -310,34 +310,34 @@ func Test_getAll(t *testing.T) {
 }
 
 type TestMapper struct {
-	conv func(kv *KeyValue) *KeyValue
+	conv func(kv *KeyValue) (*KeyValue, error)
 }
 
-func NewTestMapper(conv func(kv *KeyValue) *KeyValue) *TestMapper {
+func NewTestMapper(conv func(kv *KeyValue) (*KeyValue, error)) *TestMapper {
 	return &TestMapper{
 		conv: conv,
 	}
 }
 
-func (tm *TestMapper) Map(kv *KeyValue) *KeyValue {
+func (tm *TestMapper) Map(kv *KeyValue) (*KeyValue, error) {
 	return tm.conv(kv)
 }
 
 func Test_DefineMapper_simpleConv(t *testing.T) {
 	// Make sure it's clean
 	mappers = make(map[string]Mapper)
-	mpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
+	mpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
 		v := kv.Value
 		if _, ok := v.(int); ok {
-			return kv
+			return kv, nil
 		} else if _, ok := v.(string); ok {
 			convVal, err := strconv.Atoi(v.(string))
 			if err != nil {
 				t.Fatalf("Failed to convert value to int: %s", err)
 			}
-			return &KeyValue{kv.Key, convVal}
+			return &KeyValue{kv.Key, convVal}, nil
 		}
-		panic(fmt.Sprintf("unrecognised value type: %#v", kv.Value))
+		return nil, fmt.Errorf("unrecognised value type: %#v", kv.Value)
 	})
 	k := "foo.bar.baz"
 	DefineMapper(k, mpr)
@@ -361,27 +361,27 @@ type Compound struct {
 
 func Test_DefineMapper_nestedConv(t *testing.T) {
 	mappers = make(map[string]Mapper)
-	fooBarMpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
+	fooBarMpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
 		if _, ok := kv.Value.(int); ok {
-			return kv
+			return kv, nil
 		} else if _, ok := kv.Value.(string); ok {
 			if convVal, err := strconv.Atoi(kv.Value.(string)); err == nil {
-				return &KeyValue{kv.Key, convVal}
+				return &KeyValue{kv.Key, convVal}, nil
 			} else {
-				t.Fatalf("failed to convert value %#v: %s", kv.Value, err)
+				return nil, fmt.Errorf("failed to convert value %#v: %s", kv.Value, err)
 			}
 		}
-		panic(fmt.Sprintf("unrecognised value type: %#v", kv.Value))
+		return nil, fmt.Errorf("unrecognised value type: %#v", kv.Value)
 	})
-	fooBazMpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
+	fooBazMpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
 		if _, ok := kv.Value.(string); ok {
-			return kv
+			return kv, nil
 		} else if _, ok := kv.Value.(int); ok {
-			return &KeyValue{kv.Key, strconv.Itoa(kv.Value.(int))}
+			return &KeyValue{kv.Key, strconv.Itoa(kv.Value.(int))}, nil
 		}
-		panic(fmt.Sprintf("unrecognised value type: %#v", kv.Value))
+		return nil, fmt.Errorf("unrecognised value type: %#v", kv.Value)
 	})
-	fooMpr := NewTestMapper(func(kv *KeyValue) *KeyValue {
+	fooMpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
 		val := &Compound{}
 		if kvMap, ok := kv.Value.(map[string]Value); ok {
 			if bar, ok := kvMap["bar"]; ok {
@@ -391,9 +391,9 @@ func Test_DefineMapper_nestedConv(t *testing.T) {
 				val.baz = baz.(string)
 			}
 		} else {
-			t.Fatalf("unrecognised value type: %#v, want: map[string]Value", kv.Value)
+			return nil, fmt.Errorf("unrecognised value type: %#v, want: map[string]Value", kv.Value)
 		}
-		return &KeyValue{kv.Key, val}
+		return &KeyValue{kv.Key, val}, nil
 	})
 	DefineMapper("foo.bar", fooBarMpr)
 	DefineMapper("foo.baz", fooBazMpr)
