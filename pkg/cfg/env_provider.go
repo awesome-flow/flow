@@ -3,6 +3,8 @@ package cfg
 import (
 	"os"
 	"strings"
+
+	"github.com/awesome-flow/flow/pkg/cast"
 )
 
 var blacklist map[string]bool
@@ -15,7 +17,7 @@ func init() {
 
 type EnvProvider struct {
 	weight   int
-	registry map[string]Value
+	registry map[string]cast.Value
 	ready    chan struct{}
 }
 
@@ -33,7 +35,7 @@ func (ep *EnvProvider) Depends() []string { return []string{"default"} }
 func (ep *EnvProvider) Weight() int       { return ep.weight }
 
 func (ep *EnvProvider) SetUp(repo *Repository) error {
-	registry := make(map[string]Value)
+	registry := make(map[string]cast.Value)
 	var k string
 	var v interface{}
 
@@ -52,7 +54,7 @@ func (ep *EnvProvider) SetUp(repo *Repository) error {
 		}
 		registry[k] = v
 		if repo != nil {
-			repo.Register(NewKey(k), ep)
+			repo.Register(cast.NewKey(k), ep)
 		}
 	}
 
@@ -64,10 +66,10 @@ func (ep *EnvProvider) SetUp(repo *Repository) error {
 
 func (ep *EnvProvider) TearDown(_ *Repository) error { return nil }
 
-func (ep *EnvProvider) Get(key Key) (*KeyValue, bool) {
+func (ep *EnvProvider) Get(key cast.Key) (*cast.KeyValue, bool) {
 	<-ep.ready
 	if val, ok := ep.registry[key.String()]; ok {
-		return &KeyValue{key, val}, ok
+		return &cast.KeyValue{key, val}, ok
 	}
 	return nil, false
 }

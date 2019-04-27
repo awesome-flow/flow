@@ -1,4 +1,4 @@
-package cfg
+package cast
 
 import "fmt"
 
@@ -6,27 +6,27 @@ type Mapper interface {
 	Map(kv *KeyValue) (*KeyValue, error)
 }
 
-type mapperNode struct {
-	mpr      Mapper
-	children map[string]*mapperNode
+type MapperNode struct {
+	Mpr      Mapper
+	Children map[string]*MapperNode
 }
 
-func newMapperNode() *mapperNode {
-	return &mapperNode{nil, make(map[string]*mapperNode)}
+func NewMapperNode() *MapperNode {
+	return &MapperNode{nil, make(map[string]*MapperNode)}
 }
 
-func (mn *mapperNode) Insert(key Key, mpr Mapper) *mapperNode {
-	var ptr *mapperNode
+func (mn *MapperNode) Insert(key Key, mpr Mapper) *MapperNode {
+	var ptr *MapperNode
 	// Non-empty key check prevents users from accessing the root node
 	if len(key) > 0 {
 		ptr = mn
 		for _, k := range key {
-			if _, ok := ptr.children[k]; !ok {
-				ptr.children[k] = newMapperNode()
+			if _, ok := ptr.Children[k]; !ok {
+				ptr.Children[k] = NewMapperNode()
 			}
-			ptr = ptr.children[k]
+			ptr = ptr.Children[k]
 		}
-		ptr.mpr = mpr
+		ptr.Mpr = mpr
 	}
 
 	return ptr
@@ -36,12 +36,12 @@ func (mn *mapperNode) Insert(key Key, mpr Mapper) *mapperNode {
 // wildcarded node.
 // Example: a.*.c Vs a.b.c: a.b.c wins for a.b.c lookup, but a.*.c is returned
 // for a.f.c
-func (mn *mapperNode) Find(key Key) *mapperNode {
+func (mn *MapperNode) Find(key Key) *MapperNode {
 	if len(key) == 0 {
 		return mn
 	}
 	for _, nextK := range []string{key[0], "*"} {
-		if next, ok := mn.children[nextK]; ok {
+		if next, ok := mn.Children[nextK]; ok {
 			if res := next.Find(key[1:]); res != nil {
 				return res
 			}

@@ -1,4 +1,4 @@
-package cfg
+package cast
 
 import (
 	"reflect"
@@ -19,41 +19,41 @@ func (tm *TestMapper) Map(kv *KeyValue) (*KeyValue, error) {
 	return tm.conv(kv)
 }
 
-func Test_mapperNode_Insert(t *testing.T) {
+func Test_MapperNode_Insert(t *testing.T) {
 	mpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
 		return kv, nil
 	})
 	tests := []struct {
 		path string
-		exp  *mapperNode
+		exp  *MapperNode
 	}{
 
 		{
 			"",
-			&mapperNode{
-				children: map[string]*mapperNode{},
+			&MapperNode{
+				Children: map[string]*MapperNode{},
 			},
 		},
 		{
 			"foo",
-			&mapperNode{
-				children: map[string]*mapperNode{
-					"foo": &mapperNode{
-						mpr:      mpr,
-						children: map[string]*mapperNode{},
+			&MapperNode{
+				Children: map[string]*MapperNode{
+					"foo": &MapperNode{
+						Mpr:      mpr,
+						Children: map[string]*MapperNode{},
 					},
 				},
 			},
 		},
 		{
 			"foo.bar",
-			&mapperNode{
-				children: map[string]*mapperNode{
-					"foo": &mapperNode{
-						children: map[string]*mapperNode{
-							"bar": &mapperNode{
-								mpr:      mpr,
-								children: map[string]*mapperNode{},
+			&MapperNode{
+				Children: map[string]*MapperNode{
+					"foo": &MapperNode{
+						Children: map[string]*MapperNode{
+							"bar": &MapperNode{
+								Mpr:      mpr,
+								Children: map[string]*MapperNode{},
 							},
 						},
 					},
@@ -62,15 +62,15 @@ func Test_mapperNode_Insert(t *testing.T) {
 		},
 		{
 			"foo.*.bar",
-			&mapperNode{
-				children: map[string]*mapperNode{
-					"foo": &mapperNode{
-						children: map[string]*mapperNode{
-							"*": &mapperNode{
-								children: map[string]*mapperNode{
-									"bar": &mapperNode{
-										mpr:      mpr,
-										children: map[string]*mapperNode{},
+			&MapperNode{
+				Children: map[string]*MapperNode{
+					"foo": &MapperNode{
+						Children: map[string]*MapperNode{
+							"*": &MapperNode{
+								Children: map[string]*MapperNode{
+									"bar": &MapperNode{
+										Mpr:      mpr,
+										Children: map[string]*MapperNode{},
 									},
 								},
 							},
@@ -85,7 +85,7 @@ func Test_mapperNode_Insert(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.path, func(t *testing.T) {
-			root := newMapperNode()
+			root := NewMapperNode()
 			root.Insert(NewKey(testCase.path), mpr)
 			if !reflect.DeepEqual(testCase.exp, root) {
 				t.Errorf("Unexpected node structure: want: %#v, got: %#v", testCase.exp, root)
@@ -94,7 +94,7 @@ func Test_mapperNode_Insert(t *testing.T) {
 	}
 }
 
-func Test_mapperNode_Find_SingleEntryLookup(t *testing.T) {
+func Test_MapperNode_Find_SingleEntryLookup(t *testing.T) {
 	tests := []struct {
 		insertPaths []string
 		lookupPath  string
@@ -119,21 +119,21 @@ func Test_mapperNode_Find_SingleEntryLookup(t *testing.T) {
 		for _, insertPath := range testCase.insertPaths {
 			t.Run(insertPath, func(t *testing.T) {
 				mpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) { return kv, nil })
-				root := newMapperNode()
+				root := NewMapperNode()
 				root.Insert(NewKey(insertPath), mpr)
 				v := root.Find(NewKey(testCase.lookupPath))
 				if v == nil {
 					t.Fatalf("Expected to get a lookup result for key %q, got nil", testCase.lookupPath)
 				}
-				if v.mpr != mpr {
-					t.Fatalf("Unexpected mapper value returned by the key %q lookup: %#v, want: %#v", testCase.lookupPath, v.mpr, mpr)
+				if v.Mpr != mpr {
+					t.Fatalf("Unexpected mapper value returned by the key %q lookup: %#v, want: %#v", testCase.lookupPath, v.Mpr, mpr)
 				}
 			})
 		}
 	}
 }
 
-func Test_mapperNode_Find_Precedence(t *testing.T) {
+func Test_MapperNode_Find_Precedence(t *testing.T) {
 	convFunc := func(kv *KeyValue) (*KeyValue, error) { return kv, nil }
 	mprAstrx, mprExct := NewTestMapper(convFunc), NewTestMapper(convFunc)
 
@@ -157,7 +157,7 @@ func Test_mapperNode_Find_Precedence(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.exactPath, func(t *testing.T) {
-			root := newMapperNode()
+			root := NewMapperNode()
 			root.Insert(NewKey(testCase.exactPath), mprExct)
 			for _, astrxPath := range testCase.astrxPaths {
 				root.Insert(NewKey(astrxPath), mprAstrx)
@@ -166,8 +166,8 @@ func Test_mapperNode_Find_Precedence(t *testing.T) {
 			if v == nil {
 				t.Fatalf("Expected to get a non-nil lookup result for key %q, git nil", testCase.exactPath)
 			}
-			if v.mpr != mprExct {
-				t.Fatalf("Unexpected value returned by the key %q lookup: got: %#v, want: %#v", testCase.exactPath, v.mpr, mprExct)
+			if v.Mpr != mprExct {
+				t.Fatalf("Unexpected value returned by the key %q lookup: got: %#v, want: %#v", testCase.exactPath, v.Mpr, mprExct)
 			}
 		})
 	}

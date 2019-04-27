@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/awesome-flow/flow/pkg/cast"
 	fsnotify "github.com/fsnotify/fsnotify"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -14,7 +15,7 @@ type YamlProvider struct {
 	source   string
 	options  *YamlProviderOptions
 	watcher  *fsnotify.Watcher
-	registry map[string]Value
+	registry map[string]cast.Value
 	ready    chan struct{}
 }
 
@@ -25,7 +26,7 @@ type YamlProviderOptions struct {
 var _ Provider = (*YamlProvider)(nil)
 
 func NewYamlProvider(repo *Repository, weight int) (*YamlProvider, error) {
-	if src, ok := repo.Get(NewKey(CfgPathKey)); !ok {
+	if src, ok := repo.Get(cast.NewKey(CfgPathKey)); !ok {
 		return nil, fmt.Errorf("failed to get config file path: %s config parameter is mandatory", CfgPathKey)
 	} else {
 		options := &YamlProviderOptions{
@@ -40,7 +41,7 @@ func NewYamlProviderFromSource(repo *Repository, weight int, source string, opti
 		source:   source,
 		weight:   weight,
 		options:  options,
-		registry: make(map[string]Value),
+		registry: make(map[string]cast.Value),
 		ready:    make(chan struct{}),
 	}, nil
 }
@@ -76,7 +77,7 @@ func (yp *YamlProvider) SetUp(repo *Repository) error {
 	for k, v := range flatten(rawData) {
 		yp.registry[k] = v
 		if repo != nil {
-			repo.Register(NewKey(k), yp)
+			repo.Register(cast.NewKey(k), yp)
 		}
 	}
 
@@ -95,15 +96,15 @@ func (yp *YamlProvider) readRaw() (map[interface{}]interface{}, error) {
 	return out, nil
 }
 
-func flatten(in map[interface{}]interface{}) map[string]Value {
-	out := make(map[string]Value)
+func flatten(in map[interface{}]interface{}) map[string]cast.Value {
+	out := make(map[string]cast.Value)
 	for k, v := range in {
 		if vmap, ok := v.(map[interface{}]interface{}); ok {
 			for sk, sv := range flatten(vmap) {
-				out[k.(string)+KeySepCh+sk] = Value(sv)
+				out[k.(string)+cast.KeySepCh+sk] = cast.Value(sv)
 			}
 		} else {
-			out[k.(string)] = Value(v)
+			out[k.(string)] = cast.Value(v)
 		}
 	}
 	return out
@@ -126,10 +127,10 @@ func (yp *YamlProvider) TearDown(repo *Repository) error {
 	return nil
 }
 
-func (yp *YamlProvider) Get(key Key) (*KeyValue, bool) {
+func (yp *YamlProvider) Get(key cast.Key) (*cast.KeyValue, bool) {
 	<-yp.ready
 	if v, ok := yp.registry[key.String()]; ok {
-		return &KeyValue{key, v}, ok
+		return &cast.KeyValue{key, v}, ok
 	}
 	return nil, false
 }

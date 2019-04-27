@@ -3,49 +3,29 @@ package cfg
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"sync"
+
+	"github.com/awesome-flow/flow/pkg/cast"
 )
 
 const (
-	KeySepCh      = "."
 	CfgPathKey    = "config.path"
 	PluginPathKey = "plugins.path"
 )
 
-type Key []string
-
-func (key Key) String() string {
-	return strings.Join(key, KeySepCh)
-}
-
-func NewKey(str string) Key {
-	if len(str) == 0 {
-		return Key(nil)
-	}
-	return Key(strings.Split(str, KeySepCh))
-}
-
-type Value interface{}
-
-type KeyValue struct {
-	Key   Key
-	Value Value
-}
-
-type Listener func(*KeyValue)
+type Listener func(*cast.KeyValue)
 
 type Provider interface {
 	Name() string
 	Depends() []string
 	SetUp(*Repository) error
 	TearDown(*Repository) error
-	Get(Key) (*KeyValue, bool)
+	Get(cast.Key) (*cast.KeyValue, bool)
 	Weight() int
 }
 
 var (
-	mappers   *mapperNode
+	mappers   *cast.MapperNode
 	mappersMx sync.Mutex
 )
 
@@ -65,7 +45,7 @@ func newNode() *node {
 	}
 }
 
-func (n *node) add(key Key, prov Provider) {
+func (n *node) add(key cast.Key, prov Provider) {
 	ptr := n
 	for _, k := range key {
 		if _, ok := ptr.children[k]; !ok {
@@ -79,7 +59,7 @@ func (n *node) add(key Key, prov Provider) {
 	})
 }
 
-func (n *node) find(key Key) *node {
+func (n *node) find(key cast.Key) *node {
 	ptr := n
 	for _, k := range key {
 		if _, ok := ptr.children[k]; !ok {
@@ -90,7 +70,7 @@ func (n *node) find(key Key) *node {
 	return ptr
 }
 
-func (n *node) findOrCreate(key Key) *node {
+func (n *node) findOrCreate(key cast.Key) *node {
 	ptr := n
 	for _, k := range key {
 		if _, ok := ptr.children[k]; !ok {
@@ -101,11 +81,11 @@ func (n *node) findOrCreate(key Key) *node {
 	return ptr
 }
 
-func (n *node) subscribe(key Key, listener Listener) {
+func (n *node) subscribe(key cast.Key, listener Listener) {
 	panic("not implemented")
 }
 
-func (n *node) get(repo *Repository, key Key) (*KeyValue, bool) {
+func (n *node) get(repo *Repository, key cast.Key) (*cast.KeyValue, bool) {
 	ptr := n.find(key)
 	if ptr == nil {
 		return nil, false
@@ -128,10 +108,10 @@ func (n *node) get(repo *Repository, key Key) (*KeyValue, bool) {
 	return nil, false
 }
 
-func (n *node) getAll(repo *Repository, pref Key) *KeyValue {
-	res := make(map[string]Value)
+func (n *node) getAll(repo *Repository, pref cast.Key) *cast.KeyValue {
+	res := make(map[string]cast.Value)
 	for k, ch := range n.children {
-		key := Key(append(pref, k))
+		key := cast.Key(append(pref, k))
 		if len(ch.providers) > 0 {
 			// Providers are expected to be sorted
 			for _, prov := range ch.providers {
@@ -148,7 +128,7 @@ func (n *node) getAll(repo *Repository, pref Key) *KeyValue {
 			res[k] = ch.getAll(repo, key).Value
 		}
 	}
-	mkv, err := repo.doMap(&KeyValue{pref, res})
+	mkv, err := repo.doMap(&cast.KeyValue{pref, res})
 	if err != nil {
 		panic(err)
 	}
@@ -156,13 +136,13 @@ func (n *node) getAll(repo *Repository, pref Key) *KeyValue {
 }
 
 type Repository struct {
-	mappers *mapperNode
+	mappers *cast.MapperNode
 	root    *node
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		mappers: newMapperNode(),
+		mappers: cast.NewMapperNode(),
 		root:    newNode(),
 	}
 }
@@ -170,14 +150,16 @@ func NewRepository() *Repository {
 type Schema interface{}
 
 func (repo *Repository) DefineSchema(s Schema) error {
-	return repo.doDefineSchema(NewKey(""), s)
+	return repo.doDefineSchema(cast.NewKey(""), s)
 }
 
-func (repo *Repository) doDefineSchema(key Key, schema Schema) error {
-	if mpr, ok := schema.(Mapper); ok {
+//TODO: this method doesn't seem to belong here as it exposes the internal
+// details from cast package
+func (repo *Repository) doDefineSchema(key cast.Key, schema cast.Schema) error {
+	if mpr, ok := schema.(cast.Mapper); ok {
 		repo.mappers.Insert(key, mpr)
-	} else if cnv, ok := schema.(Converter); ok {
-		repo.mappers.Insert(key, NewConvMapper(cnv))
+	} else if cnv, ok := schema.(cast.Converter); ok {
+		repo.mappers.Insert(key, cast.NewConvMapper(cnv))
 	} else if smap, ok := schema.(map[string]Schema); ok {
 		if self, ok := smap["__self__"]; ok {
 			// self: nil is used to emphasize an empty mapper for a federation structure
@@ -201,9 +183,9 @@ func (repo *Repository) doDefineSchema(key Key, schema Schema) error {
 	return nil
 }
 
-func (repo *Repository) doMap(kv *KeyValue) (*KeyValue, error) {
-	if mn := repo.mappers.Find(kv.Key); mn != nil && mn.mpr != nil {
-		if mkv, err := mn.mpr.Map(kv); err != nil {
+func (repo *Repository) doMap(kv *cast.KeyValue) (*cast.KeyValue, error) {
+	if mn := repo.mappers.Find(kv.Key); mn != nil && mn.Mpr != nil {
+		if mkv, err := mn.Mpr.Map(kv); err != nil {
 			return nil, err
 		} else {
 			return mkv, nil
@@ -212,15 +194,15 @@ func (repo *Repository) doMap(kv *KeyValue) (*KeyValue, error) {
 	return kv, nil
 }
 
-func (repo *Repository) Register(key Key, prov Provider) {
+func (repo *Repository) Register(key cast.Key, prov Provider) {
 	repo.root.add(key, prov)
 }
 
-func (repo *Repository) Subscribe(key Key, listener Listener) {
+func (repo *Repository) Subscribe(key cast.Key, listener Listener) {
 	repo.root.subscribe(key, listener)
 }
 
-func (repo *Repository) Get(key Key) (Value, bool) {
+func (repo *Repository) Get(key cast.Key) (cast.Value, bool) {
 	// Non-empty key check prevents users from accessing a protected
 	// root node
 	if len(key) != 0 {
