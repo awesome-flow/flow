@@ -45,13 +45,27 @@ func init() {
 			},
 		},
 		"pipeline": map[string]Schema{
-			"__self__": nil, //TODO
+			"__self__": &MapCfgBlockPipelineMapper{},
 			"*": map[string]Schema{
-				"__self__": nil, //TODO
+				"__self__": &CfgBlockPipelineMapper{},
 				"connect":  ToStr,
-				"links":    Identity, //TODO
-				"routes":   Identity, //TODO
+				"links":    &ArrStrMapper{},
+				"routes": map[string]Schema{
+					"__self__": &MapStrToStrMapper{},
+					"*":        ToStr,
+				},
 			},
+		},
+
+		/* non-serialisable attributes */
+
+		"config": map[string]Schema{
+			"__self__": nil,
+			"path":     ToStr,
+		},
+		"plugin": map[string]Schema{
+			"__self__": nil,
+			"path":     ToStr,
 		},
 	})
 }

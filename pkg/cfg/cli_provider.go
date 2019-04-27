@@ -46,8 +46,8 @@ var (
 func (cp *CliProvider) SetUp(repo *Repository) error {
 	defer close(cp.ready)
 	if !flag.Parsed() {
-		flag.StringVar(&cfgFile, "config.file", "", "Config file path")
-		flag.StringVar(&pluginPath, "plugin.path", "", "Plugin folder path")
+		flag.StringVar(&cfgFile, CfgPathKey, "", "Config file path")
+		flag.StringVar(&pluginPath, PluginPathKey, "", "Plugin folder path")
 		flag.Var(cp, "o", "Extra options")
 		flag.Parse()
 		if len(cfgFile) > 0 {

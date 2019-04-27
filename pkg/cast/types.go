@@ -196,3 +196,75 @@ func (*CfgBlockComponentMapper) Map(kv *KeyValue) (*KeyValue, error) {
 }
 
 //============================================================================//
+
+type MapCfgBlockPipelineMapper struct{}
+
+var _ Mapper = (*MapCfgBlockComponentMapper)(nil)
+
+func (*MapCfgBlockPipelineMapper) Map(kv *KeyValue) (*KeyValue, error) {
+	if vmap, ok := kv.Value.(map[string]Value); ok {
+		res := make(map[string]CfgBlockPipeline)
+		for k, v := range vmap {
+			res[k] = v.(CfgBlockPipeline)
+		}
+		return &KeyValue{kv.Key, res}, nil
+	}
+	return nil, fmt.Errorf("Map[string]CfgBlockPipeline cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
+}
+
+//============================================================================//
+
+type CfgBlockPipelineMapper struct{}
+
+var _ Mapper = (*CfgBlockPipelineMapper)(nil)
+
+func (*CfgBlockPipelineMapper) Map(kv *KeyValue) (*KeyValue, error) {
+	if vmap, ok := kv.Value.(map[string]Value); ok {
+		res := CfgBlockPipeline{}
+		if connect, ok := vmap["connect"]; ok {
+			res.Connect = connect.(string)
+		}
+		if links, ok := vmap["links"]; ok {
+			res.Links = links.([]string)
+		}
+		if routes, ok := vmap["routes"]; ok {
+			res.Routes = routes.(map[string]string)
+		}
+		return &KeyValue{kv.Key, res}, nil
+	}
+	return nil, fmt.Errorf("CfgBlockPipeline cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
+}
+
+//============================================================================//
+
+type ArrStrMapper struct{}
+
+var _ Mapper = (*ArrStrMapper)(nil)
+
+func (*ArrStrMapper) Map(kv *KeyValue) (*KeyValue, error) {
+	if arr, ok := kv.Value.([]Value); ok {
+		res := make([]string, 0, len(arr))
+		for _, v := range arr {
+			res = append(res, v.(string))
+		}
+		return &KeyValue{kv.Key, res}, nil
+	}
+	return nil, fmt.Errorf("[]string cast failed for key: %q, val: %#v", kv.Key, kv.Value)
+}
+
+//============================================================================//
+
+type MapStrToStrMapper struct{}
+
+var _ Mapper = (*MapStrToStrMapper)(nil)
+
+func (*MapStrToStrMapper) Map(kv *KeyValue) (*KeyValue, error) {
+	if mp, ok := kv.Value.(map[string]Value); ok {
+		res := make(map[string]string)
+		for k, v := range mp {
+			res[k] = v.(string)
+		}
+		return &KeyValue{kv.Key, res}, nil
+	}
+	return nil, fmt.Errorf("map[string]string cast failed for key: %q, val: %#v", kv.Key, kv.Value)
+}

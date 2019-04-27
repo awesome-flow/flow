@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/util/data"
 )
 
 const (
@@ -135,15 +136,74 @@ func (n *node) getAll(repo *Repository, pref cast.Key) *cast.KeyValue {
 }
 
 type Repository struct {
-	mappers *cast.MapperNode
-	root    *node
+	mappers   *cast.MapperNode
+	root      *node
+	providers map[string]Provider
+	mx        sync.Mutex
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		mappers: cast.NewMapperNode(),
-		root:    newNode(),
+		mappers:   cast.NewMapperNode(),
+		root:      newNode(),
+		providers: make(map[string]Provider),
+		mx:        sync.Mutex{},
 	}
+}
+
+func (repo *Repository) SetUp() error {
+	repo.mx.Lock()
+	defer repo.mx.Unlock()
+
+	providers, err := repo.traverseProviders()
+	if err != nil {
+		return err
+	}
+	for _, prov := range providers {
+		if err := prov.SetUp(repo); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (repo *Repository) TearDown() error {
+	repo.mx.Lock()
+	repo.mx.Unlock()
+
+	providers, err := repo.traverseProviders()
+	if err != nil {
+		return err
+	}
+	for _, prov := range providers {
+		if err := prov.TearDown(repo); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (repo *Repository) traverseProviders() ([]Provider, error) {
+	provList := make([]data.TopologyNode, 0, len(repo.providers))
+	for _, prov := range repo.providers {
+		provList = append(provList, prov)
+	}
+	top := data.NewTopology(provList...)
+	for name, prov := range repo.providers {
+		for _, dep := range prov.Depends() {
+			top.Connect(repo.providers[name], repo.providers[dep])
+		}
+	}
+	resolved, err := top.Sort()
+	if err != nil {
+		return []Provider{}, err
+	}
+	res := make([]Provider, len(resolved))
+	for ix, prov := range resolved {
+		res[ix] = prov.(Provider)
+	}
+	return res, nil
 }
 
 func (repo *Repository) DefineSchema(s cast.Schema) error {
@@ -155,12 +215,17 @@ func (repo *Repository) doMap(kv *cast.KeyValue) (*cast.KeyValue, error) {
 }
 
 func (repo *Repository) Register(key cast.Key, prov Provider) {
+	repo.mx.Lock()
+	defer repo.mx.Unlock()
 	repo.root.add(key, prov)
+	if _, ok := repo.providers[prov.Name()]; !ok {
+		repo.providers[prov.Name()] = prov
+	}
 }
 
-func (repo *Repository) Subscribe(key cast.Key, listener Listener) {
-	repo.root.subscribe(key, listener)
-}
+//func (repo *Repository) Subscribe(key cast.Key, listener Listener) {
+//	repo.root.subscribe(key, listener)
+//}
 
 func (repo *Repository) Get(key cast.Key) (cast.Value, bool) {
 	// Non-empty key check prevents users from accessing a protected

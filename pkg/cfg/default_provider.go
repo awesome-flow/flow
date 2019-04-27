@@ -7,7 +7,9 @@ type DefaultProvider struct {
 	registry map[string]cast.Value
 }
 
-var defaults map[string]cast.Value
+var (
+	defaults map[string]cast.Value
+)
 
 func init() {
 	defaults = map[string]cast.Value{
