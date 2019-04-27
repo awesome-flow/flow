@@ -190,6 +190,13 @@ func NewRepository() *Repository {
 	}
 }
 
+type Map interface{}
+
+func (repo *Repository) DefineMap(m Map) error {
+	//TODO
+	return nil
+}
+
 func (repo *Repository) Register(key Key, prov Provider) {
 	repo.root.add(key, prov)
 }

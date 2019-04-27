@@ -417,3 +417,84 @@ func Test_DefineMapper_nestedConv(t *testing.T) {
 		t.Fatalf("unexpected value: got: %#v, want: %#v", v, expectedComp)
 	}
 }
+
+func Test_DefineMap(t *testing.T) {
+	repoMap := Map(map[string]Map{
+		"system": map[string]Map{
+			"maxproc": ToInt,
+			"admin": map[string]Map{
+				"enabled": ToBool,
+			},
+		},
+	})
+
+	tests := []struct {
+		name     string
+		input    map[string]Value
+		expected map[string]Value
+	}{
+		{
+			name: "No casting",
+			input: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+			},
+			expected: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+				"system.admin": map[string]Value{
+					"enabled": true,
+				},
+				"system": map[string]Value{
+					"maxproc": 4,
+					"admin": map[string]Value{
+						"enabled": true,
+					},
+				},
+			},
+		},
+		{
+			name: "Primitive casting from all-strings",
+			input: map[string]Value{
+				"system.maxproc":       "4",
+				"system.admin.enabled": "true",
+			},
+			expected: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+				"system.admin": map[string]Value{
+					"enabled": true,
+				},
+				"system": map[string]Value{
+					"maxproc": 4,
+					"admin": map[string]Value{
+						"enabled": true,
+					},
+				},
+			},
+		},
+	}
+
+	t.Parallel()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			repo := NewRepository()
+			repo.DefineMap(repoMap)
+
+			for path, value := range testCase.input {
+				repo.Register(NewKey(path), NewTestProv(value, DefaultWeight))
+			}
+
+			for lookupPath, expVal := range testCase.expected {
+				gotVal, gotOk := repo.Get(NewKey(lookupPath))
+				if !gotOk {
+					t.Fatalf("Expected lookup for key %q to find a value, none returned", lookupPath)
+				}
+				if !reflect.DeepEqual(gotVal, expVal) {
+					t.Fatalf("Unexpected value returned by lookup for key %q: got: %#v, want: %#v", lookupPath, gotVal, expVal)
+				}
+			}
+		})
+	}
+}
