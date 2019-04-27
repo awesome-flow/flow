@@ -1,7 +1,6 @@
 package cfg
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -45,27 +44,26 @@ type Provider interface {
 }
 
 var (
-	mappers   map[string]Mapper
+	mappers   *mapperNode
 	mappersMx sync.Mutex
 )
 
 func init() {
-	mappers = make(map[string]Mapper)
+	mappers = newMapperNode()
 }
 
 func DefineMapper(path string, mapper Mapper) error {
 	mappersMx.Lock()
 	defer mappersMx.Unlock()
-	if _, ok := mappers[path]; ok {
-		return fmt.Errorf("mapper for key %q is already defined", path)
-	}
-	mappers[path] = mapper
+
+	mappers.Insert(NewKey(path), mapper)
+
 	return nil
 }
 
 func doMap(kv *KeyValue) (*KeyValue, error) {
-	if mapper, ok := mappers[kv.Key.String()]; ok {
-		if mkv, err := mapper.Map(kv); err != nil {
+	if mn := mappers.Find(kv.Key); mn != nil && mn.mpr != nil {
+		if mkv, err := mn.mpr.Map(kv); err != nil {
 			return nil, err
 		} else {
 			return mkv, nil

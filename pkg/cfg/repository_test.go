@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+func flushMappers() {
+	mappersMx.Lock()
+	defer mappersMx.Unlock()
+	mappers = newMapperNode()
+}
+
 type TestProv struct {
 	val     Value
 	weight  int
@@ -311,7 +317,7 @@ func Test_getAll(t *testing.T) {
 
 func Test_DefineMapper_simpleConv(t *testing.T) {
 	// Make sure it's clean
-	mappers = make(map[string]Mapper)
+	flushMappers()
 	mpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
 		v := kv.Value
 		if _, ok := v.(int); ok {
@@ -346,7 +352,7 @@ type Compound struct {
 }
 
 func Test_DefineMapper_nestedConv(t *testing.T) {
-	mappers = make(map[string]Mapper)
+	flushMappers()
 	fooBarMpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
 		if _, ok := kv.Value.(int); ok {
 			return kv, nil
