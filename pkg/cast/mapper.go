@@ -50,6 +50,49 @@ func (mn *MapperNode) Find(key Key) *MapperNode {
 	return nil
 }
 
+func (mn *MapperNode) DefineSchema(s Schema) error {
+	return mn.doDefineSchema(NewKey(""), s)
+}
+
+func (mn *MapperNode) doDefineSchema(key Key, schema Schema) error {
+	if mpr, ok := schema.(Mapper); ok {
+		mn.Insert(key, mpr)
+	} else if cnv, ok := schema.(Converter); ok {
+		mn.Insert(key, NewConvMapper(cnv))
+	} else if smap, ok := schema.(map[string]Schema); ok {
+		if self, ok := smap["__self__"]; ok {
+			// self: nil is used to emphasize an empty mapper for a federation structure
+			if self != nil {
+				if err := mn.doDefineSchema(key, self); err != nil {
+					return err
+				}
+			}
+		}
+		for subKey, subSchema := range smap {
+			if subKey == "__self__" {
+				continue
+			}
+			if err := mn.doDefineSchema(append(key, subKey), subSchema); err != nil {
+				return err
+			}
+		}
+	} else {
+		return fmt.Errorf("Unexpected schema definition type for key %q: %#v", key.String(), schema)
+	}
+	return nil
+}
+
+func (mn *MapperNode) Map(kv *KeyValue) (*KeyValue, error) {
+	if ptr := mn.Find(kv.Key); ptr != nil && ptr.Mpr != nil {
+		if mkv, err := ptr.Mpr.Map(kv); err != nil {
+			return nil, err
+		} else {
+			return mkv, nil
+		}
+	}
+	return kv, nil
+}
+
 type ConvMapper struct {
 	conv Converter
 }

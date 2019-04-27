@@ -368,11 +368,11 @@ func (scm *systemcfgmapper) Map(kv *cast.KeyValue) (*cast.KeyValue, error) {
 }
 
 func Test_DefineSchema_Primitive(t *testing.T) {
-	repoSchema := Schema(map[string]Schema{
-		"system": map[string]Schema{
+	repoSchema := cast.Schema(map[string]cast.Schema{
+		"system": map[string]cast.Schema{
 			"__self__": nil,
 			"maxproc":  cast.ToInt,
-			"admin": map[string]Schema{
+			"admin": map[string]cast.Schema{
 				"__self__": nil,
 				"enabled":  cast.ToBool,
 			},
@@ -471,11 +471,11 @@ func Test_DefineSchema_Primitive(t *testing.T) {
 }
 
 func Test_DefineSchema_Struct(t *testing.T) {
-	repoSchema := Schema(map[string]Schema{
-		"system": map[string]Schema{
+	repoSchema := cast.Schema(map[string]cast.Schema{
+		"system": map[string]cast.Schema{
 			"__self__": &systemcfgmapper{},
 			"maxproc":  cast.ToInt,
-			"admin": map[string]Schema{
+			"admin": map[string]cast.Schema{
 				"__self__": &admincfgmapper{},
 				"enabled":  cast.ToBool,
 			},

@@ -1,7 +1,6 @@
 package cfg
 
 import (
-	"fmt"
 	"sort"
 	"sync"
 
@@ -147,51 +146,12 @@ func NewRepository() *Repository {
 	}
 }
 
-type Schema interface{}
-
-func (repo *Repository) DefineSchema(s Schema) error {
-	return repo.doDefineSchema(cast.NewKey(""), s)
-}
-
-//TODO: this method doesn't seem to belong here as it exposes the internal
-// details from cast package
-func (repo *Repository) doDefineSchema(key cast.Key, schema cast.Schema) error {
-	if mpr, ok := schema.(cast.Mapper); ok {
-		repo.mappers.Insert(key, mpr)
-	} else if cnv, ok := schema.(cast.Converter); ok {
-		repo.mappers.Insert(key, cast.NewConvMapper(cnv))
-	} else if smap, ok := schema.(map[string]Schema); ok {
-		if self, ok := smap["__self__"]; ok {
-			// self: nil is used to emphasize an empty mapper for a federation structure
-			if self != nil {
-				if err := repo.doDefineSchema(key, self); err != nil {
-					return err
-				}
-			}
-		}
-		for subKey, subSchema := range smap {
-			if subKey == "__self__" {
-				continue
-			}
-			if err := repo.doDefineSchema(append(key, subKey), subSchema); err != nil {
-				return err
-			}
-		}
-	} else {
-		return fmt.Errorf("Unexpected schema definition type for key %q: %#v", key.String(), schema)
-	}
-	return nil
+func (repo *Repository) DefineSchema(s cast.Schema) error {
+	return repo.mappers.DefineSchema(s)
 }
 
 func (repo *Repository) doMap(kv *cast.KeyValue) (*cast.KeyValue, error) {
-	if mn := repo.mappers.Find(kv.Key); mn != nil && mn.Mpr != nil {
-		if mkv, err := mn.Mpr.Map(kv); err != nil {
-			return nil, err
-		} else {
-			return mkv, nil
-		}
-	}
-	return kv, nil
+	return repo.mappers.Map(kv)
 }
 
 func (repo *Repository) Register(key cast.Key, prov Provider) {
