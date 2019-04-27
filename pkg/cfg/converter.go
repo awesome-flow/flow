@@ -56,13 +56,9 @@ var _ Converter = (*StrToBoolConverter)(nil)
 func (sb *StrToBoolConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
 	if sv, ok := kv.Value.(string); ok {
 		switch sv {
-		case "true":
-		case "1":
-		case "y":
+		case "true", "1", "y":
 			return &KeyValue{kv.Key, true}, true
-		case "false":
-		case "0":
-		case "n":
+		case "false", "0", "n":
 			return &KeyValue{kv.Key, false}, true
 		}
 	}
@@ -196,8 +192,6 @@ func (cc *CompositeConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
 			}
 		}
 		return res, resok
-	default:
-		panic("this should not happen")
 	}
 	return nil, false
 }

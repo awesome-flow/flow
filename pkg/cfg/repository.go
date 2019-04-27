@@ -20,6 +20,9 @@ func (key Key) String() string {
 }
 
 func NewKey(str string) Key {
+	if len(str) == 0 {
+		return Key(nil)
+	}
 	return Key(strings.Split(str, KeySepCh))
 }
 
@@ -49,6 +52,7 @@ var (
 func init() {
 	mappers = make(map[string]Mapper)
 }
+
 func DefineMapper(path string, mapper Mapper) error {
 	mappersMx.Lock()
 	defer mappersMx.Unlock()
@@ -197,8 +201,12 @@ func (repo *Repository) Subscribe(key Key, listener Listener) {
 }
 
 func (repo *Repository) Get(key Key) (Value, bool) {
-	if kv, ok := repo.root.get(key); ok {
-		return kv.Value, ok
+	// Non-empty key check prevents users from accessing a protected
+	// root node
+	if len(key) != 0 {
+		if kv, ok := repo.root.get(key); ok {
+			return kv.Value, ok
+		}
 	}
 	return nil, false
 }

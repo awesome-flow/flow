@@ -79,13 +79,13 @@ func TestGetSingleProvider(t *testing.T) {
 	for _, testCase := range tests {
 		val, ok := repo.Get(testCase.key)
 		if ok != testCase.ok {
-			t.Fatalf("Unexpected key %s lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
+			t.Fatalf("Unexpected key %q lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
 		}
 		if !ok {
 			continue
 		}
 		if !reflect.DeepEqual(val, testCase.val) {
-			t.Fatalf("Unexpected value for key %s: want %v, got %v", testCase.key, testCase.val, val)
+			t.Fatalf("Unexpected value for key %q: want %v, got %v", testCase.key, testCase.val, val)
 		}
 	}
 }
@@ -135,11 +135,11 @@ func TestTrioProviderSingleKey(t *testing.T) {
 	for _, testCase := range tests {
 		val, ok := repo.Get(testCase.key)
 		if ok != testCase.ok {
-			t.Fatalf("Unexpected key %s lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
+			t.Fatalf("Unexpected key %q lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
 		}
 
 		if !reflect.DeepEqual(val, testCase.val) {
-			t.Fatalf("Unexpected value for key %s: want %#v, got %#v", testCase.key, testCase.val, val)
+			t.Fatalf("Unexpected value for key %q: want %#v, got %#v", testCase.key, testCase.val, val)
 		}
 	}
 }
@@ -211,11 +211,11 @@ func TestTrioProviderThreeKeys(t *testing.T) {
 	for _, testCase := range tests {
 		val, ok := repo.Get(testCase.key)
 		if ok != testCase.ok {
-			t.Fatalf("Unexpected key %s lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
+			t.Fatalf("Unexpected key %q lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
 		}
 
 		if !reflect.DeepEqual(val, testCase.val) {
-			t.Fatalf("Unexpected value for key %s: want %v, got %v", testCase.key, testCase.val, val)
+			t.Fatalf("Unexpected value for key %q: want %v, got %v", testCase.key, testCase.val, val)
 		}
 	}
 }
@@ -268,11 +268,11 @@ func TestTrioProviderNestingKey(t *testing.T) {
 	for _, testCase := range tests {
 		val, ok := repo.Get(testCase.key)
 		if ok != testCase.ok {
-			t.Fatalf("Unexpected key %s lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
+			t.Fatalf("Unexpected key %q lookup result: want %t, got: %t", testCase.key, testCase.ok, ok)
 		}
 
 		if !reflect.DeepEqual(val, testCase.val) {
-			t.Fatalf("Unexpected value for key %s: want %v, got %v", testCase.key, testCase.val, val)
+			t.Fatalf("Unexpected value for key %q: want %v, got %v", testCase.key, testCase.val, val)
 		}
 	}
 }
@@ -307,20 +307,6 @@ func Test_getAll(t *testing.T) {
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("Unexpcted traversal value: want: %#v, got: %#v", want, got)
 	}
-}
-
-type TestMapper struct {
-	conv func(kv *KeyValue) (*KeyValue, error)
-}
-
-func NewTestMapper(conv func(kv *KeyValue) (*KeyValue, error)) *TestMapper {
-	return &TestMapper{
-		conv: conv,
-	}
-}
-
-func (tm *TestMapper) Map(kv *KeyValue) (*KeyValue, error) {
-	return tm.conv(kv)
 }
 
 func Test_DefineMapper_simpleConv(t *testing.T) {
