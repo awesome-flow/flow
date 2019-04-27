@@ -3,7 +3,6 @@ package cfg
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"testing"
 )
 
@@ -284,6 +283,7 @@ func TestTrioProviderNestingKey(t *testing.T) {
 }
 
 func Test_getAll(t *testing.T) {
+	repo := NewRepository()
 	n := &node{
 		children: map[string]*node{
 			"foo": &node{
@@ -309,121 +309,66 @@ func Test_getAll(t *testing.T) {
 		},
 		"bar": 20,
 	}
-	got := n.getAll(nil).Value
+	got := n.getAll(repo, nil).Value
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("Unexpcted traversal value: want: %#v, got: %#v", want, got)
 	}
 }
 
-func Test_DefineMapper_simpleConv(t *testing.T) {
-	// Make sure it's clean
-	flushMappers()
-	mpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
-		v := kv.Value
-		if _, ok := v.(int); ok {
-			return kv, nil
-		} else if _, ok := v.(string); ok {
-			convVal, err := strconv.Atoi(v.(string))
-			if err != nil {
-				t.Fatalf("Failed to convert value to int: %s", err)
-			}
-			return &KeyValue{kv.Key, convVal}, nil
+type admincfg struct {
+	enabled bool
+}
+
+type systemcfg struct {
+	maxproc  int
+	admincfg *admincfg
+}
+
+type admincfgmapper struct{}
+
+var _ Mapper = (*admincfgmapper)(nil)
+
+func (acm *admincfgmapper) Map(kv *KeyValue) (*KeyValue, error) {
+	if vmap, ok := kv.Value.(map[string]Value); ok {
+		res := &admincfg{}
+		if enabled, ok := vmap["enabled"]; ok {
+			res.enabled = enabled.(bool)
 		}
-		return nil, fmt.Errorf("unrecognised value type: %#v", kv.Value)
-	})
-	k := "foo.bar.baz"
-	DefineMapper(k, mpr)
-	repo := NewRepository()
-	prov := NewTestProv("10", 10)
-	repo.Register(NewKey(k), prov)
-	got, ok := repo.Get(NewKey(k))
-	want := 10
-	if !ok {
-		t.Fatalf("Lookup failed")
+		return &KeyValue{kv.Key, res}, nil
 	}
-	if !reflect.DeepEqual(got, 10) {
-		t.Fatalf("Unexpected value: got: %#v, want: %#v", got, want)
-	}
+	return nil, fmt.Errorf("Conversion to admincfg failed for key: %q value: %#v", kv.Key.String(), kv.Value)
 }
 
-type Compound struct {
-	bar int
-	baz string
-}
+type systemcfgmapper struct{}
 
-func Test_DefineMapper_nestedConv(t *testing.T) {
-	flushMappers()
-	fooBarMpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
-		if _, ok := kv.Value.(int); ok {
-			return kv, nil
-		} else if _, ok := kv.Value.(string); ok {
-			if convVal, err := strconv.Atoi(kv.Value.(string)); err == nil {
-				return &KeyValue{kv.Key, convVal}, nil
+var _ Mapper = (*systemcfgmapper)(nil)
+
+func (scm *systemcfgmapper) Map(kv *KeyValue) (*KeyValue, error) {
+	if vmap, ok := kv.Value.(map[string]Value); ok {
+		res := &systemcfg{}
+		if ac, ok := vmap["admin"]; ok {
+			if acptr, ok := ac.(*admincfg); ok {
+				res.admincfg = acptr
 			} else {
-				return nil, fmt.Errorf("failed to convert value %#v: %s", kv.Value, err)
+				return nil, fmt.Errorf("Wrong format for admincfg value: %#v", ac)
 			}
 		}
-		return nil, fmt.Errorf("unrecognised value type: %#v", kv.Value)
-	})
-	fooBazMpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
-		if _, ok := kv.Value.(string); ok {
-			return kv, nil
-		} else if _, ok := kv.Value.(int); ok {
-			return &KeyValue{kv.Key, strconv.Itoa(kv.Value.(int))}, nil
+		if maxproc, ok := vmap["maxproc"]; ok {
+			res.maxproc = maxproc.(int)
 		}
-		return nil, fmt.Errorf("unrecognised value type: %#v", kv.Value)
-	})
-	fooMpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
-		val := &Compound{}
-		if kvMap, ok := kv.Value.(map[string]Value); ok {
-			if bar, ok := kvMap["bar"]; ok {
-				val.bar = bar.(int)
-			}
-			if baz, ok := kvMap["baz"]; ok {
-				val.baz = baz.(string)
-			}
-		} else {
-			return nil, fmt.Errorf("unrecognised value type: %#v, want: map[string]Value", kv.Value)
-		}
-		return &KeyValue{kv.Key, val}, nil
-	})
-	DefineMapper("foo.bar", fooBarMpr)
-	DefineMapper("foo.baz", fooBazMpr)
-	DefineMapper("foo", fooMpr)
-
-	repo := NewRepository()
-	repo.Register(NewKey("foo.bar"), NewTestProv("42", DefaultWeight))
-	repo.Register(NewKey("foo.baz"), NewTestProv(123, DefaultWeight))
-
-	if v, ok := repo.Get(NewKey("foo.bar")); !ok {
-		t.Fatalf("expected repo to find key foo.bar")
-	} else if v != 42 {
-		t.Fatalf("unexpected value: got: %#v, want: 42", v)
+		return &KeyValue{kv.Key, res}, nil
 	}
-
-	if v, ok := repo.Get(NewKey("foo.baz")); !ok {
-		t.Fatalf("expected repo to find key foo.baz")
-	} else if v != "123" {
-		t.Fatalf("unexpected value: got: %#v, want: \"123\"", v)
-	}
-
-	expectedComp := &Compound{
-		bar: 42,
-		baz: "123",
-	}
-	if v, ok := repo.Get(NewKey("foo")); !ok {
-		t.Fatalf("expected repo to find key foo")
-	} else if !reflect.DeepEqual(expectedComp, v) {
-		t.Fatalf("unexpected value: got: %#v, want: %#v", v, expectedComp)
-	}
+	return nil, fmt.Errorf("Conversion to systemcfg failed for key: %q value: %#v", kv.Key.String(), kv.Value)
 }
 
-func Test_DefineMap(t *testing.T) {
-	repoMap := Map(map[string]Map{
-		"system": map[string]Map{
-			"maxproc": ToInt,
-			"admin": map[string]Map{
-				"enabled": ToBool,
+func Test_DefineSchema_Primitive(t *testing.T) {
+	repoSchema := Schema(map[string]Schema{
+		"system": map[string]Schema{
+			"__self__": nil,
+			"maxproc":  ToInt,
+			"admin": map[string]Schema{
+				"__self__": nil,
+				"enabled":  ToBool,
 			},
 		},
 	})
@@ -454,10 +399,30 @@ func Test_DefineMap(t *testing.T) {
 			},
 		},
 		{
-			name: "Primitive casting from all-strings",
+			name: "Casting from all-strings",
 			input: map[string]Value{
 				"system.maxproc":       "4",
 				"system.admin.enabled": "true",
+			},
+			expected: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+				"system.admin": map[string]Value{
+					"enabled": true,
+				},
+				"system": map[string]Value{
+					"maxproc": 4,
+					"admin": map[string]Value{
+						"enabled": true,
+					},
+				},
+			},
+		},
+		{
+			name: "Casting from ptrs",
+			input: map[string]Value{
+				"system.maxproc":       intptr(4),
+				"system.admin.enabled": boolptr(true),
 			},
 			expected: map[string]Value{
 				"system.maxproc":       4,
@@ -480,7 +445,89 @@ func Test_DefineMap(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			repo := NewRepository()
-			repo.DefineMap(repoMap)
+			repo.DefineSchema(repoSchema)
+
+			for path, value := range testCase.input {
+				repo.Register(NewKey(path), NewTestProv(value, DefaultWeight))
+			}
+
+			for lookupPath, expVal := range testCase.expected {
+				gotVal, gotOk := repo.Get(NewKey(lookupPath))
+				if !gotOk {
+					t.Fatalf("Expected lookup for key %q to find a value, none returned", lookupPath)
+				}
+				if !reflect.DeepEqual(gotVal, expVal) {
+					t.Fatalf("Unexpected value returned by lookup for key %q: got: %#v, want: %#v", lookupPath, gotVal, expVal)
+				}
+			}
+		})
+	}
+}
+
+func Test_DefineSchema_Struct(t *testing.T) {
+	repoSchema := Schema(map[string]Schema{
+		"system": map[string]Schema{
+			"__self__": &systemcfgmapper{},
+			"maxproc":  ToInt,
+			"admin": map[string]Schema{
+				"__self__": &admincfgmapper{},
+				"enabled":  ToBool,
+			},
+		},
+	})
+
+	tests := []struct {
+		name     string
+		input    map[string]Value
+		expected map[string]Value
+	}{
+		{
+			name: "No casting",
+			input: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+			},
+			expected: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+				"system.admin":         &admincfg{enabled: true},
+				"system":               &systemcfg{admincfg: &admincfg{enabled: true}, maxproc: 4},
+			},
+		},
+		{
+			name: "Casting from all-strings",
+			input: map[string]Value{
+				"system.maxproc":       "4",
+				"system.admin.enabled": "true",
+			},
+			expected: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+				"system.admin":         &admincfg{enabled: true},
+				"system":               &systemcfg{admincfg: &admincfg{enabled: true}, maxproc: 4},
+			},
+		},
+		{
+			name: "Casting from ptrs",
+			input: map[string]Value{
+				"system.maxproc":       intptr(4),
+				"system.admin.enabled": boolptr(true),
+			},
+			expected: map[string]Value{
+				"system.maxproc":       4,
+				"system.admin.enabled": true,
+				"system.admin":         &admincfg{enabled: true},
+				"system":               &systemcfg{admincfg: &admincfg{enabled: true}, maxproc: 4},
+			},
+		},
+	}
+
+	t.Parallel()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			repo := NewRepository()
+			repo.DefineSchema(repoSchema)
 
 			for path, value := range testCase.input {
 				repo.Register(NewKey(path), NewTestProv(value, DefaultWeight))

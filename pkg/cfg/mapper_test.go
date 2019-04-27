@@ -172,3 +172,58 @@ func Test_mapperNode_Find_Precedence(t *testing.T) {
 		})
 	}
 }
+
+func Test_ConvMapper(t *testing.T) {
+	tests := []struct {
+		name      string
+		conv      Converter
+		expVal    Value
+		validIn   []Value
+		invalidIn []Value
+	}{
+		{
+			name:      "conversion to Int",
+			conv:      ToInt,
+			expVal:    42,
+			validIn:   []Value{42, "42", intptr(42)},
+			invalidIn: []Value{true, "", '0', nil},
+		},
+		{
+			name:      "conversion to Str",
+			conv:      ToStr,
+			expVal:    "42",
+			validIn:   []Value{"42", 42, strptr("42")},
+			invalidIn: []Value{intptr(42), nil, false, '0'},
+		},
+		{
+			name:      "conversion to Bool",
+			conv:      ToBool,
+			expVal:    true,
+			validIn:   []Value{true, boolptr(true), "true", "y", 1, "1"},
+			invalidIn: []Value{123, "asdf", nil},
+		},
+	}
+
+	t.Parallel()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			mpr := NewConvMapper(testCase.conv)
+			for _, val := range testCase.validIn {
+				conv, convErr := mpr.Map(&KeyValue{nil, val})
+				if convErr != nil {
+					t.Fatalf("Unexpected mapping error for input value %#v", val)
+				}
+				if !reflect.DeepEqual(conv.Value, testCase.expVal) {
+					t.Fatalf("Unexpected mapping value for input value %#v: got: %#v, want: %#v", val, conv.Value, testCase.expVal)
+				}
+			}
+			for _, val := range testCase.invalidIn {
+				_, convErr := mpr.Map(&KeyValue{nil, val})
+				if convErr == nil {
+					t.Fatalf("Expected to get an error while converting %#v, got nil", val)
+				}
+			}
+		})
+	}
+}

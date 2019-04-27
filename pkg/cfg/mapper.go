@@ -1,5 +1,7 @@
 package cfg
 
+import "fmt"
+
 type Mapper interface {
 	Map(kv *KeyValue) (*KeyValue, error)
 }
@@ -46,4 +48,21 @@ func (mn *mapperNode) Find(key Key) *mapperNode {
 		}
 	}
 	return nil
+}
+
+type ConvMapper struct {
+	conv Converter
+}
+
+var _ Mapper = (*ConvMapper)(nil)
+
+func NewConvMapper(conv Converter) *ConvMapper {
+	return &ConvMapper{conv}
+}
+
+func (cm *ConvMapper) Map(kv *KeyValue) (*KeyValue, error) {
+	if mkv, ok := cm.conv.Convert(kv); ok {
+		return mkv, nil
+	}
+	return nil, fmt.Errorf("Failed to convert value %#v for key %#v", kv.Key, kv.Value)
 }

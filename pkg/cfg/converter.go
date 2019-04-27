@@ -87,8 +87,9 @@ func (ib *IntToBoolConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
 	if mv, ok := kv.Value.(int); ok {
 		if mv == 0 {
 			return &KeyValue{kv.Key, false}, true
+		} else if mv == 1 {
+			return &KeyValue{kv.Key, true}, true
 		}
-		return &KeyValue{kv.Key, true}, true
 	}
 	return nil, false
 }

@@ -1,6 +1,7 @@
 package cfg
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -47,30 +48,6 @@ var (
 	mappers   *mapperNode
 	mappersMx sync.Mutex
 )
-
-func init() {
-	mappers = newMapperNode()
-}
-
-func DefineMapper(path string, mapper Mapper) error {
-	mappersMx.Lock()
-	defer mappersMx.Unlock()
-
-	mappers.Insert(NewKey(path), mapper)
-
-	return nil
-}
-
-func doMap(kv *KeyValue) (*KeyValue, error) {
-	if mn := mappers.Find(kv.Key); mn != nil && mn.mpr != nil {
-		if mkv, err := mn.mpr.Map(kv); err != nil {
-			return nil, err
-		} else {
-			return mkv, nil
-		}
-	}
-	return kv, nil
-}
 
 type Constructor func(*Repository, int) (Provider, error)
 
@@ -125,11 +102,10 @@ func (n *node) findOrCreate(key Key) *node {
 }
 
 func (n *node) subscribe(key Key, listener Listener) {
-	ptr := n.findOrCreate(key)
-	ptr.listeners = append(ptr.listeners, listener)
+	panic("not implemented")
 }
 
-func (n *node) get(key Key) (*KeyValue, bool) {
+func (n *node) get(repo *Repository, key Key) (*KeyValue, bool) {
 	ptr := n.find(key)
 	if ptr == nil {
 		return nil, false
@@ -137,7 +113,7 @@ func (n *node) get(key Key) (*KeyValue, bool) {
 	if len(ptr.providers) != 0 {
 		for _, prov := range ptr.providers {
 			if kv, ok := prov.Get(key); ok {
-				if mkv, err := doMap(kv); err != nil {
+				if mkv, err := repo.doMap(kv); err != nil {
 					panic(err)
 				} else {
 					return mkv, ok
@@ -147,12 +123,12 @@ func (n *node) get(key Key) (*KeyValue, bool) {
 		return nil, false
 	}
 	if len(ptr.children) != 0 {
-		return ptr.getAll(key), true
+		return ptr.getAll(repo, key), true
 	}
 	return nil, false
 }
 
-func (n *node) getAll(pref Key) *KeyValue {
+func (n *node) getAll(repo *Repository, pref Key) *KeyValue {
 	res := make(map[string]Value)
 	for k, ch := range n.children {
 		key := Key(append(pref, k))
@@ -160,7 +136,7 @@ func (n *node) getAll(pref Key) *KeyValue {
 			// Providers are expected to be sorted
 			for _, prov := range ch.providers {
 				if kv, ok := prov.Get(key); ok {
-					mkv, err := doMap(kv)
+					mkv, err := repo.doMap(kv)
 					if err != nil {
 						panic(err)
 					}
@@ -169,10 +145,10 @@ func (n *node) getAll(pref Key) *KeyValue {
 				}
 			}
 		} else {
-			res[k] = ch.getAll(key).Value
+			res[k] = ch.getAll(repo, key).Value
 		}
 	}
-	mkv, err := doMap(&KeyValue{pref, res})
+	mkv, err := repo.doMap(&KeyValue{pref, res})
 	if err != nil {
 		panic(err)
 	}
@@ -180,21 +156,60 @@ func (n *node) getAll(pref Key) *KeyValue {
 }
 
 type Repository struct {
-	mappers map[string]Mapper
+	mappers *mapperNode
 	root    *node
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		root: newNode(),
+		mappers: newMapperNode(),
+		root:    newNode(),
 	}
 }
 
-type Map interface{}
+type Schema interface{}
 
-func (repo *Repository) DefineMap(m Map) error {
-	//TODO
+func (repo *Repository) DefineSchema(s Schema) error {
+	return repo.doDefineSchema(NewKey(""), s)
+}
+
+func (repo *Repository) doDefineSchema(key Key, schema Schema) error {
+	if mpr, ok := schema.(Mapper); ok {
+		repo.mappers.Insert(key, mpr)
+	} else if cnv, ok := schema.(Converter); ok {
+		repo.mappers.Insert(key, NewConvMapper(cnv))
+	} else if smap, ok := schema.(map[string]Schema); ok {
+		if self, ok := smap["__self__"]; ok {
+			// self: nil is used to emphasize an empty mapper for a federation structure
+			if self != nil {
+				if err := repo.doDefineSchema(key, self); err != nil {
+					return err
+				}
+			}
+		}
+		for subKey, subSchema := range smap {
+			if subKey == "__self__" {
+				continue
+			}
+			if err := repo.doDefineSchema(append(key, subKey), subSchema); err != nil {
+				return err
+			}
+		}
+	} else {
+		return fmt.Errorf("Unexpected schema definition type for key %q: %#v", key.String(), schema)
+	}
 	return nil
+}
+
+func (repo *Repository) doMap(kv *KeyValue) (*KeyValue, error) {
+	if mn := repo.mappers.Find(kv.Key); mn != nil && mn.mpr != nil {
+		if mkv, err := mn.mpr.Map(kv); err != nil {
+			return nil, err
+		} else {
+			return mkv, nil
+		}
+	}
+	return kv, nil
 }
 
 func (repo *Repository) Register(key Key, prov Provider) {
@@ -209,7 +224,7 @@ func (repo *Repository) Get(key Key) (Value, bool) {
 	// Non-empty key check prevents users from accessing a protected
 	// root node
 	if len(key) != 0 {
-		if kv, ok := repo.root.get(key); ok {
+		if kv, ok := repo.root.get(repo, key); ok {
 			return kv.Value, ok
 		}
 	}
