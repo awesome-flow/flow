@@ -41,8 +41,7 @@ func NewGraphVizAgent() (*GraphVizAgent, error) {
 }
 
 func (ga *GraphVizAgent) renderGraphViz(rw http.ResponseWriter, req *http.Request) {
-
-	pipelineitf, ok := global.Get("pipeline")
+	pipelineitf, ok := global.Load("pipeline")
 	if !ok {
 		log.Errorf("Failed to fetch pipeline from the global registry")
 		rw.WriteHeader(http.StatusInternalServerError)

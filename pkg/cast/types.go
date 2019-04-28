@@ -43,6 +43,12 @@ type CfgBlockPipeline struct {
 	Routes  map[string]string
 }
 
+func (cbp CfgBlockPipeline) IsDisconnected() bool {
+	return len(cbp.Links) == 0 &&
+		len(cbp.Connect) == 0 &&
+		len(cbp.Routes) == 0
+}
+
 //============================================================================//
 
 type CfgMapper struct{}

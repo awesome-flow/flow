@@ -5,11 +5,12 @@ import (
 	"runtime"
 	"sync"
 
+	"github.com/awesome-flow/flow/pkg/cast"
 	"github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/devenv"
 )
 
-type Params map[string]interface{}
+type Params map[string]cast.Value
 
 type RoutingFunc func(*Message) (string, error)
 

@@ -2,6 +2,7 @@ system:
   maxprocs: 4
   admin:
     enabled: true
+    bind_addr: :4040
 
 components:
   udp_rcv:

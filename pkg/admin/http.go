@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/awesome-flow/flow/pkg/admin/agent"
-	"github.com/awesome-flow/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/cast"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -13,7 +13,7 @@ type HttpMux struct {
 	server *http.Server
 }
 
-func newAdminSrvMx(cfg *config.CfgBlockSystem) *http.ServeMux {
+func newAdminSrvMx(cfg *cast.CfgBlockSystem) *http.ServeMux {
 	srvMx := http.NewServeMux()
 
 	for _, wa := range agent.AllAgents() {
@@ -23,7 +23,7 @@ func newAdminSrvMx(cfg *config.CfgBlockSystem) *http.ServeMux {
 	return srvMx
 }
 
-func NewHttpMux(cfg *config.CfgBlockSystem) (*HttpMux, error) {
+func NewHttpMux(cfg *cast.CfgBlockSystem) (*HttpMux, error) {
 	srvMx := newAdminSrvMx(cfg)
 	server := &http.Server{
 		Addr:    cfg.Admin.BindAddr,

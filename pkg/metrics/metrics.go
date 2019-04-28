@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/awesome-flow/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/cast"
 )
 
 var (
@@ -13,7 +13,7 @@ var (
 
 type Metric interface{}
 
-func Initialize(sysCfg *config.CfgBlockSystem) error {
+func Initialize(sysCfg *cast.CfgBlockSystem) error {
 
 	if !sysCfg.Metrics.Enabled {
 		return fmt.Errorf("Metrics module is disabled")

@@ -10,7 +10,6 @@ import (
 	"github.com/awesome-flow/flow/pkg/admin"
 	"github.com/awesome-flow/flow/pkg/cfg"
 	"github.com/awesome-flow/flow/pkg/config"
-	config_mapper "github.com/awesome-flow/flow/pkg/config/mapper"
 	"github.com/awesome-flow/flow/pkg/global"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	"github.com/awesome-flow/flow/pkg/pipeline"
@@ -32,6 +31,7 @@ func main() {
 	log.Infof("Initialising the repo")
 	repo := cfg.NewRepository()
 	repo.DefineSchema(cast.ConfigSchema)
+	global.Store("config", repo)
 
 	log.Infof("Registering default provider")
 	if _, err := cfg.NewDefaultProvider(repo, 0); err != nil {
@@ -84,26 +84,43 @@ func main() {
 
 	log.Infof("Initializing the pipeline")
 
-	sysCfg, err := config_mapper.GetSystemCfg()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to get system config: %s", err))
+	syscfgval, ok := repo.Get(cast.NewKey("system"))
+	if !ok {
+		log.Fatalf("Failed to get system config")
 	}
+	syscfg := syscfgval.(cast.CfgBlockSystem)
 
-	if err := metrics.Initialize(sysCfg); err != nil {
+	// sysCfg, err := config_mapper.GetSystemCfg()
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Failed to get system config: %s", err))
+	// }
+
+	if err := metrics.Initialize(&syscfg); err != nil {
 		log.Errorf("Failed to initialize metrics module: %s\n", err)
 	}
 
-	compsCfg, err := config_mapper.GetComponentsCfg()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to get components config: %s", err))
+	compsval, ok := repo.Get(cast.NewKey("components"))
+	if !ok {
+		log.Fatalf("Failed to get components config")
 	}
+	compscfg := compsval.(map[string]cast.CfgBlockComponent)
 
-	pplCfg, err := config_mapper.GetPipelineCfg()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to get pipeline config: %s", err))
+	// compsCfg, err := config_mapper.GetComponentsCfg()
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Failed to get components config: %s", err))
+	// }
+
+	pplval, ok := repo.Get(cast.NewKey("pipeline"))
+	if !ok {
+		log.Fatalf("Failed to get pipeline config")
 	}
+	pplcfg := pplval.(map[string]cast.CfgBlockPipeline)
+	// pplCfg, err := config_mapper.GetPipelineCfg()
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Failed to get pipeline config: %s", err))
+	// }
 
-	pipeline, pplErr := pipeline.NewPipeline(compsCfg, pplCfg)
+	pipeline, pplErr := pipeline.NewPipeline(compscfg, pplcfg)
 	if pplErr != nil {
 		log.Fatalf("Failed to initialize the pipeline: %s", pplErr)
 	}
@@ -125,9 +142,10 @@ func main() {
 	log.Info("Pipeline successfully activated")
 
 	var adminmux *admin.HttpMux
-	if sysCfg.Admin.Enabled {
-		log.Infof("Starting admin interface on %s", sysCfg.Admin.BindAddr)
-		adminmux, err = admin.NewHttpMux(sysCfg)
+	if syscfg.Admin.Enabled {
+		var err error
+		log.Infof("Starting admin interface on %s", syscfg.Admin.BindAddr)
+		adminmux, err = admin.NewHttpMux(&syscfg)
 		if err != nil {
 			log.Fatalf("Failed to start admin interface: %s", err)
 		}
