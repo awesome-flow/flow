@@ -1,6 +1,7 @@
 package cfg
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -152,14 +153,12 @@ func NewRepository() *Repository {
 }
 
 func (repo *Repository) SetUp() error {
-	repo.mx.Lock()
-	defer repo.mx.Unlock()
-
 	providers, err := repo.traverseProviders()
 	if err != nil {
 		return err
 	}
 	for _, prov := range providers {
+		fmt.Printf("Setting up provider %q\n", prov.Name())
 		if err := prov.SetUp(repo); err != nil {
 			return err
 		}
@@ -170,7 +169,7 @@ func (repo *Repository) SetUp() error {
 
 func (repo *Repository) TearDown() error {
 	repo.mx.Lock()
-	repo.mx.Unlock()
+	defer repo.mx.Unlock()
 
 	providers, err := repo.traverseProviders()
 	if err != nil {
@@ -214,6 +213,13 @@ func (repo *Repository) doMap(kv *cast.KeyValue) (*cast.KeyValue, error) {
 	return repo.mappers.Map(kv)
 }
 
+func (repo *Repository) RegisterProvider(prov Provider) {
+	repo.mx.Lock()
+	defer repo.mx.Unlock()
+	repo.providers[prov.Name()] = prov
+}
+
+//TODO: rename to RegisterKey
 func (repo *Repository) Register(key cast.Key, prov Provider) {
 	repo.mx.Lock()
 	defer repo.mx.Unlock()

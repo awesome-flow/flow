@@ -5,9 +5,12 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/awesome-flow/flow/pkg/cast"
+
 	"github.com/awesome-flow/flow/pkg/admin"
+	"github.com/awesome-flow/flow/pkg/cfg"
 	"github.com/awesome-flow/flow/pkg/config"
-	"github.com/awesome-flow/flow/pkg/config/mapper"
+	config_mapper "github.com/awesome-flow/flow/pkg/config/mapper"
 	"github.com/awesome-flow/flow/pkg/global"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	"github.com/awesome-flow/flow/pkg/pipeline"
@@ -23,6 +26,58 @@ func main() {
 	if err := config.Resolve(); err != nil {
 		panic(fmt.Sprintf("Unable to resolve config: %s", err))
 	}
+
+	/* ======== EXPERIMENT SECTION ========= */
+
+	log.Infof("Initialising the repo")
+	repo := cfg.NewRepository()
+	repo.DefineSchema(cast.ConfigSchema)
+
+	log.Infof("Registering default provider")
+	if _, err := cfg.NewDefaultProvider(repo, 0); err != nil {
+		log.Errorf("Failed to register default provider: %s", err)
+	}
+
+	log.Infof("Registering env provider")
+	if _, err := cfg.NewEnvProvider(repo, 10); err != nil {
+		log.Errorf("Failed to register env provider: %s", err)
+	}
+
+	if cfgpath, ok := config.Get("config.file"); ok {
+		log.Infof("Registering yaml provider with source %s", cfgpath.(string))
+		if _, err := cfg.NewYamlProviderFromSource(repo, 20, cfgpath.(string), &cfg.YamlProviderOptions{}); err != nil {
+			log.Errorf("Failed to register yaml provider: %s", err)
+		}
+	}
+
+	log.Infof("Registering cli provider")
+	if _, err := cfg.NewCliProvider(repo, 30); err != nil {
+		log.Errorf("Failed to register cli provider: %s", err)
+	}
+
+	log.Infof("Initializing repo providers")
+	if err := repo.SetUp(); err != nil {
+		log.Errorf("Failed to initialise config repo: %s", err)
+	}
+
+	if syscfg, ok := repo.Get(cast.NewKey("system")); ok {
+		log.Infof("system config: %#v", syscfg)
+	} else {
+		log.Errorf("Expected to get system config from repo, got none")
+	}
+
+	if compcfg, ok := repo.Get(cast.NewKey("components")); ok {
+		log.Infof("components config: %#v", compcfg)
+	} else {
+		log.Errorf("Expected to get components config from repo, got none")
+	}
+
+	if pplcfg, ok := repo.Get(cast.NewKey("pipeline")); ok {
+		log.Infof("pipeline config: %#v", pplcfg)
+	} else {
+		log.Errorf("Expected to get pipeline config from repo, got none")
+	}
+	/* ===== END OF EXPERIMENT SECTION ===== */
 
 	log.Infof("Starting %s version %d, process ID: %d",
 		ProgramName, MajVersion, os.Getpid())

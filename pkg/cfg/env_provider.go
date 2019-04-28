@@ -24,10 +24,13 @@ type EnvProvider struct {
 var _ Provider = (*EnvProvider)(nil)
 
 func NewEnvProvider(repo *Repository, weight int) (*EnvProvider, error) {
-	return &EnvProvider{
+	prov := &EnvProvider{
 		weight: weight,
 		ready:  make(chan struct{}),
-	}, nil
+	}
+	repo.RegisterProvider(prov)
+
+	return prov, nil
 }
 
 func (ep *EnvProvider) Name() string      { return "env" }
@@ -35,6 +38,7 @@ func (ep *EnvProvider) Depends() []string { return []string{"default"} }
 func (ep *EnvProvider) Weight() int       { return ep.weight }
 
 func (ep *EnvProvider) SetUp(repo *Repository) error {
+	defer close(ep.ready)
 	registry := make(map[string]cast.Value)
 	var k string
 	var v interface{}
@@ -59,7 +63,6 @@ func (ep *EnvProvider) SetUp(repo *Repository) error {
 	}
 
 	ep.registry = registry
-	close(ep.ready)
 
 	return nil
 }

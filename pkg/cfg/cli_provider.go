@@ -17,15 +17,17 @@ type CliProvider struct {
 var _ Provider = (*CliProvider)(nil)
 
 func NewCliProvider(repo *Repository, weight int) (*CliProvider, error) {
-	return &CliProvider{
+	prov := &CliProvider{
 		weight:   weight,
 		registry: make(map[string]cast.Value),
 		ready:    make(chan struct{}),
-	}, nil
+	}
+	repo.RegisterProvider(prov)
+	return prov, nil
 }
 
 func (cp *CliProvider) Name() string      { return "cli" }
-func (cp *CliProvider) Depends() []string { return nil }
+func (cp *CliProvider) Depends() []string { return []string{"default"} }
 func (cp *CliProvider) Weight() int       { return cp.weight }
 
 func (cp *CliProvider) String() string { return fmt.Sprintf("%v", cp.registry) }
@@ -56,6 +58,9 @@ func (cp *CliProvider) SetUp(repo *Repository) error {
 		if len(pluginPath) > 0 {
 			cp.registry[PluginPathKey] = pluginPath
 		}
+	}
+	for k := range cp.registry {
+		repo.Register(cast.NewKey(k), cp)
 	}
 	return nil
 }

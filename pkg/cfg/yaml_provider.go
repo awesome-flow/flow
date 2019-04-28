@@ -37,13 +37,15 @@ func NewYamlProvider(repo *Repository, weight int) (*YamlProvider, error) {
 }
 
 func NewYamlProviderFromSource(repo *Repository, weight int, source string, options *YamlProviderOptions) (*YamlProvider, error) {
-	return &YamlProvider{
+	prov := &YamlProvider{
 		source:   source,
 		weight:   weight,
 		options:  options,
 		registry: make(map[string]cast.Value),
 		ready:    make(chan struct{}),
-	}, nil
+	}
+	repo.RegisterProvider(prov)
+	return prov, nil
 }
 
 func (yp *YamlProvider) Name() string      { return "yaml" }
