@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
@@ -21,7 +22,7 @@ func TestUnix_unixRecv(t *testing.T) {
 	defer os.Remove(path)
 	testRcv := core_test.NewRememberAndReply("rar", core_test.ReplyDone)
 	payload := append(testutils.RandStringBytes(DefaultMessageSize), '\n')
-	unix, err := New("test_unix", core.Params{"path": path}, core.NewContext())
+	unix, err := New("test_unix", types.Params{"path": path}, core.NewContext())
 	if err != nil {
 		t.Fatalf("Failed to initialize unix receiver: %s", err.Error())
 	}

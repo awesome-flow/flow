@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 )
 
@@ -128,7 +129,7 @@ func TestHTTP_handleSendV1(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 
 			httpRcv, err := New("test_http",
-				core.Params{"bind_addr": testCase.bindAddr}, core.NewContext())
+				types.Params{"bind_addr": testCase.bindAddr}, core.NewContext())
 			if err != nil {
 				t.Errorf("Failed to create an HTTP receiver: %s", err)
 			}

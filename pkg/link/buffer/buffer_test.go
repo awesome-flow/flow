@@ -4,22 +4,23 @@ import (
 	"testing"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 func TestBuffer_TestNew(t *testing.T) {
 	tests := []struct {
 		name     string
-		params   core.Params
+		params   types.Params
 		expCap   int
 		expStr   BufStrategy
 		expRetry int
 	}{
-		{"default params", core.Params{}, 65536, BufStrategySub, 1},
-		{"capacity set", core.Params{"capacity": 32768}, 32768, BufStrategySub, 1},
-		{"drop strategy set", core.Params{"strategy": "drop"}, 65536, BufStrategyDrop, 1},
-		{"block strategy set", core.Params{"strategy": "block"}, 65536, BufStrategyBlock, 1},
-		{"sub strategy set", core.Params{"strategy": "sub"}, 65536, BufStrategySub, 1},
-		{"max_retry set", core.Params{"max_retry": 5}, 65536, BufStrategySub, 5},
+		{"default params", types.Params{}, 65536, BufStrategySub, 1},
+		{"capacity set", types.Params{"capacity": 32768}, 32768, BufStrategySub, 1},
+		{"drop strategy set", types.Params{"strategy": "drop"}, 65536, BufStrategyDrop, 1},
+		{"block strategy set", types.Params{"strategy": "block"}, 65536, BufStrategyBlock, 1},
+		{"sub strategy set", types.Params{"strategy": "sub"}, 65536, BufStrategySub, 1},
+		{"max_retry set", types.Params{"max_retry": 5}, 65536, BufStrategySub, 5},
 	}
 
 	for _, test := range tests {

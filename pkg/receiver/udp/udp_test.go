@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
@@ -21,7 +22,7 @@ func TestUDP_recv(t *testing.T) {
 	newline := []byte{'\r', '\n'}
 	payload := testutils.RandStringBytes(DefaultMessageSize)
 
-	udp, err := New("test_udp", core.Params{"bind_addr": udpAddr}, core.NewContext())
+	udp, err := New("test_udp", types.Params{"bind_addr": udpAddr}, core.NewContext())
 	if err != nil {
 		t.Fatalf("Failed to start a UDP listener: %s", err.Error())
 	}

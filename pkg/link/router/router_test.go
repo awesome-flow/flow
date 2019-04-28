@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type A struct {
@@ -25,7 +26,7 @@ func TestRouter_Dispatch(t *testing.T) {
 	a1, a2 := NewA(), NewA()
 	r, rErr := New(
 		"router",
-		core.Params{"routing_key": "sender"},
+		types.Params{"routing_key": "sender"},
 		core.NewContext(),
 	)
 	if rErr != nil {

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type Nil struct {
@@ -34,7 +35,7 @@ func TestThrottler_Recv(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			th, thErr := New(
 				"t",
-				core.Params{"msg_key": test.msgKey, "rps": test.rps},
+				types.Params{"msg_key": test.msgKey, "rps": test.rps},
 				core.NewContext(),
 			)
 			if thErr != nil {
@@ -84,7 +85,7 @@ func TestThrottler_Recv_Parallel(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			th, thErr := New(
 				"t",
-				core.Params{"msg_key": "", "rps": test.rpsLimit, "timeFunction": func() int64 { return 0 }},
+				types.Params{"msg_key": "", "rps": test.rpsLimit, "timeFunction": func() int64 { return 0 }},
 				core.NewContext(),
 			)
 			if thErr != nil {

@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	"github.com/awesome-flow/flow/pkg/cast"
 	config "github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/devenv"
 	"github.com/awesome-flow/flow/pkg/pipeline"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 var dockerCmd = &cobra.Command{
@@ -48,7 +48,7 @@ var dockerComposeCmd = &cobra.Command{
 			return err
 		}
 
-		var yamlcfg cast.Cfg
+		var yamlcfg types.Cfg
 		if err := yaml.Unmarshal(data, &yamlcfg); err != nil {
 			return nil
 		}

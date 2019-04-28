@@ -8,7 +8,7 @@ var (
 
 func init() {
 	ConfigSchema = Schema(map[string]Schema{
-		"__self__": &CfgMapper{},
+		"__self__": nil,
 		"system": map[string]Schema{
 			"__self__": &CfgBlockSystemMapper{},
 			"maxprocs": ToInt,
