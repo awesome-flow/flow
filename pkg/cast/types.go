@@ -248,7 +248,9 @@ type ArrStrMapper struct{}
 var _ Mapper = (*ArrStrMapper)(nil)
 
 func (*ArrStrMapper) Map(kv *KeyValue) (*KeyValue, error) {
-	if arr, ok := kv.Value.([]Value); ok {
+	// []interface{}, not []Value because factual arguments are not being
+	// type casted
+	if arr, ok := kv.Value.([]interface{}); ok {
 		res := make([]string, 0, len(arr))
 		for _, v := range arr {
 			res = append(res, v.(string))
