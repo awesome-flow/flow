@@ -2,17 +2,19 @@ package cast
 
 import (
 	"strconv"
+
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type Converter interface {
-	Convert(kv *KeyValue) (*KeyValue, bool)
+	Convert(kv *types.KeyValue) (*types.KeyValue, bool)
 }
 
 type IdentityConverter struct{}
 
 var _ Converter = (*IdentityConverter)(nil)
 
-func (id *IdentityConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*IdentityConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	return kv, true
 }
 
@@ -20,9 +22,9 @@ type IntPtrToIntConverter struct{}
 
 var _ Converter = (*IntPtrToIntConverter)(nil)
 
-func (pi *IntPtrToIntConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*IntPtrToIntConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if pv, ok := kv.Value.(*int); ok {
-		return &KeyValue{kv.Key, *pv}, true
+		return &types.KeyValue{kv.Key, *pv}, true
 	}
 	return nil, false
 }
@@ -31,9 +33,9 @@ type BoolPtrToBoolConverter struct{}
 
 var _ Converter = (*BoolPtrToBoolConverter)(nil)
 
-func (pb *BoolPtrToBoolConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*BoolPtrToBoolConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if pv, ok := kv.Value.(*bool); ok {
-		return &KeyValue{kv.Key, *pv}, true
+		return &types.KeyValue{kv.Key, *pv}, true
 	}
 	return nil, false
 }
@@ -42,9 +44,9 @@ type StrPtrToStrConverter struct{}
 
 var _ Converter = (*StrPtrToStrConverter)(nil)
 
-func (sps *StrPtrToStrConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*StrPtrToStrConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if spv, ok := kv.Value.(*string); ok {
-		return &KeyValue{kv.Key, *spv}, true
+		return &types.KeyValue{kv.Key, *spv}, true
 	}
 	return nil, false
 }
@@ -53,13 +55,13 @@ type StrToBoolConverter struct{}
 
 var _ Converter = (*StrToBoolConverter)(nil)
 
-func (sb *StrToBoolConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*StrToBoolConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if sv, ok := kv.Value.(string); ok {
 		switch sv {
 		case "true", "1", "y":
-			return &KeyValue{kv.Key, true}, true
+			return &types.KeyValue{kv.Key, true}, true
 		case "false", "0", "n":
-			return &KeyValue{kv.Key, false}, true
+			return &types.KeyValue{kv.Key, false}, true
 		}
 	}
 	return nil, false
@@ -69,11 +71,11 @@ type StrToIntConverter struct{}
 
 var _ Converter = (*StrToIntConverter)(nil)
 
-func (si *StrToIntConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*StrToIntConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if sv, ok := kv.Value.(string); ok {
 		s, err := strconv.Atoi(sv)
 		if err == nil {
-			return &KeyValue{kv.Key, s}, true
+			return &types.KeyValue{kv.Key, s}, true
 		}
 	}
 	return nil, false
@@ -83,13 +85,17 @@ type IntToBoolConverter struct{}
 
 var _ Converter = (*IntToBoolConverter)(nil)
 
-func (ib *IntToBoolConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*IntToBoolConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if mv, ok := kv.Value.(int); ok {
+		var v bool
 		if mv == 0 {
-			return &KeyValue{kv.Key, false}, true
+			v = false
 		} else if mv == 1 {
-			return &KeyValue{kv.Key, true}, true
+			v = true
+		} else {
+			return nil, false
 		}
+		return &types.KeyValue{kv.Key, v}, true
 	}
 	return nil, false
 }
@@ -98,9 +104,9 @@ type IntToStrConverter struct{}
 
 var _ Converter = (*IntToStrConverter)(nil)
 
-func (is *IntToStrConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*IntToStrConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if iv, ok := kv.Value.(int); ok {
-		return &KeyValue{kv.Key, strconv.Itoa(iv)}, true
+		return &types.KeyValue{kv.Key, strconv.Itoa(iv)}, true
 	}
 	return nil, false
 }
@@ -109,7 +115,7 @@ type IfIntConverter struct{}
 
 var _ Converter = (*IfIntConverter)(nil)
 
-func (ii *IfIntConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*IfIntConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if _, ok := kv.Value.(int); ok {
 		return kv, true
 	}
@@ -120,7 +126,7 @@ type IfStrConverter struct{}
 
 var _ Converter = (*IfStrConverter)(nil)
 
-func (is *IfStrConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*IfStrConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if _, ok := kv.Value.(string); ok {
 		return kv, true
 	}
@@ -131,7 +137,7 @@ type IfBoolConverter struct{}
 
 var _ Converter = (*IfBoolConverter)(nil)
 
-func (ib *IfBoolConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (*IfBoolConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if _, ok := kv.Value.(bool); ok {
 		return kv, true
 	}
@@ -162,7 +168,7 @@ func NewCompositeConverter(strategy CompositionStrategy, convs ...Converter) *Co
 	}
 }
 
-func (cc *CompositeConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
+func (cc *CompositeConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	switch cc.strategy {
 	case CompNone:
 		return kv, true
@@ -184,7 +190,7 @@ func (cc *CompositeConverter) Convert(kv *KeyValue) (*KeyValue, bool) {
 		}
 		return nil, false
 	case CompLast:
-		var res *KeyValue
+		var res *types.KeyValue
 		var resok bool
 		for _, conv := range cc.converters {
 			if mkv, ok := conv.Convert(kv); ok {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -55,7 +56,7 @@ var MsgStatusToHttpResp = map[core.MsgStatus]codetext{
 	core.MsgStatusThrottled:   {http.StatusTooManyRequests, []byte("Message throttled")},
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 
 	httpAddr, ok := params["bind_addr"]
 	if !ok {

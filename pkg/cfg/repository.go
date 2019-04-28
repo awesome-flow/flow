@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util/data"
 )
 
@@ -13,14 +14,15 @@ const (
 	PluginPathKey = "plugins.path"
 )
 
-type Listener func(*cast.KeyValue)
+// TODO
+// type Listener func(*types.KeyValue)
 
 type Provider interface {
 	Name() string
 	Depends() []string
 	SetUp(*Repository) error
 	TearDown(*Repository) error
-	Get(cast.Key) (*cast.KeyValue, bool)
+	Get(types.Key) (*types.KeyValue, bool)
 	Weight() int
 }
 
@@ -33,19 +35,19 @@ type Constructor func(*Repository, int) (Provider, error)
 
 type node struct {
 	providers []Provider
-	listeners []Listener
-	children  map[string]*node
+	//listeners []Listener
+	children map[string]*node
 }
 
 func newNode() *node {
 	return &node{
 		providers: make([]Provider, 0),
-		listeners: make([]Listener, 0),
-		children:  make(map[string]*node),
+		//listeners: make([]Listener, 0),
+		children: make(map[string]*node),
 	}
 }
 
-func (n *node) add(key cast.Key, prov Provider) {
+func (n *node) add(key types.Key, prov Provider) {
 	ptr := n
 	for _, k := range key {
 		if _, ok := ptr.children[k]; !ok {
@@ -59,7 +61,7 @@ func (n *node) add(key cast.Key, prov Provider) {
 	})
 }
 
-func (n *node) find(key cast.Key) *node {
+func (n *node) find(key types.Key) *node {
 	ptr := n
 	for _, k := range key {
 		if _, ok := ptr.children[k]; !ok {
@@ -70,7 +72,7 @@ func (n *node) find(key cast.Key) *node {
 	return ptr
 }
 
-func (n *node) findOrCreate(key cast.Key) *node {
+func (n *node) findOrCreate(key types.Key) *node {
 	ptr := n
 	for _, k := range key {
 		if _, ok := ptr.children[k]; !ok {
@@ -81,11 +83,11 @@ func (n *node) findOrCreate(key cast.Key) *node {
 	return ptr
 }
 
-func (n *node) subscribe(key cast.Key, listener Listener) {
-	panic("not implemented")
-}
+// func (n *node) subscribe(key types.Key, listener Listener) {
+// 	panic("not implemented")
+// }
 
-func (n *node) get(repo *Repository, key cast.Key) (*cast.KeyValue, bool) {
+func (n *node) get(repo *Repository, key types.Key) (*types.KeyValue, bool) {
 	ptr := n.find(key)
 	if ptr == nil {
 		return nil, false
@@ -108,10 +110,10 @@ func (n *node) get(repo *Repository, key cast.Key) (*cast.KeyValue, bool) {
 	return nil, false
 }
 
-func (n *node) getAll(repo *Repository, pref cast.Key) *cast.KeyValue {
-	res := make(map[string]cast.Value)
+func (n *node) getAll(repo *Repository, pref types.Key) *types.KeyValue {
+	res := make(map[string]types.Value)
 	for k, ch := range n.children {
-		key := cast.Key(append(pref, k))
+		key := types.Key(append(pref, k))
 		if len(ch.providers) > 0 {
 			// Providers are expected to be sorted
 			for _, prov := range ch.providers {
@@ -128,7 +130,7 @@ func (n *node) getAll(repo *Repository, pref cast.Key) *cast.KeyValue {
 			res[k] = ch.getAll(repo, key).Value
 		}
 	}
-	mkv, err := repo.doMap(&cast.KeyValue{pref, res})
+	mkv, err := repo.doMap(&types.KeyValue{pref, res})
 	if err != nil {
 		panic(err)
 	}
@@ -207,7 +209,7 @@ func (repo *Repository) DefineSchema(s cast.Schema) error {
 	return repo.mappers.DefineSchema(s)
 }
 
-func (repo *Repository) doMap(kv *cast.KeyValue) (*cast.KeyValue, error) {
+func (repo *Repository) doMap(kv *types.KeyValue) (*types.KeyValue, error) {
 	return repo.mappers.Map(kv)
 }
 
@@ -218,7 +220,7 @@ func (repo *Repository) RegisterProvider(prov Provider) {
 }
 
 //TODO: rename to RegisterKey
-func (repo *Repository) Register(key cast.Key, prov Provider) {
+func (repo *Repository) Register(key types.Key, prov Provider) {
 	repo.mx.Lock()
 	defer repo.mx.Unlock()
 	repo.root.add(key, prov)
@@ -231,7 +233,7 @@ func (repo *Repository) Register(key cast.Key, prov Provider) {
 //	repo.root.subscribe(key, listener)
 //}
 
-func (repo *Repository) Get(key cast.Key) (cast.Value, bool) {
+func (repo *Repository) Get(key types.Key) (types.Value, bool) {
 	// Non-empty key check prevents users from accessing a protected
 	// root node
 	if len(key) != 0 {

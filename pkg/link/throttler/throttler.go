@@ -8,6 +8,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 //go:noescape
@@ -26,7 +27,7 @@ type Throttler struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	rps, rpsOk := params["rps"]
 	if !rpsOk {
 		return nil, fmt.Errorf("Throttler params are missing rps")

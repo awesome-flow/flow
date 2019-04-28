@@ -3,24 +3,26 @@ package cast
 import (
 	"reflect"
 	"testing"
+
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type TestMapper struct {
-	conv func(kv *KeyValue) (*KeyValue, error)
+	conv func(kv *types.KeyValue) (*types.KeyValue, error)
 }
 
-func NewTestMapper(conv func(kv *KeyValue) (*KeyValue, error)) *TestMapper {
+func NewTestMapper(conv func(kv *types.KeyValue) (*types.KeyValue, error)) *TestMapper {
 	return &TestMapper{
 		conv: conv,
 	}
 }
 
-func (tm *TestMapper) Map(kv *KeyValue) (*KeyValue, error) {
+func (tm *TestMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	return tm.conv(kv)
 }
 
 func Test_MapperNode_Insert(t *testing.T) {
-	mpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) {
+	mpr := NewTestMapper(func(kv *types.KeyValue) (*types.KeyValue, error) {
 		return kv, nil
 	})
 	tests := []struct {
@@ -86,7 +88,7 @@ func Test_MapperNode_Insert(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.path, func(t *testing.T) {
 			root := NewMapperNode()
-			root.Insert(NewKey(testCase.path), mpr)
+			root.Insert(types.NewKey(testCase.path), mpr)
 			if !reflect.DeepEqual(testCase.exp, root) {
 				t.Errorf("Unexpected node structure: want: %#v, got: %#v", testCase.exp, root)
 			}
@@ -118,10 +120,10 @@ func Test_MapperNode_Find_SingleEntryLookup(t *testing.T) {
 	for _, testCase := range tests {
 		for _, insertPath := range testCase.insertPaths {
 			t.Run(insertPath, func(t *testing.T) {
-				mpr := NewTestMapper(func(kv *KeyValue) (*KeyValue, error) { return kv, nil })
+				mpr := NewTestMapper(func(kv *types.KeyValue) (*types.KeyValue, error) { return kv, nil })
 				root := NewMapperNode()
-				root.Insert(NewKey(insertPath), mpr)
-				v := root.Find(NewKey(testCase.lookupPath))
+				root.Insert(types.NewKey(insertPath), mpr)
+				v := root.Find(types.NewKey(testCase.lookupPath))
 				if v == nil {
 					t.Fatalf("Expected to get a lookup result for key %q, got nil", testCase.lookupPath)
 				}
@@ -134,7 +136,7 @@ func Test_MapperNode_Find_SingleEntryLookup(t *testing.T) {
 }
 
 func Test_MapperNode_Find_Precedence(t *testing.T) {
-	convFunc := func(kv *KeyValue) (*KeyValue, error) { return kv, nil }
+	convFunc := func(kv *types.KeyValue) (*types.KeyValue, error) { return kv, nil }
 	mprAstrx, mprExct := NewTestMapper(convFunc), NewTestMapper(convFunc)
 
 	tests := []struct {
@@ -158,11 +160,11 @@ func Test_MapperNode_Find_Precedence(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.exactPath, func(t *testing.T) {
 			root := NewMapperNode()
-			root.Insert(NewKey(testCase.exactPath), mprExct)
+			root.Insert(types.NewKey(testCase.exactPath), mprExct)
 			for _, astrxPath := range testCase.astrxPaths {
-				root.Insert(NewKey(astrxPath), mprAstrx)
+				root.Insert(types.NewKey(astrxPath), mprAstrx)
 			}
-			v := root.Find(NewKey(testCase.exactPath))
+			v := root.Find(types.NewKey(testCase.exactPath))
 			if v == nil {
 				t.Fatalf("Expected to get a non-nil lookup result for key %q, git nil", testCase.exactPath)
 			}
@@ -177,30 +179,30 @@ func Test_ConvMapper(t *testing.T) {
 	tests := []struct {
 		name      string
 		conv      Converter
-		expVal    Value
-		validIn   []Value
-		invalidIn []Value
+		expVal    types.Value
+		validIn   []types.Value
+		invalidIn []types.Value
 	}{
 		{
 			name:      "conversion to Int",
 			conv:      ToInt,
 			expVal:    42,
-			validIn:   []Value{42, "42", intptr(42)},
-			invalidIn: []Value{true, "", '0', nil},
+			validIn:   []types.Value{42, "42", intptr(42)},
+			invalidIn: []types.Value{true, "", '0', nil},
 		},
 		{
 			name:      "conversion to Str",
 			conv:      ToStr,
 			expVal:    "42",
-			validIn:   []Value{"42", 42, strptr("42")},
-			invalidIn: []Value{intptr(42), nil, false, '0'},
+			validIn:   []types.Value{"42", 42, strptr("42")},
+			invalidIn: []types.Value{intptr(42), nil, false, '0'},
 		},
 		{
 			name:      "conversion to Bool",
 			conv:      ToBool,
 			expVal:    true,
-			validIn:   []Value{true, boolptr(true), "true", "y", 1, "1"},
-			invalidIn: []Value{123, "asdf", nil},
+			validIn:   []types.Value{true, boolptr(true), "true", "y", 1, "1"},
+			invalidIn: []types.Value{123, "asdf", nil},
 		},
 	}
 
@@ -210,7 +212,7 @@ func Test_ConvMapper(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			mpr := NewConvMapper(testCase.conv)
 			for _, val := range testCase.validIn {
-				conv, convErr := mpr.Map(&KeyValue{nil, val})
+				conv, convErr := mpr.Map(&types.KeyValue{nil, val})
 				if convErr != nil {
 					t.Fatalf("Unexpected mapping error for input value %#v", val)
 				}
@@ -219,7 +221,7 @@ func Test_ConvMapper(t *testing.T) {
 				}
 			}
 			for _, val := range testCase.invalidIn {
-				_, convErr := mpr.Map(&KeyValue{nil, val})
+				_, convErr := mpr.Map(&types.KeyValue{nil, val})
 				if convErr == nil {
 					t.Fatalf("Expected to get an error while converting %#v, got nil", val)
 				}

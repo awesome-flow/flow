@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
+	"github.com/awesome-flow/flow/pkg/cast"
 	config "github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/devenv"
 	"github.com/awesome-flow/flow/pkg/pipeline"
@@ -47,12 +48,12 @@ var dockerComposeCmd = &cobra.Command{
 			return err
 		}
 
-		var cfg config.YAMLConfig
-		if err := yaml.Unmarshal(data, &cfg); err != nil {
+		var yamlcfg cast.Cfg
+		if err := yaml.Unmarshal(data, &yamlcfg); err != nil {
 			return nil
 		}
 
-		pipeline, err := pipeline.NewPipeline(cfg.Components, cfg.Pipeline)
+		pipeline, err := pipeline.NewPipeline(yamlcfg.Components, yamlcfg.Pipeline)
 		if err != nil {
 			return err
 		}

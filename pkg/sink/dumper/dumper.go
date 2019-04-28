@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type Dumper struct {
@@ -14,7 +15,7 @@ type Dumper struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	out, outOk := params["out"]
 	if !outOk {
 		return nil, fmt.Errorf("Dumper %s params are missing out", name)

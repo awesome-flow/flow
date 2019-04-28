@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 const (
@@ -165,7 +165,7 @@ func Test_SetUp(t *testing.T) {
 
 	for k, expected := range testsProv {
 		t.Run(k, func(t *testing.T) {
-			provKV, provOk := yp.Get(cast.NewKey(k))
+			provKV, provOk := yp.Get(types.NewKey(k))
 			if provOk != expected.Ok {
 				t.Fatalf("expected %q to be present: %t, got: %t", k, expected.Ok, provOk)
 			}
@@ -196,31 +196,31 @@ func Test_SetUp(t *testing.T) {
 		"pipeline.fanout.links":    {true, []interface{}{"tcp_sink_7222", "tcp_sink_7223"}},
 
 		"foo": {false, nil},
-		"pipeline": {true, map[string]cast.Value{
-			"fanout": map[string]cast.Value{
+		"pipeline": {true, map[string]types.Value{
+			"fanout": map[string]types.Value{
 				"links": []interface{}{
 					"tcp_sink_7222",
 					"tcp_sink_7223",
 				},
 			},
-			"udp_rcv": map[string]cast.Value{
+			"udp_rcv": map[string]types.Value{
 				"connect": "fanout",
 			},
 		}},
-		"components.udp_rcv": {true, map[string]cast.Value{
+		"components.udp_rcv": {true, map[string]types.Value{
 			"module": "receiver.udp",
-			"params": map[string]cast.Value{
+			"params": map[string]types.Value{
 				"bind_addr": "localhost:3101",
 			},
 		}},
-		"system.admin": {true, map[string]cast.Value{
+		"system.admin": {true, map[string]types.Value{
 			"enabled": true,
 		}},
 	}
 
 	for k, expected := range testsRepo {
 		t.Run(k, func(t *testing.T) {
-			repoV, repoOk := repo.Get(cast.NewKey(k))
+			repoV, repoOk := repo.Get(types.NewKey(k))
 			if repoOk != expected.Ok {
 				t.Fatalf("expected %q to be present in repo, got: %t, expected: %t", k, repoOk, expected.Ok)
 			}

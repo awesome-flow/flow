@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type CliProvider struct {
 	weight   int
-	registry map[string]cast.Value
+	registry map[string]types.Value
 	ready    chan struct{}
 }
 
@@ -19,7 +19,7 @@ var _ Provider = (*CliProvider)(nil)
 func NewCliProvider(repo *Repository, weight int) (*CliProvider, error) {
 	prov := &CliProvider{
 		weight:   weight,
-		registry: make(map[string]cast.Value),
+		registry: make(map[string]types.Value),
 		ready:    make(chan struct{}),
 	}
 	repo.RegisterProvider(prov)
@@ -60,7 +60,7 @@ func (cp *CliProvider) SetUp(repo *Repository) error {
 		}
 	}
 	for k := range cp.registry {
-		repo.Register(cast.NewKey(k), cp)
+		repo.Register(types.NewKey(k), cp)
 	}
 	return nil
 }
@@ -69,10 +69,10 @@ func (cp *CliProvider) TearDown(repo *Repository) error {
 	return nil
 }
 
-func (cp *CliProvider) Get(key cast.Key) (*cast.KeyValue, bool) {
+func (cp *CliProvider) Get(key types.Key) (*types.KeyValue, bool) {
 	<-cp.ready
 	if v, ok := cp.registry[key.String()]; ok {
-		return &cast.KeyValue{key, v}, ok
+		return &types.KeyValue{key, v}, ok
 	}
 	return nil, false
 }

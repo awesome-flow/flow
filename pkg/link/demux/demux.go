@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +25,7 @@ type Demux struct {
 	*core.Connector
 }
 
-func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
+func New(name string, _ types.Params, context *core.Context) (core.Link, error) {
 	demux := &Demux{
 		name,
 		nil,

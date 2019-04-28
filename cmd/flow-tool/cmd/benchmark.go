@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/awesome-flow/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/cast"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/pipeline"
 	"github.com/spf13/cobra"
@@ -50,7 +50,7 @@ var benchmarkLinkCmd = &cobra.Command{
 	Short: "Build a test pipeline with the link and benchmarks it",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		params := make(map[string]interface{})
+		params := make(map[string]cast.Value)
 		for _, kv := range *options {
 			chunks := strings.Split(kv, "=")
 			if len(chunks) != 2 {
@@ -64,7 +64,7 @@ var benchmarkLinkCmd = &cobra.Command{
 			}
 		}
 
-		benchlink := config.CfgBlockComponent{
+		benchlink := cast.CfgBlockComponent{
 			Params: params,
 		}
 
@@ -77,11 +77,11 @@ var benchmarkLinkCmd = &cobra.Command{
 		benchlink.Params = params
 
 		ppl, err := pipeline.NewPipeline(
-			map[string]config.CfgBlockComponent{
+			map[string]cast.CfgBlockComponent{
 				"tcp_rcv": {
 					Module:      "receiver.tcp",
 					Constructor: "New",
-					Params: map[string]interface{}{
+					Params: core.Params{
 						"bind_addr": ":3101",
 						"mode":      "talkative",
 						"backend":   "std",
@@ -89,7 +89,7 @@ var benchmarkLinkCmd = &cobra.Command{
 				},
 				"bench_link": benchlink,
 			},
-			map[string]config.CfgBlockPipeline{
+			map[string]cast.CfgBlockPipeline{
 				"tcp_rcv": {Connect: "bench_link"},
 			},
 		)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type Router struct {
@@ -16,7 +17,7 @@ type Router struct {
 	*sync.RWMutex
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	routingKey, ok := params["routing_key"]
 	if !ok {
 		return nil, fmt.Errorf("Router %s parameters are missing routing_key", name)

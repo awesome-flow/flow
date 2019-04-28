@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type RingLink struct {
@@ -20,7 +21,7 @@ type Fanout struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	ft := &Fanout{
 		name,
 		nil,

@@ -11,10 +11,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/awesome-flow/flow/pkg/cast"
 	"github.com/awesome-flow/flow/pkg/cfg"
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/global"
+	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util/data"
 
 	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
@@ -40,12 +40,12 @@ import (
 )
 
 type Pipeline struct {
-	pplCfg   map[string]cast.CfgBlockPipeline
-	compsCfg map[string]cast.CfgBlockComponent
+	pplCfg   map[string]types.CfgBlockPipeline
+	compsCfg map[string]types.CfgBlockComponent
 	compTop  *data.Topology
 }
 
-type Constructor func(string, core.Params, *core.Context) (core.Link, error)
+type Constructor func(string, types.Params, *core.Context) (core.Link, error)
 
 var (
 	CompBuilders = map[string]Constructor{
@@ -72,7 +72,7 @@ var (
 	}
 )
 
-func buildComponents(cfg map[string]cast.CfgBlockComponent) (map[string]core.Link, error) {
+func buildComponents(cfg map[string]types.CfgBlockComponent) (map[string]core.Link, error) {
 	components := make(map[string]core.Link)
 	for name, params := range cfg {
 		ctx := core.NewContext()
@@ -91,8 +91,8 @@ func buildComponents(cfg map[string]cast.CfgBlockComponent) (map[string]core.Lin
 }
 
 func NewPipeline(
-	compsCfg map[string]cast.CfgBlockComponent,
-	pplCfg map[string]cast.CfgBlockPipeline) (*Pipeline, error) {
+	compsCfg map[string]types.CfgBlockComponent,
+	pplCfg map[string]types.CfgBlockPipeline) (*Pipeline, error) {
 
 	components, err := buildComponents(compsCfg)
 	if err != nil {
@@ -166,11 +166,11 @@ func NewPipeline(
 	return pipeline, nil
 }
 
-func componentIsPlugin(cfg cast.CfgBlockComponent) bool {
+func componentIsPlugin(cfg types.CfgBlockComponent) bool {
 	return len(cfg.Plugin) > 0
 }
 
-func buildComponent(compName string, cfg cast.CfgBlockComponent, context *core.Context) (core.Link, error) {
+func buildComponent(compName string, cfg types.CfgBlockComponent, context *core.Context) (core.Link, error) {
 	if componentIsPlugin(cfg) {
 		return buildPlugin(compName, cfg, context)
 	}
@@ -181,7 +181,7 @@ func buildComponent(compName string, cfg cast.CfgBlockComponent, context *core.C
 }
 
 // TODO: refactoring
-func buildPlugin(name string, compcfg cast.CfgBlockComponent, context *core.Context) (core.Link, error) {
+func buildPlugin(name string, compcfg types.CfgBlockComponent, context *core.Context) (core.Link, error) {
 	if compcfg.Plugin == "" {
 		return nil, fmt.Errorf("%q config does not look like a plugin", name)
 	}
@@ -191,24 +191,11 @@ func buildPlugin(name string, compcfg cast.CfgBlockComponent, context *core.Cont
 		return nil, fmt.Errorf("Failed to load config repo from global storage")
 	}
 
-	pathval, ok := repo.(*cfg.Repository).Get(cast.NewKey("plugin.path"))
+	pathval, ok := repo.(*cfg.Repository).Get(types.NewKey("plugin.path"))
 	if !ok {
 		return nil, fmt.Errorf("Failed to get plugin.path from config repo")
 	}
 	path := pathval.(string)
-
-	// v, ok := global.Load("config").(*cfg.Repository).Get("plugin.path")
-	// if !ok {
-	// 	return nil, fmt.Errorf("Config is missing plugin.path")
-	// }
-	// basepath := v.(string)
-	//if str, ok := v.(string); ok {
-	//	basepath = str
-	//} else if strptr, ok := v.(*string); ok {
-	//	basepath = *strptr
-	//} else {
-	//	return nil, fmt.Errorf("plugin.path is not a string value")
-	//}
 
 	// /plugin_base/path/plugin_name/plugin_name.so
 	fullpath := filepath.Join(path, compcfg.Plugin, fmt.Sprintf("%s.so", compcfg.Plugin))
@@ -228,7 +215,7 @@ func buildPlugin(name string, compcfg cast.CfgBlockComponent, context *core.Cont
 		return nil, fmt.Errorf("Failed to find the declared constructor function %q for plugin %s: %s", compcfg.Constructor, compcfg.Plugin, err)
 	}
 
-	lnk, err := cnstr.(func(string, core.Params, *core.Context) (core.Link, error))(name, core.Params(compcfg.Params), context)
+	lnk, err := cnstr.(func(string, types.Params, *core.Context) (core.Link, error))(name, types.Params(compcfg.Params), context)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +286,7 @@ func (ppl *Pipeline) applySysCfg() error {
 	if !ok {
 		return fmt.Errorf("Failed to load config repo from global store")
 	}
-	maxproc, ok := repo.(*cfg.Repository).Get(cast.NewKey("system.maxprocs"))
+	maxproc, ok := repo.(*cfg.Repository).Get(types.NewKey("system.maxprocs"))
 	if !ok {
 		return fmt.Errorf("Failed to load system.maxproc config from config repo")
 	}
@@ -310,7 +297,7 @@ func (ppl *Pipeline) applySysCfg() error {
 	return nil
 }
 
-func buildPipelineTopology(cfg map[string]cast.CfgBlockPipeline,
+func buildPipelineTopology(cfg map[string]types.CfgBlockPipeline,
 	components map[string]core.Link) (*data.Topology, error) {
 	top := data.NewTopology()
 
@@ -367,14 +354,14 @@ func buildPipelineTopology(cfg map[string]cast.CfgBlockPipeline,
 	return top, nil
 }
 
-func blockHasConnection(blockcfg cast.CfgBlockPipeline) bool {
+func blockHasConnection(blockcfg types.CfgBlockPipeline) bool {
 	return len(blockcfg.Connect) > 0
 }
 
-func blockHasLinks(blockcfg cast.CfgBlockPipeline) bool {
+func blockHasLinks(blockcfg types.CfgBlockPipeline) bool {
 	return len(blockcfg.Links) > 0
 }
 
-func blockHasRoutes(blockcfg cast.CfgBlockPipeline) bool {
+func blockHasRoutes(blockcfg types.CfgBlockPipeline) bool {
 	return len(blockcfg.Routes) > 0
 }

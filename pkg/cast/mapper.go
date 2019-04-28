@@ -1,9 +1,13 @@
 package cast
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/awesome-flow/flow/pkg/types"
+)
 
 type Mapper interface {
-	Map(kv *KeyValue) (*KeyValue, error)
+	Map(kv *types.KeyValue) (*types.KeyValue, error)
 }
 
 type MapperNode struct {
@@ -15,7 +19,7 @@ func NewMapperNode() *MapperNode {
 	return &MapperNode{nil, make(map[string]*MapperNode)}
 }
 
-func (mn *MapperNode) Insert(key Key, mpr Mapper) *MapperNode {
+func (mn *MapperNode) Insert(key types.Key, mpr Mapper) *MapperNode {
 	var ptr *MapperNode
 	// Non-empty key check prevents users from accessing the root node
 	if len(key) > 0 {
@@ -36,7 +40,7 @@ func (mn *MapperNode) Insert(key Key, mpr Mapper) *MapperNode {
 // wildcarded node.
 // Example: a.*.c Vs a.b.c: a.b.c wins for a.b.c lookup, but a.*.c is returned
 // for a.f.c
-func (mn *MapperNode) Find(key Key) *MapperNode {
+func (mn *MapperNode) Find(key types.Key) *MapperNode {
 	if len(key) == 0 {
 		return mn
 	}
@@ -51,10 +55,10 @@ func (mn *MapperNode) Find(key Key) *MapperNode {
 }
 
 func (mn *MapperNode) DefineSchema(s Schema) error {
-	return mn.doDefineSchema(NewKey(""), s)
+	return mn.doDefineSchema(types.NewKey(""), s)
 }
 
-func (mn *MapperNode) doDefineSchema(key Key, schema Schema) error {
+func (mn *MapperNode) doDefineSchema(key types.Key, schema Schema) error {
 	if mpr, ok := schema.(Mapper); ok {
 		mn.Insert(key, mpr)
 	} else if cnv, ok := schema.(Converter); ok {
@@ -82,7 +86,7 @@ func (mn *MapperNode) doDefineSchema(key Key, schema Schema) error {
 	return nil
 }
 
-func (mn *MapperNode) Map(kv *KeyValue) (*KeyValue, error) {
+func (mn *MapperNode) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	if ptr := mn.Find(kv.Key); ptr != nil && ptr.Mpr != nil {
 		if mkv, err := ptr.Mpr.Map(kv); err != nil {
 			return nil, err
@@ -103,7 +107,7 @@ func NewConvMapper(conv Converter) *ConvMapper {
 	return &ConvMapper{conv}
 }
 
-func (cm *ConvMapper) Map(kv *KeyValue) (*KeyValue, error) {
+func (cm *ConvMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	if mkv, ok := cm.conv.Convert(kv); ok {
 		return mkv, nil
 	}

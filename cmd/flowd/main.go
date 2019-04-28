@@ -6,6 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/types"
 
 	"github.com/awesome-flow/flow/pkg/admin"
 	"github.com/awesome-flow/flow/pkg/cfg"
@@ -58,34 +59,34 @@ func main() {
 
 	log.Infof("Initializing the pipeline")
 
-	syscfgval, ok := repo.Get(cast.NewKey("system"))
+	syscfgval, ok := repo.Get(types.NewKey("system"))
 	if !ok {
 		log.Fatalf("❌ Failed to get system config")
 	}
-	syscfg := syscfgval.(cast.CfgBlockSystem)
+	syscfg := syscfgval.(types.CfgBlockSystem)
 
 	if err := metrics.Initialize(&syscfg); err != nil {
 		log.Errorf("⚠️ Failed to initialize metrics module: %s", err)
 	}
 
-	compsval, ok := repo.Get(cast.NewKey("components"))
+	compsval, ok := repo.Get(types.NewKey("components"))
 	if !ok {
 		log.Fatalf("❌ Failed to get components config")
 	}
-	compscfg := compsval.(map[string]cast.CfgBlockComponent)
+	compscfg := compsval.(map[string]types.CfgBlockComponent)
 
-	pplval, ok := repo.Get(cast.NewKey("pipeline"))
+	pplval, ok := repo.Get(types.NewKey("pipeline"))
 	if !ok {
 		log.Fatalf("❌ Failed to get pipeline config")
 	}
-	pplcfg := pplval.(map[string]cast.CfgBlockPipeline)
+	pplcfg := pplval.(map[string]types.CfgBlockPipeline)
 
 	pipeline, pplErr := pipeline.NewPipeline(compscfg, pplcfg)
 	if pplErr != nil {
 		log.Fatalf("❌ Failed to initialize the pipeline: %s", pplErr)
 	}
 	global.Store("pipeline", pipeline)
-	log.Info("✔️ Pipeline is successfully initialized")
+	log.Info("✅ Pipeline is successfully initialized")
 
 	if explanation, err := pipeline.Explain(); err != nil {
 		log.Errorf("⚠️ Failed to explain the pipeline: %s", err.Error())
@@ -99,7 +100,7 @@ func main() {
 	if startErr != nil {
 		log.Fatalf("❌ Failed to start the pipeline: %s", startErr)
 	}
-	log.Info("✔️ Pipeline is successfully activated")
+	log.Info("✅️ Pipeline is successfully activated")
 
 	var adminmux *admin.HttpMux
 	if syscfg.Admin.Enabled {
@@ -121,7 +122,7 @@ func main() {
 		if err := adminmux.Stop(); err != nil {
 			log.Errorf("⚠️ Error while stopping admin interface: %s", err.Error())
 		}
-		log.Infof("✔️ Done")
+		log.Infof("✅️ Done")
 	}
 
 	log.Infof("Stopping the pipeline")
@@ -129,13 +130,13 @@ func main() {
 	if stopErr != nil {
 		log.Fatalf("❌ Failed to stop the pipeline: %s", stopErr)
 	}
-	log.Infof("✔️ Done")
+	log.Infof("✅️ Done")
 
 	log.Infof("Stopping the config repo")
 	if repoErr := repo.TearDown(); repoErr != nil {
 		log.Fatalf("❌ Failed to tear down config repo: %s", repoErr)
 	}
-	log.Infof("✔️ Done")
+	log.Infof("✅️ Done")
 
 	os.Exit(0)
 }

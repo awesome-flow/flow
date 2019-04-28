@@ -10,6 +10,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/devenv"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type BufStrategy uint8
@@ -33,7 +34,7 @@ type Buffer struct {
 	context  *core.Context
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	capacity := DefaultBufCapacity
 	if v, ok := params["capacity"]; ok {
 		capacity = v.(int)

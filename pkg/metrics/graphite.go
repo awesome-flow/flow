@@ -4,13 +4,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/awesome-flow/flow/pkg/types"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/awesome-flow/flow/pkg/cast"
 	graphite "github.com/marpaia/graphite-golang"
 )
 
-func RunGraphiteReceiver(params map[string]cast.Value, interval int) error {
+func RunGraphiteReceiver(params map[string]types.Value, interval int) error {
 
 	grphHost := params["host"].(string)
 	grphPortStr := params["port"].(string)

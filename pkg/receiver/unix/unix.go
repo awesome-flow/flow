@@ -12,6 +12,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type Unix struct {
@@ -37,7 +38,7 @@ var (
 	ErrEmptyBody         = fmt.Errorf("Empty message body")
 )
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	path, ok := params["bind_addr"]
 	if !ok {
 		path = FlowUnixSock

@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 var blacklist map[string]bool
@@ -17,7 +17,7 @@ func init() {
 
 type EnvProvider struct {
 	weight   int
-	registry map[string]cast.Value
+	registry map[string]types.Value
 	ready    chan struct{}
 }
 
@@ -39,7 +39,7 @@ func (ep *EnvProvider) Weight() int       { return ep.weight }
 
 func (ep *EnvProvider) SetUp(repo *Repository) error {
 	defer close(ep.ready)
-	registry := make(map[string]cast.Value)
+	registry := make(map[string]types.Value)
 	var k string
 	var v interface{}
 
@@ -58,7 +58,7 @@ func (ep *EnvProvider) SetUp(repo *Repository) error {
 		}
 		registry[k] = v
 		if repo != nil {
-			repo.Register(cast.NewKey(k), ep)
+			repo.Register(types.NewKey(k), ep)
 		}
 	}
 
@@ -69,10 +69,10 @@ func (ep *EnvProvider) SetUp(repo *Repository) error {
 
 func (ep *EnvProvider) TearDown(_ *Repository) error { return nil }
 
-func (ep *EnvProvider) Get(key cast.Key) (*cast.KeyValue, bool) {
+func (ep *EnvProvider) Get(key types.Key) (*types.KeyValue, bool) {
 	<-ep.ready
 	if val, ok := ep.registry[key.String()]; ok {
-		return &cast.KeyValue{key, val}, ok
+		return &types.KeyValue{key, val}, ok
 	}
 	return nil, false
 }

@@ -1,4 +1,4 @@
-package cast
+package types
 
 import "strings"
 
@@ -25,3 +25,5 @@ type KeyValue struct {
 	Key   Key
 	Value Value
 }
+
+type Params map[string]Value

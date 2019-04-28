@@ -10,6 +10,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/core"
 	demux "github.com/awesome-flow/flow/pkg/link/demux"
+	"github.com/awesome-flow/flow/pkg/types"
 	hash "github.com/awesome-flow/flow/pkg/util/hash"
 )
 
@@ -27,7 +28,7 @@ const (
 	MsgSendTimeout = 50 * time.Millisecond
 )
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 
 	nBuckets := uint32(2 ^ 32 - 1)
 

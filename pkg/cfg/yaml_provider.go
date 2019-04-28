@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/types"
 	fsnotify "github.com/fsnotify/fsnotify"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -15,7 +15,7 @@ type YamlProvider struct {
 	source   string
 	options  *YamlProviderOptions
 	watcher  *fsnotify.Watcher
-	registry map[string]cast.Value
+	registry map[string]types.Value
 	ready    chan struct{}
 }
 
@@ -38,7 +38,7 @@ func NewYamlProviderFromSource(repo *Repository, weight int, options *YamlProvid
 		source:   source,
 		weight:   weight,
 		options:  options,
-		registry: make(map[string]cast.Value),
+		registry: make(map[string]types.Value),
 		ready:    make(chan struct{}),
 	}
 	repo.RegisterProvider(prov)
@@ -53,7 +53,7 @@ func (yp *YamlProvider) SetUp(repo *Repository) error {
 	defer close(yp.ready)
 
 	if len(yp.source) == 0 {
-		source, ok := repo.Get(cast.NewKey(CfgPathKey))
+		source, ok := repo.Get(types.NewKey(CfgPathKey))
 		if !ok {
 			return fmt.Errorf("Failed to get yaml config path from repo")
 		}
@@ -84,7 +84,7 @@ func (yp *YamlProvider) SetUp(repo *Repository) error {
 	for k, v := range flatten(rawData) {
 		yp.registry[k] = v
 		if repo != nil {
-			repo.Register(cast.NewKey(k), yp)
+			repo.Register(types.NewKey(k), yp)
 		}
 	}
 
@@ -103,15 +103,15 @@ func (yp *YamlProvider) readRaw() (map[interface{}]interface{}, error) {
 	return out, nil
 }
 
-func flatten(in map[interface{}]interface{}) map[string]cast.Value {
-	out := make(map[string]cast.Value)
+func flatten(in map[interface{}]interface{}) map[string]types.Value {
+	out := make(map[string]types.Value)
 	for k, v := range in {
 		if vmap, ok := v.(map[interface{}]interface{}); ok {
 			for sk, sv := range flatten(vmap) {
-				out[k.(string)+cast.KeySepCh+sk] = cast.Value(sv)
+				out[k.(string)+types.KeySepCh+sk] = types.Value(sv)
 			}
 		} else {
-			out[k.(string)] = cast.Value(v)
+			out[k.(string)] = types.Value(v)
 		}
 	}
 	return out
@@ -136,10 +136,10 @@ func (yp *YamlProvider) TearDown(repo *Repository) error {
 	return nil
 }
 
-func (yp *YamlProvider) Get(key cast.Key) (*cast.KeyValue, bool) {
+func (yp *YamlProvider) Get(key types.Key) (*types.KeyValue, bool) {
 	<-yp.ready
 	if v, ok := yp.registry[key.String()]; ok {
-		return &cast.KeyValue{key, v}, ok
+		return &types.KeyValue{key, v}, ok
 	}
 	return nil, false
 }
