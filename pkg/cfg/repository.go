@@ -219,8 +219,7 @@ func (repo *Repository) RegisterProvider(prov Provider) {
 	repo.providers[prov.Name()] = prov
 }
 
-//TODO: rename to RegisterKey
-func (repo *Repository) Register(key types.Key, prov Provider) {
+func (repo *Repository) RegisterKey(key types.Key, prov Provider) {
 	repo.mx.Lock()
 	defer repo.mx.Unlock()
 	repo.root.add(key, prov)

@@ -60,7 +60,7 @@ func (cp *CliProvider) SetUp(repo *Repository) error {
 		}
 	}
 	for k := range cp.registry {
-		repo.Register(types.NewKey(k), cp)
+		repo.RegisterKey(types.NewKey(k), cp)
 	}
 	return nil
 }

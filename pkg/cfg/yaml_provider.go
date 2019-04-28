@@ -84,7 +84,7 @@ func (yp *YamlProvider) SetUp(repo *Repository) error {
 	for k, v := range flatten(rawData) {
 		yp.registry[k] = v
 		if repo != nil {
-			repo.Register(types.NewKey(k), yp)
+			repo.RegisterKey(types.NewKey(k), yp)
 		}
 	}
 
