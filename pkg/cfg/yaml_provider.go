@@ -26,17 +26,14 @@ type YamlProviderOptions struct {
 var _ Provider = (*YamlProvider)(nil)
 
 func NewYamlProvider(repo *Repository, weight int) (*YamlProvider, error) {
-	if src, ok := repo.Get(cast.NewKey(CfgPathKey)); !ok {
-		return nil, fmt.Errorf("failed to get config file path: %s config parameter is mandatory", CfgPathKey)
-	} else {
-		options := &YamlProviderOptions{
-			Watch: true,
-		}
-		return NewYamlProviderFromSource(repo, weight, src.(string), options)
-	}
+	return NewYamlProviderWithOptions(repo, weight, &YamlProviderOptions{})
 }
 
-func NewYamlProviderFromSource(repo *Repository, weight int, source string, options *YamlProviderOptions) (*YamlProvider, error) {
+func NewYamlProviderWithOptions(repo *Repository, weight int, options *YamlProviderOptions) (*YamlProvider, error) {
+	return NewYamlProviderFromSource(repo, weight, options, "")
+}
+
+func NewYamlProviderFromSource(repo *Repository, weight int, options *YamlProviderOptions, source string) (*YamlProvider, error) {
 	prov := &YamlProvider{
 		source:   source,
 		weight:   weight,
@@ -54,6 +51,14 @@ func (yp *YamlProvider) Weight() int       { return yp.weight }
 
 func (yp *YamlProvider) SetUp(repo *Repository) error {
 	defer close(yp.ready)
+
+	if len(yp.source) == 0 {
+		source, ok := repo.Get(cast.NewKey(CfgPathKey))
+		if !ok {
+			return fmt.Errorf("Failed to get yaml config path from repo")
+		}
+		yp.source = source.(string)
+	}
 
 	if _, err := os.Stat(yp.source); err != nil {
 		return fmt.Errorf("failed to read yaml config %q: %s", yp.source, err)
@@ -114,9 +119,11 @@ func flatten(in map[interface{}]interface{}) map[string]cast.Value {
 
 func (yp *YamlProvider) watch() {
 	for event := range yp.watcher.Events {
-		if event.Op&fsnotify.Write != 1 {
-			continue
-		}
+		fmt.Printf("Received a fsnotify event: %#v", event)
+		//TODO: not implemented
+		// if event.Op&fsnotify.Write != 1 {
+		// 	continue
+		// }
 	}
 }
 

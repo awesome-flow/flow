@@ -62,7 +62,7 @@ func Test_readRaw(t *testing.T) {
 	defer os.Remove(f.Name())
 	repo := NewRepository()
 
-	yp, err := NewYamlProviderFromSource(repo, DefaultWeight, f.Name(), &YamlProviderOptions{Watch: false})
+	yp, err := NewYamlProviderFromSource(repo, DefaultWeight, &YamlProviderOptions{}, f.Name())
 	if err != nil {
 		t.Fatalf("Failed to instantiate a yaml provider: %s", err)
 	}
@@ -131,7 +131,7 @@ func Test_SetUp(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 
-	yp, err := NewYamlProviderFromSource(repo, DefaultWeight, f.Name(), &YamlProviderOptions{Watch: false})
+	yp, err := NewYamlProviderFromSource(repo, DefaultWeight, &YamlProviderOptions{}, f.Name())
 	if err != nil {
 		t.Fatalf("Failed to instantiate new yaml provider: %s", err)
 	}

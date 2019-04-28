@@ -1,7 +1,6 @@
 package cfg
 
 import (
-	"fmt"
 	"sort"
 	"sync"
 
@@ -158,7 +157,6 @@ func (repo *Repository) SetUp() error {
 		return err
 	}
 	for _, prov := range providers {
-		fmt.Printf("Setting up provider %q\n", prov.Name())
 		if err := prov.SetUp(repo); err != nil {
 			return err
 		}
