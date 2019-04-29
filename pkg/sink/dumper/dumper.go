@@ -27,7 +27,7 @@ func New(name string, params types.Params, context *core.Context) (core.Link, er
 	case "STDERR":
 		writer = bufio.NewWriter(os.Stderr)
 	default:
-		f, err := os.OpenFile(out.(string), os.O_APPEND, 0644)
+		f, err := os.OpenFile(out.(string), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"Failed to open %s out to %s: %s", name, out, err.Error())
