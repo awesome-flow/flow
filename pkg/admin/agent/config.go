@@ -1,12 +1,11 @@
 package agent
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
-	"sort"
-	"strings"
 
-	"github.com/awesome-flow/flow/pkg/config"
+	"github.com/awesome-flow/flow/pkg/cfg"
+	"github.com/awesome-flow/flow/pkg/global"
 )
 
 func init() {
@@ -14,21 +13,22 @@ func init() {
 		NewDummyWebAgent(
 			"/config",
 			func(rw http.ResponseWriter, req *http.Request) {
-				cfg := config.GetAll()
-				respChunks := make([]string, 0)
-				for k, vItf := range cfg {
-					switch vItf.(type) {
-					case string:
-						respChunks = append(respChunks, fmt.Sprintf("%s: %s", k, vItf))
-					case *string:
-						respChunks = append(respChunks, fmt.Sprintf("%s: %s", k, *(vItf.(*string))))
-					default:
-						respChunks = append(respChunks, fmt.Sprintf("%s: %+v", k, vItf))
-					}
+				repo, ok := global.Load("config")
+				if !ok {
+					rw.WriteHeader(http.StatusInternalServerError)
+					rw.Write([]byte("Failed to fetch config repo"))
+					return
 				}
-				sort.Strings(respChunks)
+				cfgdata := repo.(*cfg.Repository).Explain()
+				data, err := json.Marshal(cfgdata)
+				if err != nil {
+					rw.WriteHeader(http.StatusInternalServerError)
+					rw.Write([]byte(err.Error()))
+					return
+				}
+				rw.Header().Add("Content-Type", "application/json")
 				rw.WriteHeader(http.StatusOK)
-				rw.Write([]byte(strings.Join(respChunks, "\n")))
+				rw.Write(data)
 			},
 		),
 	)

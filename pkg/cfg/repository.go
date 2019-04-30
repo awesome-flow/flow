@@ -60,7 +60,7 @@ func (n *node) explain(key types.Key) map[string]interface{} {
 				})
 			}
 		}
-		res["__values__"] = valdescr
+		res["__value__"] = valdescr
 	} else if len(n.children) > 0 {
 		for k, ch := range n.children {
 			res[k] = ch.explain(append(key, k))
