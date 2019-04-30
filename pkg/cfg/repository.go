@@ -14,7 +14,7 @@ const (
 	PluginPathKey = "plugins.path"
 )
 
-// TODO
+// TODO(olegs): implement listener interface
 // type Listener func(*types.KeyValue)
 
 type Provider interface {

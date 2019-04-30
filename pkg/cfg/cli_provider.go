@@ -8,6 +8,11 @@ import (
 	"github.com/awesome-flow/flow/pkg/types"
 )
 
+var (
+	cfgFile    string
+	pluginPath string
+)
+
 type CliProvider struct {
 	weight   int
 	registry map[string]types.Value
@@ -29,8 +34,8 @@ func NewCliProvider(repo *Repository, weight int) (*CliProvider, error) {
 func (cp *CliProvider) Name() string      { return "cli" }
 func (cp *CliProvider) Depends() []string { return []string{"default"} }
 func (cp *CliProvider) Weight() int       { return cp.weight }
+func (cp *CliProvider) String() string    { return fmt.Sprintf("%v", cp.registry) }
 
-func (cp *CliProvider) String() string { return fmt.Sprintf("%v", cp.registry) }
 func (cp *CliProvider) Set(val string) error {
 	if chunks := strings.Split(val, "="); len(chunks) > 1 {
 		cp.registry[chunks[0]] = chunks[1]
@@ -39,11 +44,6 @@ func (cp *CliProvider) Set(val string) error {
 	}
 	return nil
 }
-
-var (
-	cfgFile    string
-	pluginPath string
-)
 
 func (cp *CliProvider) SetUp(repo *Repository) error {
 	defer close(cp.ready)

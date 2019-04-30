@@ -120,7 +120,7 @@ func flatten(in map[interface{}]interface{}) map[string]types.Value {
 func (yp *YamlProvider) watch() {
 	for event := range yp.watcher.Events {
 		fmt.Printf("Received a fsnotify event: %#v", event)
-		//TODO: not implemented
+		//TODO (olegs): not implemented
 		// if event.Op&fsnotify.Write != 1 {
 		// 	continue
 		// }

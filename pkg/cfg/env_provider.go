@@ -53,7 +53,7 @@ func (ep *EnvProvider) SetUp(repo *Repository) error {
 			k, v = kv, true
 		}
 		k = canonise(k)
-		if blacklist[k] {
+		if _, ok := blacklist[k]; ok {
 			continue
 		}
 		registry[k] = v
