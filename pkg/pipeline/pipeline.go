@@ -237,13 +237,16 @@ func (ppl *Pipeline) Links() []core.Link {
 	if err != nil {
 		panic(err.Error())
 	}
+	// Reverse the list
 	for i := 0; i < len(sorted)/2; i++ {
 		sorted[i], sorted[len(sorted)-1-i] = sorted[len(sorted)-1-i], sorted[i]
 	}
+
 	links := make([]core.Link, 0, len(sorted))
-	for _, node := range links {
+	for _, node := range sorted {
 		links = append(links, node.(core.Link))
 	}
+
 	return links
 }
 

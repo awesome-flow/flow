@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/devenv"
 )
 
@@ -33,8 +32,8 @@ func maxInt(a, b int) int {
 }
 
 func NewContext() *Context {
-	th, _ := config.GetOrDefault("global.system.maxprocs", runtime.GOMAXPROCS(-1))
-	threadiness := maxInt(th.(int), 1)
+	threadiness := runtime.GOMAXPROCS(-1)
+
 	msgChannels := make([]chan *Message, 0, threadiness)
 
 	for i := 0; i < threadiness; i++ {

@@ -569,21 +569,21 @@ func TestExplain(t *testing.T) {
 		"foo": map[string]interface{}{
 			"bar": map[string]interface{}{
 				"1": map[string]interface{}{
-					"__values__": []map[string]interface{}{
+					"__value__": []map[string]interface{}{
 						{"provider_name": "test", "provider_weight": 10, "value": "foo"},
 					},
 				},
 			},
 			"baz": map[string]interface{}{
 				"2": map[string]interface{}{
-					"__values__": []map[string]interface{}{
+					"__value__": []map[string]interface{}{
 						{"provider_name": "test", "provider_weight": 20, "value": "bar"},
 					},
 				},
 			},
 			"moo": map[string]interface{}{
 				"3": map[string]interface{}{
-					"__values__": []map[string]interface{}{
+					"__value__": []map[string]interface{}{
 						{"provider_name": "test", "provider_weight": 20, "value": "bar"},
 						{"provider_name": "test", "provider_weight": 10, "value": "foo"},
 					},
