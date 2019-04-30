@@ -47,6 +47,28 @@ func newNode() *node {
 	}
 }
 
+func (n *node) explain(key types.Key) map[string]interface{} {
+	res := map[string]interface{}{}
+	if len(n.providers) > 0 {
+		valdescr := make([]map[string]interface{}, 0, len(n.providers))
+		for _, prov := range n.providers {
+			if kv, ok := prov.Get(key); ok {
+				valdescr = append(valdescr, map[string]interface{}{
+					"provider_name":   prov.Name(),
+					"provider_weight": prov.Weight(),
+					"value":           kv.Value,
+				})
+			}
+		}
+		res["__values__"] = valdescr
+	} else if len(n.children) > 0 {
+		for k, ch := range n.children {
+			res[k] = ch.explain(append(key, k))
+		}
+	}
+	return res
+}
+
 func (n *node) add(key types.Key, prov Provider) {
 	ptr := n
 	for _, k := range key {
@@ -241,4 +263,8 @@ func (repo *Repository) Get(key types.Key) (types.Value, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (repo *Repository) Explain() map[string]interface{} {
+	return repo.root.explain(nil)
 }

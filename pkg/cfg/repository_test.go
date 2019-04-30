@@ -55,7 +55,7 @@ func TestGetSingleProvider(t *testing.T) {
 	repo := NewRepository()
 	prov := NewTestProv(42, 10)
 	key := types.NewKey("foo.bar.baz")
-	repo.Register(key, prov)
+	repo.RegisterKey(key, prov)
 
 	tests := []struct {
 		key types.Key
@@ -109,9 +109,9 @@ func TestTrioProviderSingleKey(t *testing.T) {
 	prov3 := NewTestProv(30, 30)
 
 	key := types.NewKey("foo.bar.baz")
-	repo.Register(key, prov1)
-	repo.Register(key, prov2)
-	repo.Register(key, prov3)
+	repo.RegisterKey(key, prov1)
+	repo.RegisterKey(key, prov2)
+	repo.RegisterKey(key, prov3)
 
 	tests := []struct {
 		key types.Key
@@ -165,9 +165,9 @@ func TestTrioProviderThreeKeys(t *testing.T) {
 	key1 := types.NewKey("k1.k1.k1")
 	key2 := types.NewKey("k2.k2.k2")
 	key3 := types.NewKey("k3.k3.k3")
-	repo.Register(key1, prov1)
-	repo.Register(key2, prov2)
-	repo.Register(key3, prov3)
+	repo.RegisterKey(key1, prov1)
+	repo.RegisterKey(key2, prov2)
+	repo.RegisterKey(key3, prov3)
 
 	tests := []struct {
 		key types.Key
@@ -241,9 +241,9 @@ func TestTrioProviderNestingKey(t *testing.T) {
 	key1 := types.NewKey("foo")
 	key2 := types.NewKey("foo.bar")
 	key3 := types.NewKey("foo.bar.baz")
-	repo.Register(key1, prov1)
-	repo.Register(key2, prov2)
-	repo.Register(key3, prov3)
+	repo.RegisterKey(key1, prov1)
+	repo.RegisterKey(key2, prov2)
+	repo.RegisterKey(key3, prov3)
 
 	tests := []struct {
 		key types.Key
@@ -455,7 +455,7 @@ func Test_DefineSchema_Primitive(t *testing.T) {
 			repo.DefineSchema(repoSchema)
 
 			for path, value := range testCase.input {
-				repo.Register(types.NewKey(path), NewTestProv(value, DefaultWeight))
+				repo.RegisterKey(types.NewKey(path), NewTestProv(value, DefaultWeight))
 			}
 
 			for lookupPath, expVal := range testCase.expected {
@@ -537,7 +537,7 @@ func Test_DefineSchema_Struct(t *testing.T) {
 			repo.DefineSchema(repoSchema)
 
 			for path, value := range testCase.input {
-				repo.Register(types.NewKey(path), NewTestProv(value, DefaultWeight))
+				repo.RegisterKey(types.NewKey(path), NewTestProv(value, DefaultWeight))
 			}
 
 			for lookupPath, expVal := range testCase.expected {
@@ -550,5 +550,49 @@ func Test_DefineSchema_Struct(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestExplain(t *testing.T) {
+	repo := NewRepository()
+	prov1 := NewTestProv("foo", 10)
+	prov2 := NewTestProv("bar", 20)
+
+	repo.RegisterKey(types.NewKey("foo.bar.1"), prov1)
+	repo.RegisterKey(types.NewKey("foo.baz.2"), prov2)
+	repo.RegisterKey(types.NewKey("foo.moo.3"), prov1)
+	repo.RegisterKey(types.NewKey("foo.moo.3"), prov2)
+
+	got := repo.Explain()
+
+	want := map[string]interface{}{
+		"foo": map[string]interface{}{
+			"bar": map[string]interface{}{
+				"1": map[string]interface{}{
+					"__values__": []map[string]interface{}{
+						{"provider_name": "test", "provider_weight": 10, "value": "foo"},
+					},
+				},
+			},
+			"baz": map[string]interface{}{
+				"2": map[string]interface{}{
+					"__values__": []map[string]interface{}{
+						{"provider_name": "test", "provider_weight": 20, "value": "bar"},
+					},
+				},
+			},
+			"moo": map[string]interface{}{
+				"3": map[string]interface{}{
+					"__values__": []map[string]interface{}{
+						{"provider_name": "test", "provider_weight": 20, "value": "bar"},
+						{"provider_name": "test", "provider_weight": 10, "value": "foo"},
+					},
+				},
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("repo.Explain() = %#v, want: %#v", got, want)
 	}
 }
