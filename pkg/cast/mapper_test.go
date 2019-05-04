@@ -21,7 +21,7 @@ func (tm *TestMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	return tm.conv(kv)
 }
 
-func Test_MapperNode_Insert(t *testing.T) {
+func TestMapperNodeInsert(t *testing.T) {
 	mpr := NewTestMapper(func(kv *types.KeyValue) (*types.KeyValue, error) {
 		return kv, nil
 	})
@@ -32,17 +32,14 @@ func Test_MapperNode_Insert(t *testing.T) {
 
 		{
 			"",
-			&MapperNode{
-				Children: map[string]*MapperNode{},
-			},
+			&MapperNode{},
 		},
 		{
 			"foo",
 			&MapperNode{
 				Children: map[string]*MapperNode{
 					"foo": &MapperNode{
-						Mpr:      mpr,
-						Children: map[string]*MapperNode{},
+						Mpr: mpr,
 					},
 				},
 			},
@@ -54,8 +51,7 @@ func Test_MapperNode_Insert(t *testing.T) {
 					"foo": &MapperNode{
 						Children: map[string]*MapperNode{
 							"bar": &MapperNode{
-								Mpr:      mpr,
-								Children: map[string]*MapperNode{},
+								Mpr: mpr,
 							},
 						},
 					},
@@ -71,8 +67,7 @@ func Test_MapperNode_Insert(t *testing.T) {
 							"*": &MapperNode{
 								Children: map[string]*MapperNode{
 									"bar": &MapperNode{
-										Mpr:      mpr,
-										Children: map[string]*MapperNode{},
+										Mpr: mpr,
 									},
 								},
 							},
@@ -96,7 +91,7 @@ func Test_MapperNode_Insert(t *testing.T) {
 	}
 }
 
-func Test_MapperNode_Find_SingleEntryLookup(t *testing.T) {
+func TestMapperNodeFindSingleEntryLookup(t *testing.T) {
 	tests := []struct {
 		insertPaths []string
 		lookupPath  string
@@ -135,7 +130,7 @@ func Test_MapperNode_Find_SingleEntryLookup(t *testing.T) {
 	}
 }
 
-func Test_MapperNode_Find_Precedence(t *testing.T) {
+func TestMapperNodeFindPrecedence(t *testing.T) {
 	convFunc := func(kv *types.KeyValue) (*types.KeyValue, error) { return kv, nil }
 	mprAstrx, mprExct := NewTestMapper(convFunc), NewTestMapper(convFunc)
 
@@ -175,7 +170,7 @@ func Test_MapperNode_Find_Precedence(t *testing.T) {
 	}
 }
 
-func Test_ConvMapper(t *testing.T) {
+func TestConvMapper(t *testing.T) {
 	tests := []struct {
 		name      string
 		conv      Converter
@@ -212,7 +207,7 @@ func Test_ConvMapper(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			mpr := NewConvMapper(testCase.conv)
 			for _, val := range testCase.validIn {
-				conv, convErr := mpr.Map(&types.KeyValue{nil, val})
+				conv, convErr := mpr.Map(&types.KeyValue{Key: nil, Value: val})
 				if convErr != nil {
 					t.Fatalf("Unexpected mapping error for input value %#v", val)
 				}
@@ -221,11 +216,114 @@ func Test_ConvMapper(t *testing.T) {
 				}
 			}
 			for _, val := range testCase.invalidIn {
-				_, convErr := mpr.Map(&types.KeyValue{nil, val})
+				_, convErr := mpr.Map(&types.KeyValue{Key: nil, Value: val})
 				if convErr == nil {
 					t.Fatalf("Expected to get an error while converting %#v, got nil", val)
 				}
 			}
+		})
+	}
+}
+
+func TestDefineSchema(t *testing.T) {
+
+	conv := func(kv *types.KeyValue) (*types.KeyValue, error) {
+		return kv, nil
+	}
+
+	mpr := NewTestMapper(conv)
+	mpr1, mpr2 := NewTestMapper(conv), NewTestMapper(conv)
+
+	tests := []struct {
+		name   string
+		schema Schema
+		want   MapperNode
+	}{
+		{
+			"A mapper",
+			NewTestMapper(conv),
+			MapperNode{
+				Mpr: nil,
+			},
+		},
+		{
+			"A converter",
+			NewTestConverter(convAct{1, true}),
+			MapperNode{
+				Mpr: nil,
+			},
+		},
+		{
+			"A mapper, flat key",
+			map[string]Schema{
+				"foo": mpr,
+			},
+			MapperNode{
+				Mpr: nil,
+				Children: map[string]*MapperNode{
+					"foo": &MapperNode{
+						Mpr: mpr,
+					},
+				},
+			},
+		},
+		{
+			"Simple __self__",
+			map[string]Schema{
+				"foo": map[string]Schema{
+					"__self__": mpr,
+				},
+			},
+			MapperNode{
+				Mpr: nil,
+				Children: map[string]*MapperNode{
+					"foo": &MapperNode{
+						Mpr: mpr,
+					},
+				},
+			},
+		},
+		{
+			"Nested structure",
+			map[string]Schema{
+				"foo": map[string]Schema{
+					"bar": map[string]Schema{
+						"baz": mpr1,
+					},
+				},
+				"moo": mpr2,
+			},
+			MapperNode{
+				Children: map[string]*MapperNode{
+					"foo": &MapperNode{
+						Children: map[string]*MapperNode{
+							"bar": &MapperNode{
+								Children: map[string]*MapperNode{
+									"baz": &MapperNode{
+										Mpr: mpr1,
+									},
+								},
+							},
+						},
+					},
+					"moo": &MapperNode{
+						Mpr: mpr2,
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			mn := NewMapperNode()
+			if err := mn.DefineSchema(testCase.schema); err != nil {
+				t.Fatalf("Failed to call DefineSchema(): %s", err)
+			}
+			if !reflect.DeepEqual(testCase.want, *mn) {
+				t.Fatalf("Unexpected value after DefineSchema(): got: %#v, want: %#v", *mn, testCase.want)
+			}
+
 		})
 	}
 }

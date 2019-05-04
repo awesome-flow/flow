@@ -16,7 +16,7 @@ type MapperNode struct {
 }
 
 func NewMapperNode() *MapperNode {
-	return &MapperNode{nil, make(map[string]*MapperNode)}
+	return &MapperNode{}
 }
 
 func (mn *MapperNode) Insert(key types.Key, mpr Mapper) *MapperNode {
@@ -25,6 +25,9 @@ func (mn *MapperNode) Insert(key types.Key, mpr Mapper) *MapperNode {
 	if len(key) > 0 {
 		ptr = mn
 		for _, k := range key {
+			if ptr.Children == nil {
+				ptr.Children = make(map[string]*MapperNode)
+			}
 			if _, ok := ptr.Children[k]; !ok {
 				ptr.Children[k] = NewMapperNode()
 			}

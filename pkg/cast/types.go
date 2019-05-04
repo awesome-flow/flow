@@ -22,7 +22,7 @@ func (*CfgMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 		if system, ok := vmap["system"]; ok {
 			res.System = system.(types.CfgBlockSystem)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("CfgMapper cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -45,7 +45,7 @@ func (*CfgBlockSystemMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 		if metrics, ok := vmap["metrics"]; ok {
 			res.Metrics = metrics.(types.CfgBlockSystemMetrics)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("CfgBlockSystem cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -65,7 +65,7 @@ func (*CfgBlockSystemAdminMapper) Map(kv *types.KeyValue) (*types.KeyValue, erro
 		if bindAddr, ok := vmap["bind_addr"]; ok {
 			res.BindAddr = bindAddr.(string)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("CfgBlockSystemAdmin cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -88,7 +88,7 @@ func (*CfgBlockSystemMetricsMapper) Map(kv *types.KeyValue) (*types.KeyValue, er
 		if receiver, ok := vmap["receiver"]; ok {
 			res.Receiver = receiver.(types.CfgBlockSystemMetricsReceiver)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("CfgBlockSystemMetrics cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -108,7 +108,7 @@ func (*CfgBlockSystemMetricsReceiverMapper) Map(kv *types.KeyValue) (*types.KeyV
 		if params, ok := vmap["params"]; ok {
 			res.Params = params.(map[string]types.Value)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("CfgBlockSystemMetricsReceiver cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -125,7 +125,7 @@ func (*MapCfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, err
 		for k, v := range vmap {
 			res[k] = v.(types.CfgBlockComponent)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("Map[string]CfgBlockComponent cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -151,7 +151,7 @@ func (*CfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error)
 		if params, ok := vmap["params"]; ok {
 			res.Params = params.(map[string]types.Value)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("CfgBlockComponent cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -168,7 +168,7 @@ func (*MapCfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, erro
 		for k, v := range vmap {
 			res[k] = v.(types.CfgBlockPipeline)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("Map[string]CfgBlockPipeline cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -191,7 +191,7 @@ func (*CfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) 
 		if routes, ok := vmap["routes"]; ok {
 			res.Routes = routes.(map[string]string)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("CfgBlockPipeline cast failed for key: %q, val: %#v", kv.Key.String(), kv.Value)
 }
@@ -210,7 +210,7 @@ func (*ArrStrMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 		for _, v := range arr {
 			res = append(res, v.(string))
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("[]string cast failed for key: %q, val: %#v", kv.Key, kv.Value)
 }
@@ -227,7 +227,7 @@ func (*MapStrToStrMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 		for k, v := range mp {
 			res[k] = v.(string)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("map[string]string cast failed for key: %q, val: %#v", kv.Key, kv.Value)
 }

@@ -24,7 +24,7 @@ var _ Converter = (*IntPtrToIntConverter)(nil)
 
 func (*IntPtrToIntConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if pv, ok := kv.Value.(*int); ok {
-		return &types.KeyValue{kv.Key, *pv}, true
+		return &types.KeyValue{Key: kv.Key, Value: *pv}, true
 	}
 	return nil, false
 }
@@ -35,7 +35,7 @@ var _ Converter = (*BoolPtrToBoolConverter)(nil)
 
 func (*BoolPtrToBoolConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if pv, ok := kv.Value.(*bool); ok {
-		return &types.KeyValue{kv.Key, *pv}, true
+		return &types.KeyValue{Key: kv.Key, Value: *pv}, true
 	}
 	return nil, false
 }
@@ -46,7 +46,7 @@ var _ Converter = (*StrPtrToStrConverter)(nil)
 
 func (*StrPtrToStrConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if spv, ok := kv.Value.(*string); ok {
-		return &types.KeyValue{kv.Key, *spv}, true
+		return &types.KeyValue{Key: kv.Key, Value: *spv}, true
 	}
 	return nil, false
 }
@@ -59,9 +59,9 @@ func (*StrToBoolConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if sv, ok := kv.Value.(string); ok {
 		switch sv {
 		case "true", "1", "y":
-			return &types.KeyValue{kv.Key, true}, true
+			return &types.KeyValue{Key: kv.Key, Value: true}, true
 		case "false", "0", "n":
-			return &types.KeyValue{kv.Key, false}, true
+			return &types.KeyValue{Key: kv.Key, Value: false}, true
 		}
 	}
 	return nil, false
@@ -75,7 +75,7 @@ func (*StrToIntConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if sv, ok := kv.Value.(string); ok {
 		s, err := strconv.Atoi(sv)
 		if err == nil {
-			return &types.KeyValue{kv.Key, s}, true
+			return &types.KeyValue{Key: kv.Key, Value: s}, true
 		}
 	}
 	return nil, false
@@ -95,7 +95,7 @@ func (*IntToBoolConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 		} else {
 			return nil, false
 		}
-		return &types.KeyValue{kv.Key, v}, true
+		return &types.KeyValue{Key: kv.Key, Value: v}, true
 	}
 	return nil, false
 }
@@ -106,7 +106,7 @@ var _ Converter = (*IntToStrConverter)(nil)
 
 func (*IntToStrConverter) Convert(kv *types.KeyValue) (*types.KeyValue, bool) {
 	if iv, ok := kv.Value.(int); ok {
-		return &types.KeyValue{kv.Key, strconv.Itoa(iv)}, true
+		return &types.KeyValue{Key: kv.Key, Value: strconv.Itoa(iv)}, true
 	}
 	return nil, false
 }
