@@ -1,6 +1,7 @@
 package cast
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -337,7 +338,22 @@ func TestDefineSchema(t *testing.T) {
 	}
 }
 
+type fooStruct struct {
+	Bar int
+}
+
 func TestMap(t *testing.T) {
+	convSq := NewTestMapper(func(kv *types.KeyValue) (*types.KeyValue, error) {
+		v := kv.Value.(int)
+		return &types.KeyValue{Key: kv.Key, Value: v * v}, nil
+	})
+	fooMpr := NewTestMapper(func(kv *types.KeyValue) (*types.KeyValue, error) {
+		v := kv.Value.(map[string]types.Value)
+		return &types.KeyValue{Key: kv.Key, Value: &fooStruct{Bar: v["bar"].(int)}}, nil
+	})
+	errMpr := NewTestMapper(func(kv *types.KeyValue) (*types.KeyValue, error) {
+		return nil, fmt.Errorf("This mapper returns an error")
+	})
 	tests := []struct {
 		name    string
 		schema  Schema
@@ -351,6 +367,57 @@ func TestMap(t *testing.T) {
 			&types.KeyValue{Key: types.NewKey("foo"), Value: 42},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: 42},
 			nil,
+		},
+		{
+			"Simple mapper matching the key",
+			map[string]Schema{
+				"foo": convSq,
+			},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: 4},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: 16},
+			nil,
+		},
+		{
+			"Simple mapper with unknown key",
+			map[string]Schema{
+				"foo": convSq,
+			},
+			&types.KeyValue{Key: types.NewKey("bar"), Value: 4},
+			&types.KeyValue{Key: types.NewKey("bar"), Value: 4},
+			nil,
+		},
+		{
+			"Nesting schema definition",
+			map[string]Schema{
+				"foo": map[string]Schema{
+					"__self__": fooMpr,
+					"bar":      convSq,
+				},
+			},
+			&types.KeyValue{Key: types.NewKey("foo.bar"), Value: 4},
+			&types.KeyValue{Key: types.NewKey("foo.bar"), Value: 16},
+			nil,
+		},
+		{
+			"Composite key lookup",
+			map[string]Schema{
+				"foo": map[string]Schema{
+					"__self__": fooMpr,
+					"bar":      convSq,
+				},
+			},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{"bar": 4}},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: &fooStruct{Bar: 4}},
+			nil,
+		},
+		{
+			"Failing mapper",
+			map[string]Schema{
+				"foo": errMpr,
+			},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: 42},
+			nil,
+			fmt.Errorf("This mapper returns an error"),
 		},
 	}
 
@@ -366,8 +433,8 @@ func TestMap(t *testing.T) {
 			if !reflect.DeepEqual(gotErr, testCase.wantErr) {
 				t.Fatalf("Unexpected error on Map() call: got: %s, want: %s", gotErr, testCase.wantErr)
 			}
-			if !reflect.DeepEqual(gotKV, testCase.inputKV) {
-				t.Fatalf("Unexpected value: Map() = %#v, want: %#v", gotKV, testCase.wantKV)
+			if testCase.wantKV != nil && !reflect.DeepEqual(gotKV, testCase.wantKV) {
+				t.Fatalf("Unexpected value: Map(%#v) = %#v, want: %#v", testCase.inputKV, gotKV, testCase.wantKV)
 			}
 		})
 	}
