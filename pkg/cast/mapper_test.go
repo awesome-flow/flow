@@ -152,6 +152,8 @@ func TestMapperNodeFindPrecedence(t *testing.T) {
 		},
 	}
 
+	t.Parallel()
+
 	for _, testCase := range tests {
 		t.Run(testCase.exactPath, func(t *testing.T) {
 			root := NewMapperNode()
@@ -240,6 +242,11 @@ func TestDefineSchema(t *testing.T) {
 		want   MapperNode
 	}{
 		{
+			"Nil-schema",
+			nil,
+			MapperNode{},
+		},
+		{
 			"A mapper",
 			NewTestMapper(conv),
 			MapperNode{
@@ -314,6 +321,8 @@ func TestDefineSchema(t *testing.T) {
 		},
 	}
 
+	t.Parallel()
+
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			mn := NewMapperNode()
@@ -324,6 +333,42 @@ func TestDefineSchema(t *testing.T) {
 				t.Fatalf("Unexpected value after DefineSchema(): got: %#v, want: %#v", *mn, testCase.want)
 			}
 
+		})
+	}
+}
+
+func TestMap(t *testing.T) {
+	tests := []struct {
+		name    string
+		schema  Schema
+		inputKV *types.KeyValue
+		wantKV  *types.KeyValue
+		wantErr error
+	}{
+		{
+			"nil-schema",
+			nil,
+			&types.KeyValue{Key: types.NewKey("foo"), Value: 42},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: 42},
+			nil,
+		},
+	}
+
+	t.Parallel()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			mn := &MapperNode{}
+			if err := mn.DefineSchema(testCase.schema); err != nil {
+				t.Fatalf("Failed to call DefineSchema(): %s", err)
+			}
+			gotKV, gotErr := mn.Map(testCase.inputKV)
+			if !reflect.DeepEqual(gotErr, testCase.wantErr) {
+				t.Fatalf("Unexpected error on Map() call: got: %s, want: %s", gotErr, testCase.wantErr)
+			}
+			if !reflect.DeepEqual(gotKV, testCase.inputKV) {
+				t.Fatalf("Unexpected value: Map() = %#v, want: %#v", gotKV, testCase.wantKV)
+			}
 		})
 	}
 }

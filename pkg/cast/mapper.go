@@ -62,7 +62,9 @@ func (mn *MapperNode) DefineSchema(s Schema) error {
 }
 
 func (mn *MapperNode) doDefineSchema(key types.Key, schema Schema) error {
-	if mpr, ok := schema.(Mapper); ok {
+	if schema == nil {
+		return nil
+	} else if mpr, ok := schema.(Mapper); ok {
 		mn.Insert(key, mpr)
 	} else if cnv, ok := schema.(Converter); ok {
 		mn.Insert(key, NewConvMapper(cnv))
