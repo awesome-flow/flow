@@ -13,7 +13,7 @@ type resFound struct {
 	found bool
 }
 
-func TestMessage_NewMessage(t *testing.T) {
+func TestMessageNewMessage(t *testing.T) {
 	msg := NewMessage([]byte{})
 	var v interface{}
 	var ok bool
@@ -72,7 +72,7 @@ func TestMessage_NewMessage(t *testing.T) {
 	}
 }
 
-func TestMessage_GetMeta(t *testing.T) {
+func TestMessageGetMeta(t *testing.T) {
 	tests := []struct {
 		name     string
 		meta     map[string]interface{}
@@ -111,7 +111,7 @@ func TestMessage_GetMeta(t *testing.T) {
 	}
 }
 
-func TestMessage_GetMetaAll(t *testing.T) {
+func TestMessageGetMetaAll(t *testing.T) {
 	tests := []struct {
 		name         string
 		meta         map[string]interface{}
@@ -144,7 +144,7 @@ func TestMessage_GetMetaAll(t *testing.T) {
 	}
 }
 
-func TestMessage_Ack(t *testing.T) {
+func TestMessageAck(t *testing.T) {
 	NoStatus := uint8(math.MaxUint8)
 	tests := []struct {
 		name      string
@@ -184,7 +184,7 @@ func TestMessage_Ack(t *testing.T) {
 	}
 }
 
-func TestMessage_NewMessageWithAckCh(t *testing.T) {
+func TestMessageNewMessageWithAckCh(t *testing.T) {
 	ch := make(chan MsgStatus, 1)
 	msg := NewMessageWithAckCh(ch, nil, []byte(""))
 	msg.AckDone()
@@ -198,7 +198,7 @@ func TestMessage_NewMessageWithAckCh(t *testing.T) {
 	}
 }
 
-func TestMessage_CpMessage(t *testing.T) {
+func TestMessageCpMessage(t *testing.T) {
 	pl1 := []byte("payload1")
 	meta1 := map[string]interface{}{"k1": "v1"}
 	msg1 := NewMessageWithMeta(meta1, pl1)
@@ -212,7 +212,7 @@ func TestMessage_CpMessage(t *testing.T) {
 	}
 }
 
-func TestMessage_BumpAttempts(t *testing.T) {
+func TestMessageBumpAttempts(t *testing.T) {
 	msg := NewMessage([]byte(""))
 	if msg.attempts != 0 {
 		t.Errorf("Unexpected msg attempts: %d, want: %d", msg.attempts, 0)
