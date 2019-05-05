@@ -4,6 +4,10 @@ import (
 	"github.com/awesome-flow/flow/pkg/types"
 )
 
+// DefaultProvider represents a set of default values.
+// Prefer keeping defaults over providing default values local to other
+// providers as it guarantees presence of the default values indiffirent to
+// the provider set that have been activated.
 type DefaultProvider struct {
 	weight   int
 	registry map[string]types.Value
@@ -23,10 +27,14 @@ func init() {
 
 var _ Provider = (*DefaultProvider)(nil)
 
+// NewDefaultProvider is a constructor for DefaultProvider.
 func NewDefaultProvider(repo *Repository, weight int) (*DefaultProvider, error) {
 	return NewDefaultProviderWithRegistry(repo, weight, defaults)
 }
 
+// NewDefaultProviderWithRegistry is an alternative constructor for
+// DefaultProvider. Accepts an extra registry argument as a complete replacement
+// for the default one.
 func NewDefaultProviderWithRegistry(repo *Repository, weight int, registry map[string]types.Value) (*DefaultProvider, error) {
 	prov := &DefaultProvider{
 		weight:   weight,
@@ -37,10 +45,16 @@ func NewDefaultProviderWithRegistry(repo *Repository, weight int, registry map[s
 	return prov, nil
 }
 
-func (dp *DefaultProvider) Name() string      { return "default" }
-func (dp *DefaultProvider) Depends() []string { return []string{} }
-func (dp *DefaultProvider) Weight() int       { return dp.weight }
+// Name returns provider name: default
+func (dp *DefaultProvider) Name() string { return "default" }
 
+// Depends returns the list of provider dependencies: none
+func (dp *DefaultProvider) Depends() []string { return []string{} }
+
+// Weight returns the provider weight
+func (dp *DefaultProvider) Weight() int { return dp.weight }
+
+// SetUp registers all keys from the registry in the repo
 func (dp *DefaultProvider) SetUp(repo *Repository) error {
 	defer close(dp.ready)
 	for k := range dp.registry {
@@ -49,12 +63,14 @@ func (dp *DefaultProvider) SetUp(repo *Repository) error {
 	return nil
 }
 
-func (dp *DefaultProvider) TearDown(_ *Repository) error { return nil }
+// TearDown is a no-op operation for DefaultProvider
+func (dp *DefaultProvider) TearDown(*Repository) error { return nil }
 
+// Get is the primary method for fetching values from the default registry
 func (dp *DefaultProvider) Get(key types.Key) (*types.KeyValue, bool) {
 	<-dp.ready
 	if val, ok := dp.registry[key.String()]; ok {
-		return &types.KeyValue{key, val}, ok
+		return &types.KeyValue{Key: key, Value: val}, ok
 	}
 	return nil, false
 }

@@ -19,6 +19,30 @@ func flushMappers() {
 	mappers = cast.NewMapperNode()
 }
 
+type queueItem struct {
+	k types.Key
+	n *node
+}
+
+// Visits all nodes in the repo and maps flattened keys to provider list.
+func flattenRepo(repo *Repository) map[string][]Provider {
+	res := make(map[string][]Provider)
+	queue := make([]queueItem, 0, 1)
+	queue = append(queue, queueItem{nil, repo.root})
+	var head queueItem
+	for len(queue) > 0 {
+		head, queue = queue[0], queue[1:]
+		if len(head.n.providers) > 0 {
+			res[head.k.String()] = head.n.providers
+		} else if len(head.n.children) > 0 {
+			for k, n := range head.n.children {
+				queue = append(queue, queueItem{append(head.k, k), n})
+			}
+		}
+	}
+	return res
+}
+
 type TestProv struct {
 	val     types.Value
 	weight  int

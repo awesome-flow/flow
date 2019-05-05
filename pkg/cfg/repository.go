@@ -10,13 +10,20 @@ import (
 )
 
 const (
-	CfgPathKey    = "config.path"
+	// CfgPathKey is a string constant used globally to reach up the config
+	// file path setting.
+	CfgPathKey = "config.path"
+	// PluginPathKey is a string constant used globally to reach up the plugin
+	// path setting.
 	PluginPathKey = "plugins.path"
 )
 
 // TODO(olegs): implement listener interface
 // type Listener func(*types.KeyValue)
 
+// Provider is a generic interface for config providers.
+// A method initializing a new instance of Provider must conform to Constructor
+// type.
 type Provider interface {
 	Name() string
 	Depends() []string
@@ -31,6 +38,8 @@ var (
 	mappersMx sync.Mutex
 )
 
+// Constructor is the signature Provider instances are expected to implement
+// as a producing function.
 type Constructor func(*Repository, int) (Provider, error)
 
 type node struct {
@@ -152,13 +161,20 @@ func (n *node) getAll(repo *Repository, pref types.Key) *types.KeyValue {
 			res[k] = ch.getAll(repo, key).Value
 		}
 	}
-	mkv, err := repo.doMap(&types.KeyValue{pref, res})
+	mkv, err := repo.doMap(&types.KeyValue{Key: pref, Value: res})
 	if err != nil {
 		panic(err)
 	}
 	return mkv
 }
 
+// Repository is a generic structure used by flow to store config maps and
+// corresponding type mappers.
+// There is 1 globally registered repository instance available by loading from
+// global storage: `global.Load("config")`. It keeps the init-stage system
+// settings and might be used by any consumer.
+// Plugin code can instantiate and use locally defined repositories. Having
+// independent repositories is practical.
 type Repository struct {
 	mappers   *cast.MapperNode
 	root      *node
@@ -166,6 +182,7 @@ type Repository struct {
 	mx        sync.Mutex
 }
 
+// NewRepository returns a new instance of an empty Repository.
 func NewRepository() *Repository {
 	return &Repository{
 		mappers:   cast.NewMapperNode(),
@@ -175,6 +192,12 @@ func NewRepository() *Repository {
 	}
 }
 
+// SetUp traverses registered providers and calls `provider.SetUp(repo)`.
+// Providers are traversed in topological order, based on the dependencies
+// they defined using `Depends()` method.
+// Firstly, it sets up providers with no dependencies and progresses forward
+// as providers with non-zero dependencies turn to be unblocked.
+// Returns an error if at least 1 provider failed to call `SetUp`.
 func (repo *Repository) SetUp() error {
 	providers, err := repo.traverseProviders()
 	if err != nil {
@@ -189,10 +212,11 @@ func (repo *Repository) SetUp() error {
 	return nil
 }
 
+// TearDown does the opposite to `SetUp`: it prepares providers to get
+// unloaded. The sequence of `provider.TearDown(repo)` is exactly the same
+// as SetUp(): topologically sorted dependency list.
+// Returns an error if at least 1 provider failed to call `TearDown`.
 func (repo *Repository) TearDown() error {
-	repo.mx.Lock()
-	defer repo.mx.Unlock()
-
 	providers, err := repo.traverseProviders()
 	if err != nil {
 		return err
@@ -227,6 +251,10 @@ func (repo *Repository) traverseProviders() ([]Provider, error) {
 	return res, nil
 }
 
+// DefineSchema registers a schema in the repo.
+// Multiple non-overlapping schemas might be registered sequentually with
+// an equivalence of registering a composite schema at once.
+// Returns an error if the root mapper node failes to register the schema.
 func (repo *Repository) DefineSchema(s cast.Schema) error {
 	return repo.mappers.DefineSchema(s)
 }
@@ -235,12 +263,22 @@ func (repo *Repository) doMap(kv *types.KeyValue) (*types.KeyValue, error) {
 	return repo.mappers.Map(kv)
 }
 
+// RegisterProvider marks a provider as known to the repository.
+// A registered provider will be visited by `SetUp` and `TearDown` methods,
+// but won't serve any key lookup requests yet. Used at the very early stage
+// of the system initialization in order to trigger providers's `SetUp` method.
+// This method is thread safe.
 func (repo *Repository) RegisterProvider(prov Provider) {
 	repo.mx.Lock()
 	defer repo.mx.Unlock()
 	repo.providers[prov.Name()] = prov
 }
 
+// RegisterKey registers a provider as a potential servant for the specified
+// key.
+// If a provider can serve multiple keys, every key registration must be
+// created explicitly, 1 at a time.
+// This method is thread safe.
 func (repo *Repository) RegisterKey(key types.Key, prov Provider) {
 	repo.mx.Lock()
 	defer repo.mx.Unlock()
@@ -254,6 +292,9 @@ func (repo *Repository) RegisterKey(key types.Key, prov Provider) {
 //	repo.root.subscribe(key, listener)
 //}
 
+// Get is the primary interface for the stored data retrieval.
+// Returns the fetched value and a bool flag indicating the lookup result.
+// If no value was retrived from the providers, bool flag is set to false.
 func (repo *Repository) Get(key types.Key) (types.Value, bool) {
 	// Non-empty key check prevents users from accessing a protected
 	// root node
@@ -265,6 +306,10 @@ func (repo *Repository) Get(key types.Key) (types.Value, bool) {
 	return nil, false
 }
 
+// Explain returns a structure with a detailed explanation of the repository.
+// The resulting map mimics the original config map structure and leafs
+// indicate per-provider breakdown with a corresponding value returned by
+// each of them.
 func (repo *Repository) Explain() map[string]interface{} {
 	return repo.root.explain(nil)
 }

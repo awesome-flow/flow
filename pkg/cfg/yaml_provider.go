@@ -3,12 +3,24 @@ package cfg
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 
 	"github.com/awesome-flow/flow/pkg/types"
 	fsnotify "github.com/fsnotify/fsnotify"
 	yaml "gopkg.in/yaml.v2"
 )
+
+// Redefined in tests
+var readRaw = func(source string) (map[interface{}]interface{}, error) {
+	out := make(map[interface{}]interface{})
+	data, err := ioutil.ReadFile(source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read yaml config file %q: %s", source, err)
+	}
+	if err := yaml.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 type YamlProvider struct {
 	weight   int
@@ -60,9 +72,9 @@ func (yp *YamlProvider) SetUp(repo *Repository) error {
 		yp.source = source.(string)
 	}
 
-	if _, err := os.Stat(yp.source); err != nil {
-		return fmt.Errorf("failed to read yaml config %q: %s", yp.source, err)
-	}
+	// if _, err := os.Stat(yp.source); err != nil {
+	// 	return fmt.Errorf("failed to read yaml config %q: %s", yp.source, err)
+	// }
 
 	if yp.options.Watch {
 		watcher, err := fsnotify.NewWatcher()
@@ -77,7 +89,7 @@ func (yp *YamlProvider) SetUp(repo *Repository) error {
 		go yp.watch()
 	}
 
-	rawData, err := yp.readRaw()
+	rawData, err := readRaw(yp.source)
 	if err != nil {
 		return err
 	}
@@ -89,18 +101,6 @@ func (yp *YamlProvider) SetUp(repo *Repository) error {
 	}
 
 	return nil
-}
-
-func (yp *YamlProvider) readRaw() (map[interface{}]interface{}, error) {
-	out := make(map[interface{}]interface{})
-	data, err := ioutil.ReadFile(yp.source)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read yaml config file %q: %s", yp.source, err)
-	}
-	if err := yaml.Unmarshal(data, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func flatten(in map[interface{}]interface{}) map[string]types.Value {

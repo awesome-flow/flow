@@ -1,12 +1,12 @@
 package cfg
 
 import (
-	"io/ioutil"
-	"os"
 	"reflect"
+	"sort"
+	"strings"
 	"testing"
 
-	"github.com/awesome-flow/flow/pkg/types"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -41,194 +41,83 @@ pipeline:
 `
 )
 
-func tmpyamlcfg() (*os.File, error) {
-	f, err := ioutil.TempFile(".", "yaml-provider")
-	if err != nil {
-		return nil, err
-	}
-	if _, err := f.Write([]byte(sampleYaml)); err != nil {
-		return nil, err
-	}
-
-	return f, nil
-}
-
-func Test_readRaw(t *testing.T) {
-	f, err := tmpyamlcfg()
-	if err != nil {
-		t.Fatalf("Failed to create tmp file: %s", err)
-	}
-
-	defer os.Remove(f.Name())
-	repo := NewRepository()
-
-	yp, err := NewYamlProviderFromSource(repo, DefaultWeight, &YamlProviderOptions{}, f.Name())
-	if err != nil {
-		t.Fatalf("Failed to instantiate a yaml provider: %s", err)
-	}
-	if err := yp.SetUp(nil); err != nil {
-		t.Fatalf("Failed to call provider.SetUp: %s", err)
-	}
-
-	got, err := yp.readRaw()
-	if err != nil {
-		t.Fatalf("Failed to read config data: %s", err)
-	}
-
-	expected := map[interface{}]interface{}{
-		"system": map[interface{}]interface{}{
-			"maxprocs": 4,
-			"admin": map[interface{}]interface{}{
-				"enabled": true,
-			},
-		},
-		"components": map[interface{}]interface{}{
-			"udp_rcv": map[interface{}]interface{}{
-				"module": "receiver.udp",
-				"params": map[interface{}]interface{}{
-					"bind_addr": "localhost:3101",
-				},
-			},
-			"fanout": map[interface{}]interface{}{
-				"module": "link.fanout",
-			},
-			"tcp_sink_7222": map[interface{}]interface{}{
-				"module": "sink.tcp",
-				"params": map[interface{}]interface{}{
-					"bind_addr": "localhost:7222",
-				},
-			},
-			"tcp_sink_7223": map[interface{}]interface{}{
-				"module": "sink.tcp",
-				"params": map[interface{}]interface{}{
-					"bind_addr": "localhost:7223",
-				},
-			},
-		},
-		"pipeline": map[interface{}]interface{}{
-			"udp_rcv": map[interface{}]interface{}{
-				"connect": "fanout",
-			},
-			"fanout": map[interface{}]interface{}{
-				"links": []interface{}{
-					"tcp_sink_7222",
-					"tcp_sink_7223",
-				},
-			},
-		},
-	}
-	if !reflect.DeepEqual(expected, got) {
-		t.Fatalf("Unexpected value:\n\nwant: %#v\n\ngot: %#v", expected, got)
-	}
-}
-
-func Test_SetUp(t *testing.T) {
-	repo := NewRepository()
-
-	f, err := tmpyamlcfg()
-	if err != nil {
-		t.Fatalf("Failed to create tmp file: %s", err)
-	}
-	defer os.Remove(f.Name())
-
-	yp, err := NewYamlProviderFromSource(repo, DefaultWeight, &YamlProviderOptions{}, f.Name())
-	if err != nil {
-		t.Fatalf("Failed to instantiate new yaml provider: %s", err)
-	}
-
-	if err := yp.SetUp(repo); err != nil {
-		t.Fatalf("failed to SetUp yaml provider: %s", err)
-	}
-
-	testsProv := map[string]struct {
-		Ok bool
-		V  interface{}
+func TestYamlProviderSetUp(t *testing.T) {
+	tests := []struct {
+		name     string
+		src      []byte
+		options  *YamlProviderOptions
+		wantRegs []string
 	}{
-		"system.maxprocs":      {true, 4},
-		"system.admin.enabled": {true, true},
-
-		"components.udp_rcv.module":                 {true, "receiver.udp"},
-		"components.udp_rcv.params.bind_addr":       {true, "localhost:3101"},
-		"components.fanout.module":                  {true, "link.fanout"},
-		"components.tcp_sink_7222.module":           {true, "sink.tcp"},
-		"components.tcp_sink_7222.params.bind_addr": {true, "localhost:7222"},
-		"components.tcp_sink_7223.module":           {true, "sink.tcp"},
-		"components.tcp_sink_7223.params.bind_addr": {true, "localhost:7223"},
-
-		"pipeline.udp_rcv.connect": {true, "fanout"},
-		"pipeline.fanout.links":    {true, []interface{}{"tcp_sink_7222", "tcp_sink_7223"}},
-
-		"foo":          {false, nil},
-		"pipeline":     {false, nil},
-		"system.admin": {false, nil},
+		{
+			"empty yaml",
+			[]byte(""),
+			&YamlProviderOptions{},
+			[]string{},
+		},
+		{
+			"Sample yaml",
+			[]byte(sampleYaml),
+			&YamlProviderOptions{},
+			[]string{
+				"system.maxprocs",
+				"system.admin.enabled",
+				"components.udp_rcv.params.bind_addr",
+				"components.udp_rcv.module",
+				"components.tcp_sink_7223.params.bind_addr",
+				"components.tcp_sink_7223.module",
+				"components.tcp_sink_7222.params.bind_addr",
+				"components.tcp_sink_7222.module",
+				"components.fanout.module",
+				"pipeline.udp_rcv.connect",
+				"pipeline.fanout.links",
+			},
+		},
 	}
 
-	for k, expected := range testsProv {
-		t.Run(k, func(t *testing.T) {
-			provKV, provOk := yp.Get(types.NewKey(k))
-			if provOk != expected.Ok {
-				t.Fatalf("expected %q to be present: %t, got: %t", k, expected.Ok, provOk)
-			}
-			if provOk {
-				if !reflect.DeepEqual(expected.V, provKV.Value) {
-					t.Fatalf("unexpected value for %q: got: %#v, want: %#v", k, provKV.Value, expected.V)
+	t.Parallel()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+
+			// Redefining the original value
+			oldReadRaw := readRaw
+			readRaw = func(source string) (map[interface{}]interface{}, error) {
+				out := make(map[interface{}]interface{})
+				if err := yaml.Unmarshal(testCase.src, &out); err != nil {
+					return nil, err
 				}
+				return out, nil
 			}
-		})
-	}
 
-	testsRepo := map[string]struct {
-		Ok bool
-		V  interface{}
-	}{
-		"system.maxprocs":      {true, 4},
-		"system.admin.enabled": {true, true},
-
-		"components.udp_rcv.module":                 {true, "receiver.udp"},
-		"components.udp_rcv.params.bind_addr":       {true, "localhost:3101"},
-		"components.fanout.module":                  {true, "link.fanout"},
-		"components.tcp_sink_7222.module":           {true, "sink.tcp"},
-		"components.tcp_sink_7222.params.bind_addr": {true, "localhost:7222"},
-		"components.tcp_sink_7223.module":           {true, "sink.tcp"},
-		"components.tcp_sink_7223.params.bind_addr": {true, "localhost:7223"},
-
-		"pipeline.udp_rcv.connect": {true, "fanout"},
-		"pipeline.fanout.links":    {true, []interface{}{"tcp_sink_7222", "tcp_sink_7223"}},
-
-		"foo": {false, nil},
-		"pipeline": {true, map[string]types.Value{
-			"fanout": map[string]types.Value{
-				"links": []interface{}{
-					"tcp_sink_7222",
-					"tcp_sink_7223",
-				},
-			},
-			"udp_rcv": map[string]types.Value{
-				"connect": "fanout",
-			},
-		}},
-		"components.udp_rcv": {true, map[string]types.Value{
-			"module": "receiver.udp",
-			"params": map[string]types.Value{
-				"bind_addr": "localhost:3101",
-			},
-		}},
-		"system.admin": {true, map[string]types.Value{
-			"enabled": true,
-		}},
-	}
-
-	for k, expected := range testsRepo {
-		t.Run(k, func(t *testing.T) {
-			repoV, repoOk := repo.Get(types.NewKey(k))
-			if repoOk != expected.Ok {
-				t.Fatalf("expected %q to be present in repo, got: %t, expected: %t", k, repoOk, expected.Ok)
+			repo := NewRepository()
+			prov, err := NewYamlProviderFromSource(repo, 0, testCase.options, "dummy.dummy")
+			if err != nil {
+				t.Fatalf("Failed to initialize a new yaml provider: %s", err)
 			}
-			if repoOk {
-				if !reflect.DeepEqual(expected.V, repoV) {
-					t.Fatalf("unexpected repo value for %q: got: %#v, want: %#v", k, repoV, expected.V)
+			if err := prov.SetUp(repo); err != nil {
+				t.Fatalf("Failed to set up yaml provider: %s", err)
+			}
+			gotRegs := flattenRepo(repo)
+			for _, k := range testCase.wantRegs {
+				provs, ok := gotRegs[k]
+				if !ok {
+					t.Fatalf("Failed to find a registration for key %q", k)
 				}
+				if !reflect.DeepEqual(provs, []Provider{prov}) {
+					t.Fatalf("Unexpected provider list for key %q: %#v, want: %#v", k, provs, []Provider{prov})
+				}
+				delete(gotRegs, k)
 			}
+			if len(gotRegs) > 0 {
+				extraKeys := make([]string, 0, len(gotRegs))
+				for k := range gotRegs {
+					extraKeys = append(extraKeys, k)
+				}
+				sort.Strings(extraKeys)
+				t.Fatalf("Unexpected registration keys: %s", strings.Join(extraKeys, ", "))
+			}
+
+			readRaw = oldReadRaw
 		})
 	}
 }
