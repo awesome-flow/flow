@@ -61,7 +61,7 @@ func New(name string, params types.Params, context *core.Context) (core.Link, er
 }
 
 func (repl *Replicator) SetUp() error {
-	for _, ch := range repl.GetMsgCh() {
+	for _, ch := range repl.MsgCh() {
 		go repl.replicate(ch)
 	}
 
@@ -69,7 +69,7 @@ func (repl *Replicator) SetUp() error {
 }
 
 func (repl *Replicator) TearDown() error {
-	for _, ch := range repl.GetMsgCh() {
+	for _, ch := range repl.MsgCh() {
 		close(ch)
 	}
 	return nil

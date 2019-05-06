@@ -40,7 +40,7 @@ func New(name string, params types.Params, context *core.Context) (core.Link, er
 	routes := make(map[string]core.Link)
 	r := &Router{name, routingFunc, routes, core.NewConnector(), &sync.RWMutex{}}
 
-	for _, ch := range r.GetMsgCh() {
+	for _, ch := range r.MsgCh() {
 		go func(ch chan *core.Message) {
 			r.dsptchMsgs(ch)
 		}(ch)

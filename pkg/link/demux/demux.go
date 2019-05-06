@@ -40,7 +40,7 @@ func New(name string, _ types.Params, context *core.Context) (core.Link, error) 
 }
 
 func (demux *Demux) SetUp() error {
-	for _, ch := range demux.GetMsgCh() {
+	for _, ch := range demux.MsgCh() {
 		go func(ch chan *core.Message) {
 			for msg := range ch {
 				if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, MsgSendTimeout); sendErr != nil {
@@ -53,7 +53,7 @@ func (demux *Demux) SetUp() error {
 }
 
 func (demux *Demux) TearDown() error {
-	for _, ch := range demux.GetMsgCh() {
+	for _, ch := range demux.MsgCh() {
 		close(ch)
 	}
 	return nil

@@ -28,7 +28,7 @@ func New(name string, params types.Params, context *core.Context) (core.Link, er
 		&sync.Mutex{},
 		core.NewConnector(),
 	}
-	for _, ch := range ft.GetMsgCh() {
+	for _, ch := range ft.MsgCh() {
 		go func(ch chan *core.Message) {
 			ft.fanout(ch)
 		}(ch)

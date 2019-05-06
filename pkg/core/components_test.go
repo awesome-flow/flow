@@ -87,7 +87,7 @@ func (c *C) TearDown() error { return nil }
 
 func (c *C) String() string { return "a C instance" }
 
-func (c *C) GetContext() *Context { return nil }
+func (c *C) Context() *Context { return nil }
 
 func (c *C) DevEnv(context *devenv.Context) ([]devenv.Fragment, error) { return nil, nil }
 
