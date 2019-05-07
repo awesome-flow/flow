@@ -8,6 +8,8 @@ import (
 	"github.com/awesome-flow/flow/pkg/types"
 )
 
+// CfgMapper is the root-level system config encorporating the primary config
+// blocks, as: system, components and pipeline.
 type CfgMapper struct{}
 
 var _ Mapper = (*CfgMapper)(nil)
@@ -25,6 +27,12 @@ func errUnknownKeys(castType string, kv *types.KeyValue, unknown map[string]stru
 	return fmt.Errorf("%s cast failed for key: %q: unknown attributes: [%s]", castType, kv.Key, strings.Join(unknownArr, ", "))
 }
 
+// Map converts map[string]Value to types.Cfg{} structure.
+// Lookup keys are:
+// * components
+// * pipeline
+// * system
+// No extra keys are allowed under this section.
 func (*CfgMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
@@ -62,10 +70,17 @@ func (*CfgMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 
 //============================================================================//
 
+// CfgBlockSystemMapper represents the system config section.
 type CfgBlockSystemMapper struct{}
 
 var _ Mapper = (*CfgBlockSystemMapper)(nil)
 
+// Map converts map[string]Value to types.CfgBlockSystem{} structure.
+// Lookup keys are:
+// * maxprocs
+// * admin
+// * metrics
+// No extra keys are allowed under this section.
 func (*CfgBlockSystemMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
@@ -103,10 +118,16 @@ func (*CfgBlockSystemMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 
 //============================================================================//
 
+// CfgBlockSystemAdminMapper represents a mapper for system.admin config section.
 type CfgBlockSystemAdminMapper struct{}
 
 var _ Mapper = (*CfgBlockSystemAdminMapper)(nil)
 
+// Map converts map[string]Value to types.CfgBlockSystemAdmin{} structure.
+// Lookup keys are:
+// * enabled
+// * bind_addr
+// No extra keys are allowed under this section.
 func (*CfgBlockSystemAdminMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
@@ -140,10 +161,17 @@ func (*CfgBlockSystemAdminMapper) Map(kv *types.KeyValue) (*types.KeyValue, erro
 
 //============================================================================//
 
+// CfgBlockSystemMetricsMapper represents a mapper for system.metrics section.
 type CfgBlockSystemMetricsMapper struct{}
 
 var _ Mapper = (*CfgBlockSystemMetricsMapper)(nil)
 
+// Map converts map[string]Value to types.CfgBlockSystemMetrics{} structure.
+// Lookup keys are:
+// * enabled
+// * interval
+// * receiver
+// No extra keys are allowed in this section.
 func (*CfgBlockSystemMetricsMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
@@ -181,10 +209,17 @@ func (*CfgBlockSystemMetricsMapper) Map(kv *types.KeyValue) (*types.KeyValue, er
 
 //============================================================================//
 
+// CfgBlockSystemMetricsReceiverMapper represents a mapper for
+// system.metrics.receiver section.
 type CfgBlockSystemMetricsReceiverMapper struct{}
 
 var _ Mapper = (*CfgBlockSystemMetricsReceiverMapper)(nil)
 
+// Map convers map[string]Value to types.CfgBlockSystemMetricsReceiver{} structure.
+// Lookup keys are:
+// * type
+// * params
+// No extra keys are allowed in this section.
 func (*CfgBlockSystemMetricsReceiverMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
@@ -218,10 +253,13 @@ func (*CfgBlockSystemMetricsReceiverMapper) Map(kv *types.KeyValue) (*types.KeyV
 
 //============================================================================//
 
+// MapCfgBlockComponentMapper represents a mapper for components config section.
 type MapCfgBlockComponentMapper struct{}
 
 var _ Mapper = (*MapCfgBlockComponentMapper)(nil)
 
+// Map converts map[string]Value to map[string]types.CfgBlockComponent.
+// All keys from the original map will be kept in the resulting structure.
 func (*MapCfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	if vmap, ok := kv.Value.(map[string]types.Value); ok {
 		res := make(map[string]types.CfgBlockComponent)
@@ -235,10 +273,18 @@ func (*MapCfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, err
 
 //============================================================================//
 
+// CfgBlockComponentMapper represents a mapper for components.* config section.
 type CfgBlockComponentMapper struct{}
 
 var _ Mapper = (*CfgBlockComponentMapper)(nil)
 
+// Map converts map[string]Value to types.CfgBlockComponent{}.
+// Lookup keys are:
+// * constructor
+// * module
+// * plugin
+// * params
+// No extra keys are allowed in this section.
 func (*CfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
@@ -280,10 +326,13 @@ func (*CfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error)
 
 //============================================================================//
 
+// MapCfgBlockPipelineMapper represents a mapper for pipeline config section.
 type MapCfgBlockPipelineMapper struct{}
 
 var _ Mapper = (*MapCfgBlockComponentMapper)(nil)
 
+// Map converts map[string]Value to map[string]types.CfgBlockPipeline.
+// All keys from the original map will be kept in the resulting map.
 func (*MapCfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	if vmap, ok := kv.Value.(map[string]types.Value); ok {
 		res := make(map[string]types.CfgBlockPipeline)
@@ -297,10 +346,17 @@ func (*MapCfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, erro
 
 //============================================================================//
 
+// CfgBlockPipelineMapper represents a mapper for pipeline.* config section.
 type CfgBlockPipelineMapper struct{}
 
 var _ Mapper = (*CfgBlockPipelineMapper)(nil)
 
+// Map converts map[string]Value to types.CfgBlockPipeline structure.
+// Lookup keys are:
+// * connect
+// * links
+// * routes
+// No extra keys are allowed in this section.
 func (*CfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
@@ -338,10 +394,12 @@ func (*CfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) 
 
 //============================================================================//
 
+// ArrStrMapper represents a mapper for string arrays.
 type ArrStrMapper struct{}
 
 var _ Mapper = (*ArrStrMapper)(nil)
 
+// Map converts []interface{} to []string.
 func (*ArrStrMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	// []interface{}, not []Value because factual arguments are not being
 	// type casted
@@ -357,10 +415,12 @@ func (*ArrStrMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 
 //============================================================================//
 
+// MapStrToStrMapper represents a mapper for map[string]string maps.
 type MapStrToStrMapper struct{}
 
 var _ Mapper = (*MapStrToStrMapper)(nil)
 
+// Map converts from map[string]types.Value to map[string]string.
 func (*MapStrToStrMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	if mp, ok := kv.Value.(map[string]types.Value); ok {
 		res := make(map[string]string)

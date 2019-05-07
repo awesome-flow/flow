@@ -134,7 +134,8 @@ func (mn *MapperNode) doDefineSchema(key types.Key, schema Schema) error {
 			}
 		}
 	} else {
-		return fmt.Errorf("Unexpected schema definition type for key %q: %#v", key.String(), schema)
+		return fmt.Errorf("Unexpected schema definition type for key %q: %#v",
+			key.String(), schema)
 	}
 	return nil
 }

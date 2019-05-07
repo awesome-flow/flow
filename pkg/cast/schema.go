@@ -1,8 +1,16 @@
 package cast
 
+// Schema is a pretty flexible structure for schema definitions.
+// It might be:
+// * a Mapper
+// * a Converter
+// * a map[string]Schema
 type Schema interface{}
 
 var (
+	// ConfigSchema defines the global flow configuration schema.
+	// The settings defined here are system-wide and system modules reply
+	// upon that.
 	ConfigSchema Schema
 )
 
