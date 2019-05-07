@@ -10,6 +10,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/devenv"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type BufStrategy uint8
@@ -33,7 +34,7 @@ type Buffer struct {
 	context  *core.Context
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	capacity := DefaultBufCapacity
 	if v, ok := params["capacity"]; ok {
 		capacity = v.(int)
@@ -69,7 +70,7 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 func (buf *Buffer) SetUp() error    { return nil }
 func (buf *Buffer) TearDown() error { return nil }
 
-func (buf *Buffer) GetContext() *core.Context {
+func (buf *Buffer) Context() *core.Context {
 	return buf.context
 }
 
@@ -80,26 +81,26 @@ func (buf *Buffer) Recv(msg *core.Message) error {
 }
 
 func (buf *Buffer) Send(msg *core.Message) error {
-	rnd := rand.Intn(len(buf.context.GetMsgCh()))
+	rnd := rand.Intn(len(buf.context.MsgCh()))
 	switch buf.strategy {
 	case BufStrategyDrop:
-		if len(buf.context.GetMsgCh()[rnd]) >= buf.capacity {
+		if len(buf.context.MsgCh()[rnd]) >= buf.capacity {
 			return msg.AckFailed()
 		}
 	case BufStrategySub:
-		for len(buf.context.GetMsgCh()) >= buf.capacity {
-			msg := <-buf.context.GetMsgCh()[rnd]
+		for len(buf.context.MsgCh()) >= buf.capacity {
+			msg := <-buf.context.MsgCh()[rnd]
 			msg.AckFailed()
 		}
 	}
 
-	buf.context.GetMsgCh()[rnd] <- msg
+	buf.context.MsgCh()[rnd] <- msg
 
 	return nil
 }
 
 func (buf *Buffer) ConnectTo(link core.Link) error {
-	for _, ch := range buf.context.GetMsgCh() {
+	for _, ch := range buf.context.MsgCh() {
 		go func(ch chan *core.Message) {
 			for msg := range ch {
 				if msg.Attempts() >= uint32(buf.maxRetry) {

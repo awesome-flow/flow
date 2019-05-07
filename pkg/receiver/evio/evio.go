@@ -12,6 +12,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/tidwall/evio"
 )
 
@@ -45,7 +46,7 @@ type Evio struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 
 	events := &evio.Events{}
 

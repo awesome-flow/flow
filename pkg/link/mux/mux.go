@@ -2,6 +2,7 @@ package link
 
 import (
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type Mux struct {
@@ -9,7 +10,7 @@ type Mux struct {
 	*core.Connector
 }
 
-func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
+func New(name string, _ types.Params, context *core.Context) (core.Link, error) {
 	mux := &Mux{
 		name,
 		core.NewConnectorWithContext(context),

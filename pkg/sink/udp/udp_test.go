@@ -7,6 +7,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/devenv"
+	"github.com/awesome-flow/flow/pkg/types"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
 )
 
@@ -14,7 +15,7 @@ func Test_UDP_DevEnv(t *testing.T) {
 	port := testutil.RandInt(32000)
 	udp, err := New(
 		"udp",
-		core.Params{"bind_addr": fmt.Sprintf(":%d", port)},
+		types.Params{"bind_addr": fmt.Sprintf(":%d", port)},
 		core.NewContext(),
 	)
 	if err != nil {

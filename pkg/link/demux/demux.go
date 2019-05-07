@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +25,7 @@ type Demux struct {
 	*core.Connector
 }
 
-func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
+func New(name string, _ types.Params, context *core.Context) (core.Link, error) {
 	demux := &Demux{
 		name,
 		nil,
@@ -39,7 +40,7 @@ func New(name string, _ core.Params, context *core.Context) (core.Link, error) {
 }
 
 func (demux *Demux) SetUp() error {
-	for _, ch := range demux.GetMsgCh() {
+	for _, ch := range demux.MsgCh() {
 		go func(ch chan *core.Message) {
 			for msg := range ch {
 				if sendErr := Demultiplex(msg, DemuxMaskAll, demux.links, MsgSendTimeout); sendErr != nil {
@@ -52,7 +53,7 @@ func (demux *Demux) SetUp() error {
 }
 
 func (demux *Demux) TearDown() error {
-	for _, ch := range demux.GetMsgCh() {
+	for _, ch := range demux.MsgCh() {
 		close(ch)
 	}
 	return nil

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/devenv"
+	"github.com/awesome-flow/flow/pkg/types"
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
@@ -30,7 +31,7 @@ type UDP struct {
 	*sync.Mutex
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	if _, ok := params["bind_addr"]; !ok {
 		return nil, fmt.Errorf("UDP sink parameters are missing bind_addr")
 	}

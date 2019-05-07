@@ -4,21 +4,22 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/awesome-flow/flow/pkg/types"
 	log "github.com/sirupsen/logrus"
 
 	graphite "github.com/marpaia/graphite-golang"
 )
 
-func RunGraphiteReceiver(params map[string]string, interval int) error {
+func RunGraphiteReceiver(params map[string]types.Value, interval int) error {
 
-	grphHost := params["host"]
-	grphPortStr := params["port"]
+	grphHost := params["host"].(string)
+	grphPortStr := params["port"].(string)
 	grphPort, err := strconv.Atoi(grphPortStr)
 	if err != nil {
 		return err
 	}
 
-	namespace := params["namespace"]
+	namespace := params["namespace"].(string)
 	sendInterval := time.Duration(interval) * time.Second
 
 	grph, err := graphite.NewGraphite(grphHost, grphPort)

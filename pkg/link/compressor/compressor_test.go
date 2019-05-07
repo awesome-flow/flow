@@ -15,6 +15,7 @@ import (
 	"github.com/golang/snappy"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util/core_test"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
 )
@@ -165,7 +166,7 @@ func TestCompressGzip(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			cmp, err := New(
 				"compressor",
-				core.Params{"algo": testcase.coder},
+				types.Params{"algo": testcase.coder},
 				core.NewContext(),
 			)
 			if err != nil {
@@ -194,7 +195,7 @@ func TestCompressGzip(t *testing.T) {
 
 func BenchmarkCompressorGzipBestSpeed(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "gzip", "level": gzip.BestSpeed}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "gzip", "level": gzip.BestSpeed}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -211,7 +212,7 @@ func BenchmarkCompressorGzipBestSpeed(b *testing.B) {
 
 func BenchmarkCompressorGzipBestCompression(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "gzip", "level": gzip.BestCompression}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "gzip", "level": gzip.BestCompression}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -228,7 +229,7 @@ func BenchmarkCompressorGzipBestCompression(b *testing.B) {
 
 func BenchmarkCompressorFlateBestSpeed(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "flate", "level": flate.BestSpeed}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "flate", "level": flate.BestSpeed}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -245,7 +246,7 @@ func BenchmarkCompressorFlateBestSpeed(b *testing.B) {
 
 func BenchmarkCompressorFlateBestCompression(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "flate", "level": flate.BestCompression}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "flate", "level": flate.BestCompression}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -262,7 +263,7 @@ func BenchmarkCompressorFlateBestCompression(b *testing.B) {
 
 func BenchmarkCompressorLZW(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "lzw"}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "lzw"}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -279,7 +280,7 @@ func BenchmarkCompressorLZW(b *testing.B) {
 
 func BenchmarkCompressionZLIBestSpeed(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "zlib", "level": flate.BestSpeed}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "zlib", "level": flate.BestSpeed}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -296,7 +297,7 @@ func BenchmarkCompressionZLIBestSpeed(b *testing.B) {
 
 func BenchmarkCompressionZLIBestCompression(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "zlib", "level": flate.BestCompression}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "zlib", "level": flate.BestCompression}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -313,7 +314,7 @@ func BenchmarkCompressionZLIBestCompression(b *testing.B) {
 
 func BenchmarkCompressionZSTDBestSpeed(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "zstd", "level": 1}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "zstd", "level": 1}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -330,7 +331,7 @@ func BenchmarkCompressionZSTDBestSpeed(b *testing.B) {
 
 func BenchmarkCompressionZSTDBestCompression(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "zstd", "level": 19}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "zstd", "level": 19}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -347,7 +348,7 @@ func BenchmarkCompressionZSTDBestCompression(b *testing.B) {
 
 func BenchmarkCompressionSnappy(b *testing.B) {
 	rcv := core_test.NewCountAndReply("counter", core_test.ReplyDone)
-	cmp, err := New("compressor", core.Params{"algo": "snappy"}, core.NewContext())
+	cmp, err := New("compressor", types.Params{"algo": "snappy"}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type A struct {
@@ -67,7 +68,7 @@ func TestMetaParser_Recv(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 
-			mp, err := New("meta_parser", core.Params{}, core.NewContext())
+			mp, err := New("meta_parser", types.Params{}, core.NewContext())
 			if err != nil {
 				t.Errorf("Failed to instantiate a meta parser: %s", err)
 			}

@@ -10,6 +10,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	evio_rcv "github.com/awesome-flow/flow/pkg/receiver/evio"
+	"github.com/awesome-flow/flow/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,7 +34,7 @@ type UDP struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	udpAddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("UDP receiver parameters are missing bind_addr")

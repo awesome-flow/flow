@@ -8,7 +8,7 @@ func Store(key string, ref interface{}) {
 	registry.Store(key, ref)
 }
 
-func Get(key string) (interface{}, bool) {
+func Load(key string) (interface{}, bool) {
 	v, ok := registry.Load(key)
 	return v, ok
 }

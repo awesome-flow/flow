@@ -13,6 +13,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	eviorcv "github.com/awesome-flow/flow/pkg/receiver/evio"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 const (
@@ -82,7 +83,7 @@ type TCP struct {
 	*core.Connector
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	bindaddr, ok := params["bind_addr"]
 	if !ok {
 		return nil, fmt.Errorf("TCP receiver is missing bind_addr")

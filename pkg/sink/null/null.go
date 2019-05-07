@@ -1,13 +1,16 @@
 package sink
 
-import "github.com/awesome-flow/flow/pkg/core"
+import (
+	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
+)
 
 type Null struct {
 	Name string
 	*core.Connector
 }
 
-func New(name string, _ core.Params, conext *core.Context) (core.Link, error) {
+func New(name string, _ types.Params, conext *core.Context) (core.Link, error) {
 	return &Null{name, core.NewConnectorWithContext(conext)}, nil
 }
 

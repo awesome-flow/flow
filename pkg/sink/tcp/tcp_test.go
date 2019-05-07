@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/awesome-flow/flow/pkg/devenv"
+	"github.com/awesome-flow/flow/pkg/types"
 
 	"github.com/awesome-flow/flow/pkg/core"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
@@ -15,7 +16,7 @@ func Test_TCP_DevEnv(t *testing.T) {
 	port := testutil.RandInt(32000)
 	tcp, err := New(
 		"tcp",
-		core.Params{"bind_addr": fmt.Sprintf(":%d", port)},
+		types.Params{"bind_addr": fmt.Sprintf(":%d", port)},
 		core.NewContext(),
 	)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type Router struct {
@@ -13,10 +14,10 @@ type Router struct {
 	routingFunc core.RoutingFunc
 	routes      map[string]core.Link
 	*core.Connector
-	*sync.Mutex
+	*sync.RWMutex
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	routingKey, ok := params["routing_key"]
 	if !ok {
 		return nil, fmt.Errorf("Router %s parameters are missing routing_key", name)
@@ -37,9 +38,9 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 		return nil, fmt.Errorf("Incompatible routing key type")
 	}
 	routes := make(map[string]core.Link)
-	r := &Router{name, routingFunc, routes, core.NewConnector(), &sync.Mutex{}}
+	r := &Router{name, routingFunc, routes, core.NewConnector(), &sync.RWMutex{}}
 
-	for _, ch := range r.GetMsgCh() {
+	for _, ch := range r.MsgCh() {
 		go func(ch chan *core.Message) {
 			r.dsptchMsgs(ch)
 		}(ch)
@@ -49,8 +50,8 @@ func New(name string, params core.Params, context *core.Context) (core.Link, err
 }
 
 func (r *Router) RouteTo(routes map[string]core.Link) error {
-	r.Lock()
-	defer r.Unlock()
+	r.RLock()
+	defer r.RUnlock()
 	for routeKey, routeDst := range routes {
 		r.routes[routeKey] = routeDst
 	}

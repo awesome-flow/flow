@@ -12,6 +12,7 @@ import (
 	"github.com/golang/snappy"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type CoderFunc func([]byte, int) ([]byte, error)
@@ -93,7 +94,7 @@ var Coders = map[string]CoderFunc{
 	},
 }
 
-func New(name string, params core.Params, ctx *core.Context) (core.Link, error) {
+func New(name string, params types.Params, ctx *core.Context) (core.Link, error) {
 	var coder CoderFunc
 	if algo, ok := params["algo"]; ok {
 		coder, ok = Coders[algo.(string)]

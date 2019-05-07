@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	core_test "github.com/awesome-flow/flow/pkg/util/core_test"
 	testutils "github.com/awesome-flow/flow/pkg/util/test"
 )
@@ -21,7 +22,7 @@ func TestTCP_recv(t *testing.T) {
 	newline := []byte{'\r', '\n'}
 	payload := testutils.RandStringBytes(DefaultMessageSize)
 
-	tcp, err := New("test_tcp", core.Params{"bind_addr": tcpAddr}, core.NewContext())
+	tcp, err := New("test_tcp", types.Params{"bind_addr": tcpAddr}, core.NewContext())
 	if err != nil {
 		t.Fatalf("Failed to initialize a TCP listener: %s", err)
 	}

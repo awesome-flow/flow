@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type TestLink struct {
@@ -37,7 +38,7 @@ func TestReplicator_linksIxsForKey(t *testing.T) {
 		NewTestLink("Link7"),
 	}
 
-	repl, err := New("replicator", core.Params{"replicas": 3}, core.NewContext())
+	repl, err := New("replicator", types.Params{"replicas": 3}, core.NewContext())
 	if err != nil {
 		t.Fatalf("Unexpected error while initializing replicator: %s", err)
 	}

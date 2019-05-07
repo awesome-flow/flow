@@ -14,6 +14,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 	"github.com/awesome-flow/flow/pkg/devenv"
 	"github.com/awesome-flow/flow/pkg/metrics"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 const (
@@ -29,7 +30,7 @@ type TCP struct {
 	*sync.Mutex
 }
 
-func New(name string, params core.Params, context *core.Context) (core.Link, error) {
+func New(name string, params types.Params, context *core.Context) (core.Link, error) {
 	if _, ok := params["bind_addr"]; !ok {
 		return nil, fmt.Errorf("TCP sink parameters are missing bind_addr")
 	}

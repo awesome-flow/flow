@@ -4,91 +4,91 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/awesome-flow/flow/pkg/config"
 	"github.com/awesome-flow/flow/pkg/core"
+	"github.com/awesome-flow/flow/pkg/types"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func TestPipeline_buildComponents(t *testing.T) {
 	tests := []struct {
 		name string
-		cfg  *config.CfgBlockComponent
+		cfg  *types.CfgBlockComponent
 	}{
 		{
 			"TCP receiver",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "receiver.tcp",
-				Params: core.Params{"bind_addr": ":13101"},
+				Params: types.Params{"bind_addr": ":13101"},
 			},
 		},
 		{
 			"UDP receiver",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "receiver.udp",
-				Params: core.Params{"bind_addr": ":13102"},
+				Params: types.Params{"bind_addr": ":13102"},
 			},
 		},
 		{
 			"HTTP receiver",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "receiver.http",
-				Params: core.Params{"bind_addr": ":13103"},
+				Params: types.Params{"bind_addr": ":13103"},
 			},
 		},
 		{
 			"Unix receiver",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "receiver.unix",
-				Params: core.Params{"path": "/tmp/flow.sock.test"},
+				Params: types.Params{"path": "/tmp/flow.sock.test"},
 			},
 		},
 		{
 			"Demux link",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "link.demux",
-				Params: core.Params{},
+				Params: types.Params{},
 			},
 		},
 		{
 			"Mux link",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "link.mux",
-				Params: core.Params{},
+				Params: types.Params{},
 			},
 		},
 		{
 			"Router link",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "link.router",
-				Params: core.Params{"routing_key": "type"},
+				Params: types.Params{"routing_key": "type"},
 			},
 		},
 		{
 			"Throttler link",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "link.throttler",
-				Params: core.Params{"rps": 42},
+				Params: types.Params{"rps": 42},
 			},
 		},
 		{
 			"Dumper sink",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "sink.dumper",
-				Params: core.Params{"out": "/dev/null"},
+				Params: types.Params{"out": "/dev/null"},
 			},
 		},
 		{
 			"TCP sink",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "sink.tcp",
-				Params: core.Params{"bind_addr": ":13101"},
+				Params: types.Params{"bind_addr": ":13101"},
 			},
 		},
 		{
 			"UDP sink",
-			&config.CfgBlockComponent{
+			&types.CfgBlockComponent{
 				Module: "sink.udp",
-				Params: core.Params{"bind_addr": ":13102"},
+				Params: types.Params{"bind_addr": ":13102"},
 			},
 		},
 	}
@@ -105,8 +105,8 @@ func TestPipeline_buildComponents(t *testing.T) {
 	}
 }
 
-func cfgFromYaml(body []byte) (*config.YAMLConfig, error) {
-	cfg := &config.YAMLConfig{}
+func cfgFromYaml(body []byte) (*types.Cfg, error) {
+	cfg := &types.Cfg{}
 	err := yaml.Unmarshal(body, cfg)
 	if err != nil {
 		return nil, err

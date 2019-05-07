@@ -9,13 +9,14 @@ import (
 	"github.com/awesome-flow/flow/pkg/core"
 	replicator "github.com/awesome-flow/flow/pkg/link/replicator"
 	tcp_rcv "github.com/awesome-flow/flow/pkg/receiver/tcp"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 var cntr uint64
 
 func main() {
 	log.Printf("Starting a new TCP listener")
-	tcprcv, err := tcp_rcv.New("tcp_rcv", core.Params{
+	tcprcv, err := tcp_rcv.New("tcp_rcv", types.Params{
 		"bind_addr": ":3101",
 		"mode":      "talkative",
 		"backend":   "std",
@@ -24,7 +25,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to initialize TCP receiver: %s", err))
 	}
 
-	repl, err := replicator.New("replicator", core.Params{"replicas": 3}, core.NewContext())
+	repl, err := replicator.New("replicator", types.Params{"replicas": 3}, core.NewContext())
 	if err != nil {
 		panic(err.Error())
 	}
