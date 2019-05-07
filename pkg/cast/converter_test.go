@@ -23,7 +23,7 @@ type testConverter struct {
 
 var _ Converter = (*testConverter)(nil)
 
-func NewTestConverter(act convAct) *testConverter {
+func newTestConverter(act convAct) *testConverter {
 	return &testConverter{
 		conv: func(kv *types.KeyValue) (*types.KeyValue, bool) {
 			if act.ok {
@@ -417,7 +417,7 @@ func TestCompositeConverter_CompAnd(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			convChain := make([]Converter, 0, len(testCase.chain))
 			for _, act := range testCase.chain {
-				convChain = append(convChain, NewTestConverter(act))
+				convChain = append(convChain, newTestConverter(act))
 			}
 
 			comp := NewCompositeConverter(CompAnd, convChain...)
@@ -504,7 +504,7 @@ func TestCompositeConverterCompOr(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			convChain := make([]Converter, 0, len(testCase.chain))
 			for _, act := range testCase.chain {
-				convChain = append(convChain, NewTestConverter(act))
+				convChain = append(convChain, newTestConverter(act))
 			}
 
 			comp := NewCompositeConverter(CompOr, convChain...)
@@ -591,7 +591,7 @@ func TestCompositeConverterCompFirst(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			convChain := make([]Converter, 0, len(testCase.chain))
 			for _, act := range testCase.chain {
-				convChain = append(convChain, NewTestConverter(act))
+				convChain = append(convChain, newTestConverter(act))
 			}
 
 			comp := NewCompositeConverter(CompFirst, convChain...)
@@ -678,7 +678,7 @@ func TestCompositeConverterCompLast(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			convChain := make([]Converter, 0, len(testCase.chain))
 			for _, act := range testCase.chain {
-				convChain = append(convChain, NewTestConverter(act))
+				convChain = append(convChain, newTestConverter(act))
 			}
 
 			comp := NewCompositeConverter(CompLast, convChain...)

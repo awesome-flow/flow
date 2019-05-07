@@ -256,7 +256,7 @@ func TestDefineSchema(t *testing.T) {
 		},
 		{
 			"A converter",
-			NewTestConverter(convAct{1, true}),
+			newTestConverter(convAct{1, true}),
 			MapperNode{
 				Mpr: nil,
 			},
