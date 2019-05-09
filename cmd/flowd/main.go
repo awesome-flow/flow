@@ -8,11 +8,11 @@ import (
 	"github.com/awesome-flow/flow/pkg/cast"
 	"github.com/awesome-flow/flow/pkg/types"
 
-	"github.com/awesome-flow/flow/pkg/admin"
 	"github.com/awesome-flow/flow/pkg/cfg"
 	"github.com/awesome-flow/flow/pkg/global"
 	"github.com/awesome-flow/flow/pkg/metrics"
 	"github.com/awesome-flow/flow/pkg/pipeline"
+	webapp "github.com/awesome-flow/flow/web/app"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -102,11 +102,11 @@ func main() {
 	}
 	log.Info("✅️ Pipeline is successfully activated")
 
-	var adminmux *admin.HttpMux
+	var adminmux *webapp.HttpMux
 	if syscfg.Admin.Enabled {
 		var err error
 		log.Infof("Starting admin interface on %s", syscfg.Admin.BindAddr)
-		adminmux, err = admin.NewHttpMux(&syscfg)
+		adminmux, err = webapp.NewHttpMux(&syscfg)
 		if err != nil {
 			log.Fatalf("❌ Failed to start admin interface: %s", err)
 		}

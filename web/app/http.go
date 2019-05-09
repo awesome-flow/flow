@@ -1,11 +1,11 @@
-package admin
+package app
 
 import (
 	"fmt"
 	"net/http"
 
-	"github.com/awesome-flow/flow/pkg/admin/agent"
 	"github.com/awesome-flow/flow/pkg/types"
+	"github.com/awesome-flow/flow/web/app/agent"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -1,6 +1,6 @@
 # [WIP] The Flow Framework
 
-![logo](https://github.com/whiteboxio/flow/blob/master/flow.png)
+![logo](https://github.com/whiteboxio/flow/blob/master/assets/flow.png)
 
 [![Build Status](https://travis-ci.com/awesome-flow/flow.svg?branch=master)](https://travis-ci.com/awesome-flow/flow) [![Coverage Status](https://coveralls.io/repos/github/awesome-flow/flow/badge.svg?branch=master)](https://coveralls.io/github/awesome-flow/flow?branch=master)
 
@@ -83,8 +83,9 @@ link A to link B. In this case we say that A has an *outcoming connector*, an B
 has an *incoming connector*.
 
 Links come with the semantics of connectability: some of them can have outcoming
-connectors only: we call them out-links, or *receivers* (this is where the data comes into the pipeline), and some can have
-incoming connectors only: in-links, or *sinks* (where the data leaves the pipeline). A receiver is a link that
+connectors only: we call them out-links, or *receivers* (this is where the data
+comes into the pipeline), and some can have incoming connectors only: in-links,
+or *sinks* (where the data leaves the pipeline). A receiver is a link that
 receives internal messages: a network listener, pub-sub client etc. They ingest
 messages into the pipeline. A sink has the opposite purpose: to send messages
 somewhere else. This is where the lifecycle of the message ends. An example
