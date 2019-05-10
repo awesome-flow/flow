@@ -15,7 +15,7 @@ const GraphVizTemplate = `
 	{{.GraphViz}}
 </textarea>
 <div id="graph-place"></div>
-<script src="http://www.webgraphviz.com/viz.js"></script>
+<script src="/static/js/viz.js"></script>
 <script type='text/javascript'>
 	document.addEventListener("DOMContentLoaded", function(event) {
 		var dotsrc = document.getElementById("graphviz-dot-text")
