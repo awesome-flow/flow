@@ -22,11 +22,11 @@ const (
 )
 
 func errorf(format string, args ...interface{}) {
-	log.Errorf("⚠️ "+format, args...)
+	log.Errorf("⚠️  "+format, args...)
 }
 
 func infof(format string, args ...interface{}) {
-	log.Infof("✅ "+format, args...)
+	log.Infof(format, args...)
 }
 
 func fatalf(format string, args ...interface{}) {
