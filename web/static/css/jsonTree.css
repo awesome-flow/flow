@@ -13,9 +13,9 @@
 
 /* Styles for the container of the tree (e.g. fonts, margins etc.) */
 .jsontree_tree {
-    margin-left: 30px;
+    /*margin-left: 30px;*/
     font-family: 'PT Mono', monospace;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 /* Styles for a list of child nodes */
@@ -84,7 +84,7 @@
     display: block;
     width: 11px;
     height: 11px;
-    background-image: url('icons.svg');
+    background-image: url('/static/img/icons.svg');
 }
 .jsontree_node_expanded > .jsontree_label-wrapper > .jsontree_label > .jsontree_expand-button {
     background-position: 0 -11px;
@@ -104,4 +104,7 @@
 }
 .jsontree_node_empty > .jsontree_label-wrapper > .jsontree_label {
     cursor: default !important;
+}
+.jsontree_node {
+	list-style-type: none;
 }
