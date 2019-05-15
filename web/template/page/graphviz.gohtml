@@ -1,0 +1,15 @@
+{{ define "graphviz" }}
+<textarea style="display:none;" name="graphviz-dot-text" id="graphviz-dot-text">
+	{{.GraphViz}}
+</textarea>
+<div id="graph-place"></div>
+<script src="/static/js/viz.js"></script>
+<script type='text/javascript'>
+	document.addEventListener("DOMContentLoaded", function(event) {
+		var dotsrc = document.getElementById("graphviz-dot-text")
+		var data = Viz(dotsrc.value, "svg")
+		var placeholder = document.getElementById("graph-place")
+		placeholder.innerHTML = data
+	})
+</script>
+{{ end }}
