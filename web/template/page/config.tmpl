@@ -1,0 +1,19 @@
+{{ define "config" }}
+<link rel="stylesheet" href="/static/css/jsonTree.css">
+<div class="row" id="config-holder"></div>
+<script src="/static/js/jsonTree.js"></script>
+<script type="text/javascript">
+	document.addEventListener("DOMContentLoaded", function(event) {
+		var holder = document.getElementById("config-holder")
+		var json = {{ .Config }}
+		var data
+		try {
+			data = JSON.parse(json)
+			var tree = jsonTree.create(data, holder)
+			tree.expand(function(n) { return true })
+		} catch (e) {
+			console.Error(e)
+		}
+	})
+</script>
+{{ end }}

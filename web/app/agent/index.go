@@ -15,9 +15,10 @@ var (
 func init() {
 	var err error
 	tmpl, err = template.ParseFiles(
-		"web/template/page.gohtml",
-		"web/template/page/index.gohtml",
-		"web/template/page/graphviz.gohtml",
+		"web/template/layout.tmpl",
+		"web/template/page/config.tmpl",
+		"web/template/page/index.tmpl",
+		"web/template/page/graphviz.tmpl",
 	)
 	if err != nil {
 		panic(err.Error())
