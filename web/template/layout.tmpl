@@ -1,0 +1,45 @@
+{{ define "layout" -}}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{.Data.Title}}</title>
+        <link rel="stylesheet" href="/static/css/bootstrap-4.3.1.css">
+        <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
+        <meta name="msapplication-TileColor" content="#da532c">
+        <meta name="theme-color" content="#ffffff">
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="/">
+	    	<img src="/static/img/logo.png" width=36 height=36 />
+	    </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pipeline/describe">Describe pipeline</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/config">Active config</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/expvar">Explain vars</a>
+                    </li>
+		    <li class="nav-item">
+			<a class="nav-link" href="/pprof">Pprof</a>
+		    </li>
+                </ul>
+            </div>
+        </nav>
+	<div class="container">
+		{{.Body}}
+	</div>
+        <script src="/static/js/jquery-3.3.1.js"></script>
+        <script src="/static/js/popper-1.14.7.js"></script>
+        <script src="/static/js/bootstrap-4.3.1.js"></script>
+    </body>
+</html>
+{{- end }}

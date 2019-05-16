@@ -8,6 +8,11 @@ import (
 	"github.com/awesome-flow/flow/pkg/global"
 )
 
+type ConfigPage struct {
+	Title  string
+	Config string
+}
+
 func init() {
 	RegisterWebAgent(
 		NewDummyWebAgent(
@@ -20,15 +25,16 @@ func init() {
 					return
 				}
 				cfgdata := repo.(*cfg.Repository).Explain()
-				data, err := json.Marshal(cfgdata)
+				js, err := json.Marshal(cfgdata)
 				if err != nil {
 					rw.WriteHeader(http.StatusInternalServerError)
 					rw.Write([]byte(err.Error()))
 					return
 				}
-				rw.Header().Add("Content-Type", "application/json")
-				rw.WriteHeader(http.StatusOK)
-				rw.Write(data)
+				respondWith(rw, RespHtml, "config", &ConfigPage{
+					Title:  "Flow active config",
+					Config: string(js),
+				})
 			},
 		),
 	)
