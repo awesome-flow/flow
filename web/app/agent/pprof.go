@@ -1,14 +1,22 @@
 package agent
 
 import (
+	"net/http"
 	"net/http/pprof"
 )
+
+type PprofPage struct {
+	Title string
+}
 
 func init() {
 	RegisterWebAgent(
 		NewDummyWebAgent(
 			"/pprof/",
-			pprof.Index,
+			//pprof.Index,
+			func(rw http.ResponseWriter, req *http.Request) {
+				respondWith(rw, RespHtml, "pprof", &PprofPage{Title: "pprof debug info"})
+			},
 		),
 	)
 

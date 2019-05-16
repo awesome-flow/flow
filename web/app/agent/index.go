@@ -19,6 +19,7 @@ func init() {
 		"web/template/page/config.tmpl",
 		"web/template/page/index.tmpl",
 		"web/template/page/graphviz.tmpl",
+		"web/template/page/pprof.tmpl",
 	)
 	if err != nil {
 		panic(err.Error())
