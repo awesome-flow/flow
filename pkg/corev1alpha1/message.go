@@ -52,6 +52,16 @@ func (msg *Message) Await() MsgStatus {
 	return msg.status
 }
 
+func (msg *Message) AwaitChan() <-chan MsgStatus {
+	res := make(chan MsgStatus)
+	go func() {
+		<-msg.done
+		res <- msg.status
+		close(res)
+	}()
+	return res
+}
+
 func (msg *Message) Complete(status MsgStatus) {
 	msg.status = status
 	close(msg.done)

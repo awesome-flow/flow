@@ -175,7 +175,7 @@ func buildComponent(compName string, cfg types.CfgBlockComponent, context *core.
 		return buildPlugin(compName, cfg, context)
 	}
 	if builder, ok := CompBuilders[cfg.Module]; ok {
-		return builder(compName, cfg.Params, context)
+		return builder(compName, types.Params(cfg.Params), context)
 	}
 	return nil, fmt.Errorf("Unknown module: %s requested by %s", cfg.Module, compName)
 }
