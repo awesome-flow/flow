@@ -8,6 +8,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/cast"
 	"github.com/awesome-flow/flow/pkg/cfg"
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	pipeline "github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
 	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util"
 	webapp "github.com/awesome-flow/flow/web/app"
@@ -39,7 +40,7 @@ func main() {
 	logger := context.Logger()
 
 	logger.Info("Initializing the pipeline")
-	pipeline, err := core.NewPipeline(context)
+	pipeline, err := pipeline.NewPipeline(context)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init pipeline: %s", err))
 	}

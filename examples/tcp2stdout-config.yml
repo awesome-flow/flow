@@ -1,20 +1,16 @@
 system:
-  max_proc: 4
+  maxprocs: 4
 
 components:
   tcp_rcv:
-    module: receiver.tcp
+    module: core.receiver.tcp
     params:
-      bind_addr: :3110
-  meta_parser:
-    module: link.meta_parser
+      bind: :3110
   stdout:
-    module: sink.dumper
+    module: core.sink.dumper
     params:
       out: STDOUT
 
 pipeline:
   tcp_rcv:
-    connect: meta_parser
-  meta_parser:
     connect: stdout
