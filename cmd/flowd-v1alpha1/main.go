@@ -1,0 +1,92 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/signal"
+
+	"github.com/awesome-flow/flow/pkg/cast"
+	"github.com/awesome-flow/flow/pkg/cfg"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	"github.com/awesome-flow/flow/pkg/types"
+	"github.com/awesome-flow/flow/pkg/util"
+	webapp "github.com/awesome-flow/flow/web/app"
+)
+
+func main() {
+	repo := cfg.NewRepository()
+	repo.DefineSchema(cast.ConfigSchema)
+
+	if err := util.ExecEnsure(
+		func() error { _, err := cfg.NewDefaultProvider(repo, 0); return err },
+		func() error { _, err := cfg.NewEnvProvider(repo, 10); return err },
+		func() error { _, err := cfg.NewYamlProvider(repo, 20); return err },
+		func() error { _, err := cfg.NewCliProvider(repo, 30); return err },
+	); err != nil {
+		panic(fmt.Sprintf("config init failed: %s", err.Error()))
+	}
+
+	config := core.NewConfig(repo)
+	context, err := core.NewContext(config)
+	if err != nil {
+		panic(fmt.Sprintf("failed to init context: %s", err))
+	}
+
+	if err := context.Start(); err != nil {
+		panic(fmt.Sprintf("failed to start context: %s", err))
+	}
+
+	logger := context.Logger()
+
+	logger.Info("Initializing the pipeline")
+	pipeline, err := core.NewPipeline(context)
+	if err != nil {
+		panic(fmt.Sprintf("failed to init pipeline: %s", err))
+	}
+	logger.Info("The pipeline is initialized")
+
+	logger.Info("Starting the pipeline")
+	if err := pipeline.Start(); err != nil {
+		panic(fmt.Sprintf("failed to start pipeline: %s", err))
+	}
+	logger.Info("The pipeline is active")
+
+	syscfgval, ok := repo.Get(types.NewKey("system"))
+	if !ok {
+		panic("failed to get system config")
+	}
+	syscfg := syscfgval.(types.CfgBlockSystem)
+	var adminmux *webapp.HttpMux
+	if syscfg.Admin.Enabled {
+		var err error
+		logger.Info("Starting admin interface on %s", syscfg.Admin.BindAddr)
+		adminmux, err = webapp.NewHttpMux(&syscfg)
+		if err != nil {
+			logger.Fatal("failed to start admin interface: %s", err)
+		}
+	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+
+	logger.Info("Terminating")
+
+	if adminmux != nil {
+		logger.Info("Stopping admin interface")
+		if err := adminmux.Stop(); err != nil {
+			logger.Error("Error while stopping admin interface: %s", err.Error())
+		} else {
+			logger.Info("Admin interface is successfully terminated")
+		}
+	}
+
+	if err := util.ExecEnsure(
+		pipeline.Stop,
+		context.Stop,
+	); err != nil {
+		panic(fmt.Sprintf("failed to terminate: %s", err))
+	}
+
+	os.Exit(0)
+}

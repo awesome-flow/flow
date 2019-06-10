@@ -7,6 +7,31 @@ import (
 	"github.com/awesome-flow/flow/pkg/util/data"
 )
 
+var builders map[string]Constructor
+
+func init() {
+	builders = map[string]Constructor{
+		"core.receiver.tcp":  nil,
+		"core.receiver.udp":  nil,
+		"core.receiver.http": nil,
+		"core.receiver.unix": nil,
+
+		"core.demux":      nil,
+		"core.mux":        nil,
+		"core.router":     nil,
+		"core.throttler":  nil,
+		"core.fanout":     nil,
+		"core.replicator": nil,
+		"core.buffer":     nil,
+		"core.compressor": nil,
+
+		"core.sink.dumper": nil,
+		"core.sink.tcp":    nil,
+		"core.sink.udp":    nil,
+		"core.sink.null":   nil,
+	}
+}
+
 type Pipeline struct {
 	ctx      *Context
 	actors   map[string]Actor
@@ -43,13 +68,17 @@ func (p *Pipeline) Stop() error {
 	return nil
 }
 
+func (p *Pipeline) Context() *Context {
+	return p.ctx
+}
+
 func buildActors(ctx *Context) (map[string]Actor, error) {
-	comps, ok := ctx.config.Repo().Get(types.NewKey("components"))
+	comps, ok := ctx.config.Get(types.NewKey("components"))
 	if !ok {
 		return nil, fmt.Errorf("Components config is missing")
 	}
-	for name, actorcfg := range comps.(map[string]*types.CfgBlockComponent) {
-		//TODO
+	for name, actorcfg := range comps.(map[string]types.CfgBlockComponent) {
+		ctx.Logger().Info("actor: %s, config: %+v", name, actorcfg)
 	}
 
 	return make(map[string]Actor), nil
