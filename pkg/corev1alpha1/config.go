@@ -3,15 +3,19 @@ package corev1alpha1
 import "github.com/awesome-flow/flow/pkg/cfg"
 
 type Config struct {
-	repo *cfg.Repository
+	*cfg.Repository
 }
+
+var _ Runner = (*Config)(nil)
 
 func NewConfig(repo *cfg.Repository) *Config {
-	return &Config{
-		repo: repo,
-	}
+	return &Config{repo}
 }
 
-func (config *Config) Repo() *cfg.Repository {
-	return config.repo
+func (config *Config) Start() error {
+	return config.SetUp()
+}
+
+func (config *Config) Stop() error {
+	return config.TearDown()
 }

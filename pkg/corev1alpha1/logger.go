@@ -84,26 +84,27 @@ func (logger *Logger) Format(log *Log) string {
 	)
 }
 
-func (logger *Logger) Debug(payload string) {
-	logger.logs <- NewLog(LogSevDebug, payload)
+func (logger *Logger) Debug(format string, a ...interface{}) {
+	logger.logs <- NewLog(LogSevDebug, fmt.Sprintf(format, a...))
 }
 
-func (logger *Logger) Trace(payload string) {
-	logger.logs <- NewLog(LogSevTrace, payload)
+func (logger *Logger) Trace(format string, a ...interface{}) {
+	logger.logs <- NewLog(LogSevTrace, fmt.Sprintf(format, a...))
 }
 
-func (logger *Logger) Info(payload string) {
-	logger.logs <- NewLog(LogSevInfo, payload)
+func (logger *Logger) Info(format string, a ...interface{}) {
+	logger.logs <- NewLog(LogSevInfo, fmt.Sprintf(format, a...))
 }
 
-func (logger *Logger) Warn(payload string) {
-	logger.logs <- NewLog(LogSevWarn, payload)
+func (logger *Logger) Warn(format string, a ...interface{}) {
+	logger.logs <- NewLog(LogSevWarn, fmt.Sprintf(format, a...))
 }
 
-func (logger *Logger) Error(payload string) {
-	logger.logs <- NewLog(LogSevError, payload)
+func (logger *Logger) Error(format string, a ...interface{}) {
+	logger.logs <- NewLog(LogSevError, fmt.Sprintf(format, a...))
 }
 
-func (logger *Logger) Fatal(payload string) {
-	logger.logs <- NewLog(LogSevFatal, payload)
+func (logger *Logger) Fatal(format string, a ...interface{}) {
+	logger.logs <- NewLog(LogSevFatal, fmt.Sprintf(format, a...))
+	panic("terminated")
 }
