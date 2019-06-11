@@ -111,7 +111,7 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	scanner := bufio.NewScanner(reader)
 
-	conn.SetReadDeadline(time.Now().Add(ConnReadTimeout))
+	//conn.SetReadDeadline(time.Now().Add(ConnReadTimeout))
 	for scanner.Scan() {
 		msg := core.NewMessage(scanner.Bytes())
 		r.queue <- msg
