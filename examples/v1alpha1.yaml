@@ -3,15 +3,21 @@ actors:
     module: core.receiver.http
     params:
       bind: :3110
-  router:
-    module: core.router
-  dumper:
+  demux:
+    module: core.demux
+  dumper-a:
     module: core.sink.dumper
     params:
-      out: STDOUT
+      out: a.out
+  dumper-b:
+    module: core.sink.dumper
+    params:
+      out: b.out
 
 pipeline:
   tcp_listener:
-    connect: router
-  router:
-    connect: dumper
+    connect: demux
+  demux:
+    connect:
+      - dumper-a
+      - dumper-b

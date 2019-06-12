@@ -105,47 +105,18 @@ func NewPipeline(
 			return nil, fmt.Errorf(
 				"Pipeline component %q mentioned in the pipeline config but never defined in components section", compName)
 		}
-		if compCfg.Connect != "" {
-			log.Infof("Connecting %s to %s", compName, compCfg.Connect)
-			if _, ok := components[compCfg.Connect]; !ok {
-				return nil, fmt.Errorf(
-					"Failed to connect %s to %s: %s is undefined",
-					compName, compCfg.Connect, compCfg.Connect)
-			}
-			if err := comp.ConnectTo(components[compCfg.Connect]); err != nil {
-				return nil, fmt.Errorf("Failed to connect %s to %s: %s",
-					compName, compCfg.Connect, err.Error())
-			}
-		}
-		if len(compCfg.Links) > 0 {
-			log.Infof("Linking %s with %s", compName, compCfg.Links)
-			links := make([]core.Link, len(compCfg.Links))
-			for ix, linkName := range compCfg.Links {
-				if _, ok := components[linkName]; !ok {
+		if len(compCfg.Connect) != 0 {
+			for _, connect := range compCfg.Connect {
+				log.Infof("Connecting %s to %s", compName, connect)
+				if _, ok := components[connect]; !ok {
 					return nil, fmt.Errorf(
-						"Failed to link %s to %s: %s is undefined",
-						compName, linkName, linkName)
+						"Failed to connect %s to %s: %s is undefined",
+						compName, compCfg.Connect, connect)
 				}
-				links[ix] = components[linkName]
-			}
-			if err := comp.LinkTo(links); err != nil {
-				return nil, fmt.Errorf(
-					"Failed to link %s: %s", compName, err.Error())
-			}
-		}
-		if len(compCfg.Routes) > 0 {
-			routes := make(map[string]core.Link)
-			for rtPath, rtName := range compCfg.Routes {
-				if _, ok := components[rtName]; !ok {
-					return nil, fmt.Errorf(
-						"Failed to route %s to %s under path %s: %s is undefined",
-						compName, rtName, rtPath, rtName)
+				if err := comp.ConnectTo(components[connect]); err != nil {
+					return nil, fmt.Errorf("Failed to connect %s to %s: %s",
+						compName, connect, err.Error())
 				}
-				routes[rtPath] = components[rtName]
-			}
-			if err := comp.RouteTo(routes); err != nil {
-				return nil, fmt.Errorf("Failed to route %s: %s",
-					compName, err.Error())
 			}
 		}
 	}
@@ -310,46 +281,16 @@ func buildPipelineTopology(cfg map[string]types.CfgBlockPipeline,
 
 	for name, blockcfg := range cfg {
 		hasConnection := blockHasConnection(blockcfg)
-		hasLinks := blockHasLinks(blockcfg)
-		hasRoutes := blockHasRoutes(blockcfg)
 		if hasConnection {
-			connectTo, ok := components[blockcfg.Connect]
-			if !ok {
-				return nil, fmt.Errorf(
-					"Component %q defined a connection to an unknown component %q",
-					name,
-					blockcfg.Connect)
-			}
-			top.Connect(components[name], connectTo)
-		}
-		if hasLinks {
-			for _, linkName := range blockcfg.Links {
-				linkTo, ok := components[linkName]
+			for _, connect := range blockcfg.Connect {
+				connectTo, ok := components[connect]
 				if !ok {
 					return nil, fmt.Errorf(
-						"Component %q defined a link to an unknown component %q",
+						"Component %q defined a connection to an unknown component %q",
 						name,
-						linkName)
+						connect)
 				}
-				if hasConnection {
-					// Link is incoming is connectTo is defined
-					top.Connect(linkTo, components[name])
-				} else {
-					// Link is outcoming otherwise
-					top.Connect(components[name], linkTo)
-				}
-			}
-		}
-		if hasRoutes {
-			for _, routeName := range blockcfg.Routes {
-				routeTo, ok := components[routeName]
-				if !ok {
-					return nil, fmt.Errorf(
-						"Component %q defined a route to an unknown component %q",
-						name,
-						routeName)
-				}
-				top.Connect(components[name], routeTo)
+				top.Connect(components[name], connectTo)
 			}
 		}
 	}
@@ -359,12 +300,4 @@ func buildPipelineTopology(cfg map[string]types.CfgBlockPipeline,
 
 func blockHasConnection(blockcfg types.CfgBlockPipeline) bool {
 	return len(blockcfg.Connect) > 0
-}
-
-func blockHasLinks(blockcfg types.CfgBlockPipeline) bool {
-	return len(blockcfg.Links) > 0
-}
-
-func blockHasRoutes(blockcfg types.CfgBlockPipeline) bool {
-	return len(blockcfg.Routes) > 0
 }

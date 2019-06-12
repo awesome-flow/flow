@@ -16,7 +16,7 @@ var builders map[string]core.Constructor = map[string]core.Constructor{
 	"core.receiver.http": actor.NewReceiverHTTP,
 	"core.receiver.unix": nil,
 
-	"core.demux":      nil,
+	"core.demux":      actor.NewDemux,
 	"core.mux":        nil,
 	"core.router":     actor.NewRouter,
 	"core.throttler":  nil,
@@ -152,16 +152,18 @@ func buildTopology(ctx *core.Context, actors map[string]core.Actor) (*data.Topol
 		if !ok {
 			return nil, fmt.Errorf("unknown actor in the pipeline config: %s", name)
 		}
-		if cfg.Connect != "" {
-			peer, ok := actors[cfg.Connect]
-			if !ok {
-				return nil, fmt.Errorf("unknown peer in the pipeline config: %s", cfg.Connect)
-			}
-			if err := actor.Connect(nthreads.(int), peer); err != nil {
-				return nil, err
-			}
-			if err := topology.Connect(actor, peer); err != nil {
-				return nil, err
+		if len(cfg.Connect) != 0 {
+			for _, connect := range cfg.Connect {
+				peer, ok := actors[connect]
+				if !ok {
+					return nil, fmt.Errorf("unknown peer in the pipeline config: %s", cfg.Connect)
+				}
+				if err := actor.Connect(nthreads.(int), peer); err != nil {
+					return nil, err
+				}
+				if err := topology.Connect(actor, peer); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}

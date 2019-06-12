@@ -38,7 +38,7 @@ type ReceiverHTTP struct {
 	httpsrv *http.Server
 }
 
-var _ core.Runner = (*ReceiverHTTP)(nil)
+var _ core.Actor = (*ReceiverHTTP)(nil)
 
 func NewReceiverHTTP(name string, ctx *core.Context, params core.Params) (core.Actor, error) {
 	bind, ok := params["bind"]

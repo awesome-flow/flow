@@ -19,9 +19,7 @@ func TestCfgMapper(t *testing.T) {
 	}
 	ppl := map[string]types.CfgBlockPipeline{
 		"moo": types.CfgBlockPipeline{
-			Connect: "connect",
-			Links:   []string{"l1", "l2", "l3"},
-			Routes:  map[string]string{"r1": "l1", "r2": "l2", "r3": "l3"},
+			Connect: []string{"connect"},
 		},
 	}
 	sys := types.CfgBlockSystem{
@@ -570,14 +568,10 @@ func TestCfgBlockActorMapper(t *testing.T) {
 
 func TestMapCfgBlockPipeline(t *testing.T) {
 	ppl1 := types.CfgBlockPipeline{
-		Connect: "connect1",
-		Links:   []string{"l11", "l12", "l13"},
-		Routes:  map[string]string{"r11": "l11", "r12": "l12", "r13": "l13"},
+		Connect: []string{"connect1"},
 	}
 	ppl2 := types.CfgBlockPipeline{
-		Connect: "connect2",
-		Links:   []string{"l21", "l22", "l23"},
-		Routes:  map[string]string{"r21": "l21", "r22": "l22", "r23": "l23"},
+		Connect: []string{"connect2"},
 	}
 
 	tests := []struct {
@@ -629,9 +623,6 @@ func TestMapCfgBlockPipeline(t *testing.T) {
 }
 
 func TestCfgBlockPipelineMapper(t *testing.T) {
-	links := []string{"l1", "l2", "l3"}
-	routes := map[string]string{"r1": "l1", "r2": "l2", "r3": "l3"}
-
 	tests := []struct {
 		name    string
 		inputKV *types.KeyValue
@@ -656,27 +647,7 @@ func TestCfgBlockPipelineMapper(t *testing.T) {
 				"connect": "connect",
 			}},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockPipeline{
-				Connect: "connect",
-			}},
-			nil,
-		},
-		{
-			"Links defined",
-			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
-				"links": links,
-			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockPipeline{
-				Links: links,
-			}},
-			nil,
-		},
-		{
-			"Routes defined",
-			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
-				"routes": routes,
-			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockPipeline{
-				Routes: routes,
+				Connect: []string{"connect"},
 			}},
 			nil,
 		},
