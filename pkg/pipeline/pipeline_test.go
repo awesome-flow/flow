@@ -12,81 +12,81 @@ import (
 func TestPipeline_buildComponents(t *testing.T) {
 	tests := []struct {
 		name string
-		cfg  *types.CfgBlockComponent
+		cfg  *types.CfgBlockActor
 	}{
 		{
 			"TCP receiver",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "receiver.tcp",
 				Params: types.Params{"bind_addr": ":13101"},
 			},
 		},
 		{
 			"UDP receiver",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "receiver.udp",
 				Params: types.Params{"bind_addr": ":13102"},
 			},
 		},
 		{
 			"HTTP receiver",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "receiver.http",
 				Params: types.Params{"bind_addr": ":13103"},
 			},
 		},
 		{
 			"Unix receiver",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "receiver.unix",
 				Params: types.Params{"path": "/tmp/flow.sock.test"},
 			},
 		},
 		{
 			"Demux link",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "link.demux",
 				Params: types.Params{},
 			},
 		},
 		{
 			"Mux link",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "link.mux",
 				Params: types.Params{},
 			},
 		},
 		{
 			"Router link",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "link.router",
 				Params: types.Params{"routing_key": "type"},
 			},
 		},
 		{
 			"Throttler link",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "link.throttler",
 				Params: types.Params{"rps": 42},
 			},
 		},
 		{
 			"Dumper sink",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "sink.dumper",
 				Params: types.Params{"out": "/dev/null"},
 			},
 		},
 		{
 			"TCP sink",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "sink.tcp",
 				Params: types.Params{"bind_addr": ":13101"},
 			},
 		},
 		{
 			"UDP sink",
-			&types.CfgBlockComponent{
+			&types.CfgBlockActor{
 				Module: "sink.udp",
 				Params: types.Params{"bind_addr": ":13102"},
 			},

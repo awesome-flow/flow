@@ -3,9 +3,9 @@ package types
 // Cfg is the global config structure, aggregates all other kinds of
 // config blocks.
 type Cfg struct {
-	Components map[string]CfgBlockComponent
-	Pipeline   map[string]CfgBlockPipeline
-	System     CfgBlockSystem
+	Actors   map[string]CfgBlockActor
+	Pipeline map[string]CfgBlockPipeline
+	System   CfgBlockSystem
 }
 
 // CfgBlockSystem represents the system part of the config: the block
@@ -38,10 +38,10 @@ type CfgBlockSystemMetricsReceiver struct {
 	Type   string
 }
 
-// CfgBlockComponent represents a singular component config: it's module name,
+// CfgBlockActor represents a singular component config: it's module name,
 // parameter list and (if applicable) plugin name and the corresponding
 // constructor.
-type CfgBlockComponent struct {
+type CfgBlockActor struct {
 	Constructor string
 	Module      string
 	Params      map[string]Value

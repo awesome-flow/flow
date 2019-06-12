@@ -139,7 +139,7 @@ func (yp *YamlProvider) TearDown(repo *Repository) error {
 func (yp *YamlProvider) Get(key types.Key) (*types.KeyValue, bool) {
 	<-yp.ready
 	if v, ok := yp.registry[key.String()]; ok {
-		return &types.KeyValue{key, v}, ok
+		return &types.KeyValue{Key: key, Value: v}, ok
 	}
 	return nil, false
 }

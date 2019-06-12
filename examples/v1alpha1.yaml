@@ -1,0 +1,17 @@
+actors:
+  tcp_listener:
+    module: core.receiver.http
+    params:
+      bind: :3110
+  router:
+    module: core.router
+  dumper:
+    module: core.sink.dumper
+    params:
+      out: STDOUT
+
+pipeline:
+  tcp_listener:
+    connect: router
+  router:
+    connect: dumper

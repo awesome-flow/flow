@@ -43,6 +43,7 @@ func NewMessage(body []byte) *Message {
 	return &Message{
 		body:   body,
 		done:   make(chan struct{}),
+		meta:   make(map[interface{}]interface{}),
 		status: MsgStatusNew,
 	}
 }

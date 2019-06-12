@@ -64,7 +64,7 @@ var benchmarkLinkCmd = &cobra.Command{
 			}
 		}
 
-		benchlink := types.CfgBlockComponent{
+		benchlink := types.CfgBlockActor{
 			Params: params,
 		}
 
@@ -77,7 +77,7 @@ var benchmarkLinkCmd = &cobra.Command{
 		benchlink.Params = params
 
 		ppl, err := pipeline.NewPipeline(
-			map[string]types.CfgBlockComponent{
+			map[string]types.CfgBlockActor{
 				"tcp_rcv": {
 					Module:      "receiver.tcp",
 					Constructor: "New",

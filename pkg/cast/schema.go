@@ -39,10 +39,10 @@ func init() {
 				},
 			},
 		},
-		"components": map[string]Schema{
-			"__self__": &MapCfgBlockComponentMapper{},
+		"actors": map[string]Schema{
+			"__self__": &MapCfgBlockActorMapper{},
 			"*": map[string]Schema{
-				"__self__":    &CfgBlockComponentMapper{},
+				"__self__":    &CfgBlockActorMapper{},
 				"constructor": ToStr,
 				"module":      ToStr,
 				"plugin":      ToStr,

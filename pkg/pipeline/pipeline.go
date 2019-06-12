@@ -41,7 +41,7 @@ import (
 
 type Pipeline struct {
 	pplCfg   map[string]types.CfgBlockPipeline
-	compsCfg map[string]types.CfgBlockComponent
+	compsCfg map[string]types.CfgBlockActor
 	compTop  *data.Topology
 }
 
@@ -72,7 +72,7 @@ var (
 	}
 )
 
-func buildComponents(cfg map[string]types.CfgBlockComponent) (map[string]core.Link, error) {
+func buildComponents(cfg map[string]types.CfgBlockActor) (map[string]core.Link, error) {
 	components := make(map[string]core.Link)
 	for name, params := range cfg {
 		ctx := core.NewContext()
@@ -91,7 +91,7 @@ func buildComponents(cfg map[string]types.CfgBlockComponent) (map[string]core.Li
 }
 
 func NewPipeline(
-	compsCfg map[string]types.CfgBlockComponent,
+	compsCfg map[string]types.CfgBlockActor,
 	pplCfg map[string]types.CfgBlockPipeline) (*Pipeline, error) {
 
 	components, err := buildComponents(compsCfg)
@@ -166,11 +166,11 @@ func NewPipeline(
 	return pipeline, nil
 }
 
-func componentIsPlugin(cfg types.CfgBlockComponent) bool {
+func componentIsPlugin(cfg types.CfgBlockActor) bool {
 	return len(cfg.Plugin) > 0
 }
 
-func buildComponent(compName string, cfg types.CfgBlockComponent, context *core.Context) (core.Link, error) {
+func buildComponent(compName string, cfg types.CfgBlockActor, context *core.Context) (core.Link, error) {
 	if componentIsPlugin(cfg) {
 		return buildPlugin(compName, cfg, context)
 	}
@@ -181,7 +181,7 @@ func buildComponent(compName string, cfg types.CfgBlockComponent, context *core.
 }
 
 // TODO: refactoring
-func buildPlugin(name string, compcfg types.CfgBlockComponent, context *core.Context) (core.Link, error) {
+func buildPlugin(name string, compcfg types.CfgBlockActor, context *core.Context) (core.Link, error) {
 	if compcfg.Plugin == "" {
 		return nil, fmt.Errorf("%q config does not look like a plugin", name)
 	}

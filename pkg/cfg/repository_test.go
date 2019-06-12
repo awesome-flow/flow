@@ -365,7 +365,7 @@ func (acm *admincfgmapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 		if enabled, ok := vmap["enabled"]; ok {
 			res.enabled = enabled.(bool)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("Conversion to admincfg failed for key: %q value: %#v", kv.Key.String(), kv.Value)
 }
@@ -384,10 +384,10 @@ func (scm *systemcfgmapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 				return nil, fmt.Errorf("Wrong format for admincfg value: %#v", ac)
 			}
 		}
-		if maxproc, ok := vmap["maxproc"]; ok {
+		if maxproc, ok := vmap["maxprocs"]; ok {
 			res.maxproc = maxproc.(int)
 		}
-		return &types.KeyValue{kv.Key, res}, nil
+		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
 	return nil, fmt.Errorf("Conversion to systemcfg failed for key: %q value: %#v", kv.Key.String(), kv.Value)
 }

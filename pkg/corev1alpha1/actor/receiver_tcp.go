@@ -58,7 +58,7 @@ func NewReceiverTCP(name string, ctx *core.Context, params core.Params) (core.Ac
 
 	bind, ok := params["bind"]
 	if !ok {
-		return nil, fmt.Errorf("tcp receiver is missing 'bind' config")
+		return nil, fmt.Errorf("tcp receiver is missing `bind` config")
 	}
 	r.bind = bind.(string)
 
