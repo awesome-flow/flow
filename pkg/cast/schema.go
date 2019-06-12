@@ -56,12 +56,7 @@ func init() {
 			"__self__": &MapCfgBlockPipelineMapper{},
 			"*": map[string]Schema{
 				"__self__": &CfgBlockPipelineMapper{},
-				"connect":  ToStr,
-				"links":    &ArrStrMapper{},
-				"routes": map[string]Schema{
-					"__self__": &MapStrToStrMapper{},
-					"*":        ToStr,
-				},
+				"connect":  &ArrStrMapper{},
 			},
 		},
 

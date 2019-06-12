@@ -51,15 +51,11 @@ type CfgBlockActor struct {
 // CfgBlockPipeline represents a singular pipeline config: one of 3: connection,
 // a link set or a routing map.
 type CfgBlockPipeline struct {
-	Connect string
-	Links   []string
-	Routes  map[string]string
+	Connect []string
 }
 
 // IsDisconnected is a helper method indicating a pipeline block has no
 // outgoing connections: 0 connections, 0 links and no routes.
 func (cbp CfgBlockPipeline) IsDisconnected() bool {
-	return len(cbp.Links) == 0 &&
-		len(cbp.Connect) == 0 &&
-		len(cbp.Routes) == 0
+	return len(cbp.Connect) == 0
 }

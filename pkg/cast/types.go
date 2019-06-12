@@ -364,7 +364,7 @@ func (*CfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) 
 		}
 		if connect, ok := vmap["connect"]; ok {
 			delete(keys, "connect")
-			res.Connect = connect.(string)
+			res.Connect = connect.([]string)
 		}
 		if len(keys) > 0 {
 			err = errUnknownKeys("CfgBlockPipeline", kv, keys)
@@ -391,6 +391,9 @@ var _ Mapper = (*ArrStrMapper)(nil)
 func (*ArrStrMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	// []interface{}, not []Value because factual arguments are not being
 	// type casted
+	if sv, ok := kv.Value.(string); ok {
+		return &types.KeyValue{Key: kv.Key, Value: []string{sv}}, nil
+	}
 	if arr, ok := kv.Value.([]interface{}); ok {
 		res := make([]string, 0, len(arr))
 		for _, v := range arr {

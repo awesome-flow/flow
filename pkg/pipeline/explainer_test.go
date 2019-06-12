@@ -87,7 +87,7 @@ pipeline:
 			}
 
 			pipeline := &Pipeline{
-				compsCfg: cfg.Components,
+				compsCfg: cfg.Actors,
 				pplCfg:   cfg.Pipeline,
 			}
 
