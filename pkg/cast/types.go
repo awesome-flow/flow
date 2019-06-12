@@ -42,9 +42,9 @@ func (*CfgMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 		for k := range vmap {
 			keys[k] = struct{}{}
 		}
-		if components, ok := vmap["components"]; ok {
-			delete(keys, "components")
-			res.Components = components.(map[string]types.CfgBlockComponent)
+		if components, ok := vmap["actors"]; ok {
+			delete(keys, "actors")
+			res.Actors = components.(map[string]types.CfgBlockActor)
 		}
 		if pipeline, ok := vmap["pipeline"]; ok {
 			delete(keys, "pipeline")
@@ -253,43 +253,43 @@ func (*CfgBlockSystemMetricsReceiverMapper) Map(kv *types.KeyValue) (*types.KeyV
 
 //============================================================================//
 
-// MapCfgBlockComponentMapper represents a mapper for components config section.
-type MapCfgBlockComponentMapper struct{}
+// MapCfgBlockActorMapper represents a mapper for components config section.
+type MapCfgBlockActorMapper struct{}
 
-var _ Mapper = (*MapCfgBlockComponentMapper)(nil)
+var _ Mapper = (*MapCfgBlockActorMapper)(nil)
 
-// Map converts map[string]Value to map[string]types.CfgBlockComponent.
+// Map converts map[string]Value to map[string]types.CfgBlockActor.
 // All keys from the original map will be kept in the resulting structure.
-func (*MapCfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
+func (*MapCfgBlockActorMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	if vmap, ok := kv.Value.(map[string]types.Value); ok {
-		res := make(map[string]types.CfgBlockComponent)
+		res := make(map[string]types.CfgBlockActor)
 		for k, v := range vmap {
-			res[k] = v.(types.CfgBlockComponent)
+			res[k] = v.(types.CfgBlockActor)
 		}
 		return &types.KeyValue{Key: kv.Key, Value: res}, nil
 	}
-	return nil, errUnknownValType("map[string]CfgBlockComponent", kv)
+	return nil, errUnknownValType("map[string]CfgBlockActor", kv)
 }
 
 //============================================================================//
 
-// CfgBlockComponentMapper represents a mapper for components.* config section.
-type CfgBlockComponentMapper struct{}
+// CfgBlockActorMapper represents a mapper for components.* config section.
+type CfgBlockActorMapper struct{}
 
-var _ Mapper = (*CfgBlockComponentMapper)(nil)
+var _ Mapper = (*CfgBlockActorMapper)(nil)
 
-// Map converts map[string]Value to types.CfgBlockComponent{}.
+// Map converts map[string]Value to types.CfgBlockActor{}.
 // Lookup keys are:
 // * constructor
 // * module
 // * plugin
 // * params
 // No extra keys are allowed in this section.
-func (*CfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
+func (*CfgBlockActorMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	var resKV *types.KeyValue
 	var err error
 	if vmap, ok := kv.Value.(map[string]types.Value); ok {
-		res := types.CfgBlockComponent{}
+		res := types.CfgBlockActor{}
 		keys := make(map[string]struct{})
 		for k := range vmap {
 			keys[k] = struct{}{}
@@ -302,21 +302,17 @@ func (*CfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error)
 			delete(keys, "module")
 			res.Module = module.(string)
 		}
-		if plugin, ok := vmap["plugin"]; ok {
-			delete(keys, "plugin")
-			res.Plugin = plugin.(string)
-		}
 		if params, ok := vmap["params"]; ok {
 			delete(keys, "params")
 			res.Params = params.(map[string]types.Value)
 		}
 		if len(keys) > 0 {
-			err = errUnknownKeys("CfgBlockComponent", kv, keys)
+			err = errUnknownKeys("CfgBlockActor", kv, keys)
 		} else {
 			resKV = &types.KeyValue{Key: kv.Key, Value: res}
 		}
 	} else {
-		err = errUnknownValType("CfgBlockComponent", kv)
+		err = errUnknownValType("CfgBlockActor", kv)
 	}
 	if err != nil {
 		return nil, err
@@ -329,7 +325,7 @@ func (*CfgBlockComponentMapper) Map(kv *types.KeyValue) (*types.KeyValue, error)
 // MapCfgBlockPipelineMapper represents a mapper for pipeline config section.
 type MapCfgBlockPipelineMapper struct{}
 
-var _ Mapper = (*MapCfgBlockComponentMapper)(nil)
+var _ Mapper = (*MapCfgBlockActorMapper)(nil)
 
 // Map converts map[string]Value to map[string]types.CfgBlockPipeline.
 // All keys from the original map will be kept in the resulting map.
@@ -369,14 +365,6 @@ func (*CfgBlockPipelineMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) 
 		if connect, ok := vmap["connect"]; ok {
 			delete(keys, "connect")
 			res.Connect = connect.(string)
-		}
-		if links, ok := vmap["links"]; ok {
-			delete(keys, "links")
-			res.Links = links.([]string)
-		}
-		if routes, ok := vmap["routes"]; ok {
-			delete(keys, "routes")
-			res.Routes = routes.(map[string]string)
 		}
 		if len(keys) > 0 {
 			err = errUnknownKeys("CfgBlockPipeline", kv, keys)

@@ -17,9 +17,10 @@ var _ core.Actor = (*Router)(nil)
 
 func NewRouter(name string, ctx *core.Context, params core.Params) (core.Actor, error) {
 	return &Router{
-		name: name,
-		ctx:  ctx,
-		lock: sync.Mutex{},
+		name:  name,
+		ctx:   ctx,
+		rtmap: make(map[string]chan *core.Message),
+		lock:  sync.Mutex{},
 	}, nil
 }
 

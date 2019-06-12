@@ -85,7 +85,7 @@ func main() {
 	if !ok {
 		fatalf("Failed to get components config")
 	}
-	compscfg := compsval.(map[string]types.CfgBlockComponent)
+	compscfg := compsval.(map[string]types.CfgBlockActor)
 
 	pplval, ok := repo.Get(types.NewKey("pipeline"))
 	if !ok {

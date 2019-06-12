@@ -10,29 +10,25 @@ import (
 	"github.com/awesome-flow/flow/pkg/util/data"
 )
 
-var builders map[string]core.Constructor
+var builders map[string]core.Constructor = map[string]core.Constructor{
+	"core.receiver.tcp":  actor.NewReceiverTCP,
+	"core.receiver.udp":  nil,
+	"core.receiver.http": actor.NewReceiverHTTP,
+	"core.receiver.unix": nil,
 
-func init() {
-	builders = map[string]core.Constructor{
-		"core.receiver.tcp":  actor.NewReceiverTCP,
-		"core.receiver.udp":  nil,
-		"core.receiver.http": nil,
-		"core.receiver.unix": nil,
+	"core.demux":      nil,
+	"core.mux":        nil,
+	"core.router":     actor.NewRouter,
+	"core.throttler":  nil,
+	"core.fanout":     nil,
+	"core.replicator": nil,
+	"core.buffer":     nil,
+	"core.compressor": nil,
 
-		"core.demux":      nil,
-		"core.mux":        nil,
-		"core.router":     nil,
-		"core.throttler":  nil,
-		"core.fanout":     nil,
-		"core.replicator": nil,
-		"core.buffer":     nil,
-		"core.compressor": nil,
-
-		"core.sink.dumper": actor.NewSinkDumper,
-		"core.sink.tcp":    nil,
-		"core.sink.udp":    nil,
-		"core.sink.null":   nil,
-	}
+	"core.sink.dumper": actor.NewSinkDumper,
+	"core.sink.tcp":    nil,
+	"core.sink.udp":    nil,
+	"core.sink.null":   nil,
 }
 
 type Pipeline struct {
@@ -100,12 +96,12 @@ func (p *Pipeline) Context() *core.Context {
 }
 
 func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
-	comps, ok := ctx.Config().Get(types.NewKey("components"))
+	actblocks, ok := ctx.Config().Get(types.NewKey("actors"))
 	if !ok {
-		return nil, fmt.Errorf("components config is missing")
+		return nil, fmt.Errorf("`actors` config is missing")
 	}
 	actors := make(map[string]core.Actor)
-	for name, actorcfg := range comps.(map[string]types.CfgBlockComponent) {
+	for name, actorcfg := range actblocks.(map[string]types.CfgBlockActor) {
 		var actor core.Actor
 		var err error
 		module := actorcfg.Module
@@ -125,7 +121,7 @@ func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
 	return actors, nil
 }
 
-func buildCoreActor(name string, ctx *core.Context, cfg *types.CfgBlockComponent) (core.Actor, error) {
+func buildCoreActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
 	module := cfg.Module
 	if _, ok := builders[module]; !ok {
 		return nil, fmt.Errorf("unrecognised core module: %s", module)
@@ -133,7 +129,7 @@ func buildCoreActor(name string, ctx *core.Context, cfg *types.CfgBlockComponent
 	return (builders[module])(name, ctx, core.Params(cfg.Params))
 }
 
-func buildPluginActor(name string, ctx *core.Context, cfg *types.CfgBlockComponent) (core.Actor, error) {
+func buildPluginActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
 	//TODO
 	return nil, nil
 }

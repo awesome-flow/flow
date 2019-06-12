@@ -9,8 +9,8 @@ import (
 )
 
 func TestCfgMapper(t *testing.T) {
-	comps := map[string]types.CfgBlockComponent{
-		"bar": types.CfgBlockComponent{
+	actors := map[string]types.CfgBlockActor{
+		"bar": types.CfgBlockActor{
 			Constructor: "constructor",
 			Module:      "module",
 			Params:      map[string]types.Value{"baz": 42},
@@ -61,10 +61,10 @@ func TestCfgMapper(t *testing.T) {
 		{
 			"Components defined",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
-				"components": comps,
+				"actors": actors,
 			}},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: types.Cfg{
-				Components: comps,
+				Actors: actors,
 			}},
 			nil,
 		},
@@ -417,16 +417,16 @@ func TestCfgBlockSystemMetricsReceiverMapper(t *testing.T) {
 	}
 }
 
-func TestMapCfgBlockComponentMapper(t *testing.T) {
+func TestMapCfgBlockActorMapper(t *testing.T) {
 	p1 := map[string]types.Value{"p11": 11, "p12": "12"}
 	p2 := map[string]types.Value{"p21": 21, "p22": "22"}
-	comp1 := types.CfgBlockComponent{
+	comp1 := types.CfgBlockActor{
 		Constructor: "constructor1",
 		Module:      "module1",
 		Params:      p1,
 		Plugin:      "plugin1",
 	}
-	comp2 := types.CfgBlockComponent{
+	comp2 := types.CfgBlockActor{
 		Constructor: "constructor2",
 		Module:      "module2",
 		Params:      p2,
@@ -441,14 +441,14 @@ func TestMapCfgBlockComponentMapper(t *testing.T) {
 		{
 			"Empty map",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: make(map[string]types.CfgBlockComponent)},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: make(map[string]types.CfgBlockActor)},
 			nil,
 		},
 		{
 			"Nil-value",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: nil},
 			nil,
-			fmt.Errorf("map[string]CfgBlockComponent cast failed for key: %q, val: %#v: unknown value type", types.NewKey("foo"), nil),
+			fmt.Errorf("map[string]CfgBlockActor cast failed for key: %q, val: %#v: unknown value type", types.NewKey("foo"), nil),
 		},
 		{
 			"A set of components",
@@ -456,7 +456,7 @@ func TestMapCfgBlockComponentMapper(t *testing.T) {
 				"bar": comp1,
 				"baz": comp2,
 			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.CfgBlockComponent{
+			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.CfgBlockActor{
 				"bar": comp1,
 				"baz": comp2,
 			}},
@@ -468,7 +468,7 @@ func TestMapCfgBlockComponentMapper(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			mpr := &MapCfgBlockComponentMapper{}
+			mpr := &MapCfgBlockActorMapper{}
 			gotKV, gotErr := mpr.Map(testCase.inputKV)
 			if !reflect.DeepEqual(gotErr, testCase.wantErr) {
 				t.Fatalf("Unexpected error: Map(%#v) = _, %s, want: %s", testCase.inputKV, gotErr, testCase.wantErr)
@@ -480,7 +480,7 @@ func TestMapCfgBlockComponentMapper(t *testing.T) {
 	}
 }
 
-func TestCfgBlockComponentMapper(t *testing.T) {
+func TestCfgBlockActorMapper(t *testing.T) {
 	params := map[string]types.Value{"p1": "v1", "p2": 2, "p3": true}
 
 	tests := []struct {
@@ -492,21 +492,21 @@ func TestCfgBlockComponentMapper(t *testing.T) {
 		{
 			"Empty map",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockComponent{}},
+			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{}},
 			nil,
 		},
 		{
 			"Nil-value",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: nil},
 			nil,
-			fmt.Errorf("CfgBlockComponent cast failed for key: %q, val: %#v: unknown value type", types.NewKey("foo"), nil),
+			fmt.Errorf("CfgBlockActor cast failed for key: %q, val: %#v: unknown value type", types.NewKey("foo"), nil),
 		},
 		{
 			"Constructor defined",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
 				"constructor": "constructor",
 			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockComponent{
+			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{
 				Constructor: "constructor",
 			}},
 			nil,
@@ -516,7 +516,7 @@ func TestCfgBlockComponentMapper(t *testing.T) {
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
 				"module": "module",
 			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockComponent{
+			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{
 				Module: "module",
 			}},
 			nil,
@@ -526,7 +526,7 @@ func TestCfgBlockComponentMapper(t *testing.T) {
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
 				"plugin": "plugin",
 			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockComponent{
+			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{
 				Plugin: "plugin",
 			}},
 			nil,
@@ -536,7 +536,7 @@ func TestCfgBlockComponentMapper(t *testing.T) {
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
 				"params": params,
 			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockComponent{
+			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{
 				Params: params,
 			}},
 			nil,
@@ -548,7 +548,7 @@ func TestCfgBlockComponentMapper(t *testing.T) {
 				"unknown2": 42,
 			}},
 			nil,
-			fmt.Errorf("CfgBlockComponent cast failed for key: %q: unknown attributes: [%s]", types.NewKey("foo"), "unknown1, unknown2"),
+			fmt.Errorf("CfgBlockActor cast failed for key: %q: unknown attributes: [%s]", types.NewKey("foo"), "unknown1, unknown2"),
 		},
 	}
 
@@ -556,7 +556,7 @@ func TestCfgBlockComponentMapper(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			mpr := &CfgBlockComponentMapper{}
+			mpr := &CfgBlockActorMapper{}
 			gotKV, gotErr := mpr.Map(testCase.inputKV)
 			if !reflect.DeepEqual(gotErr, testCase.wantErr) {
 				t.Fatalf("Unexpected error: Map(%#v) = _, %s, want: %s", testCase.inputKV, gotErr, testCase.wantErr)
