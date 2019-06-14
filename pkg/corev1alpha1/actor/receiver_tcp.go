@@ -37,8 +37,8 @@ var MsgStatusToTcpResp = map[core.MsgStatus][]byte{
 }
 
 type ReceiverTCP struct {
-	ctx      *core.Context
 	name     string
+	ctx      *core.Context
 	silent   bool
 	bind     string
 	listener net.Listener
@@ -144,6 +144,7 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 
 func (r *ReceiverTCP) Stop() error {
 	close(r.done)
+	close(r.queue)
 	return nil
 }
 

@@ -12,14 +12,14 @@ import (
 
 var builders map[string]core.Constructor = map[string]core.Constructor{
 	"core.receiver.tcp":  actor.NewReceiverTCP,
-	"core.receiver.udp":  nil,
+	"core.receiver.udp":  actor.NewReceiverUDP,
 	"core.receiver.http": actor.NewReceiverHTTP,
 	"core.receiver.unix": nil,
 
 	"core.demux":      actor.NewDemux,
 	"core.mux":        actor.NewMux,
 	"core.router":     actor.NewRouter,
-	"core.throttler":  nil,
+	"core.throttler":  actor.NewThrottler,
 	"core.fanout":     nil,
 	"core.replicator": nil,
 	"core.buffer":     nil,

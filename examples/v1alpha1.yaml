@@ -1,23 +1,13 @@
 actors:
-  tcp_listener:
-    module: core.receiver.http
+  udp_listener:
+    module: core.receiver.udp
     params:
       bind: :3110
-  demux:
-    module: core.demux
-  dumper-a:
+  dumper:
     module: core.sink.dumper
     params:
-      out: a.out
-  dumper-b:
-    module: core.sink.dumper
-    params:
-      out: b.out
+      out: STDOUT
 
 pipeline:
-  tcp_listener:
-    connect: demux
-  demux:
-    connect:
-      - dumper-a
-      - dumper-b
+  udp_listener:
+    connect: dumper
