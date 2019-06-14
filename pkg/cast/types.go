@@ -387,7 +387,7 @@ type ArrStrMapper struct{}
 
 var _ Mapper = (*ArrStrMapper)(nil)
 
-// Map converts []interface{} to []string.
+// Map converts string or []interface{} to []string.
 func (*ArrStrMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 	// []interface{}, not []Value because factual arguments are not being
 	// type casted
