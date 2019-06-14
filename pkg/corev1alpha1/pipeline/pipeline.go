@@ -17,7 +17,7 @@ var builders map[string]core.Constructor = map[string]core.Constructor{
 	"core.receiver.unix": nil,
 
 	"core.demux":      actor.NewDemux,
-	"core.mux":        nil,
+	"core.mux":        actor.NewMux,
 	"core.router":     actor.NewRouter,
 	"core.throttler":  nil,
 	"core.fanout":     nil,
