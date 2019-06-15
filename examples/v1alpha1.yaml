@@ -1,13 +1,23 @@
 actors:
-  udp_listener:
-    module: core.receiver.udp
+  tcp_listener:
+    module: core.receiver.tcp
     params:
       bind: :3110
-  dumper:
+  fanout:
+    module: core.fanout
+  dumper-a:
     module: core.sink.dumper
     params:
-      out: STDOUT
+      out: a.out
+  dumper-b:
+    module: core.sink.dumper
+    params:
+      out: b.out
 
 pipeline:
-  udp_listener:
-    connect: dumper
+  tcp_listener:
+    connect: fanout
+  fanout:
+    connect:
+      - dumper-a
+      - dumper-b
