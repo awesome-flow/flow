@@ -20,7 +20,7 @@ var builders map[string]core.Constructor = map[string]core.Constructor{
 	"core.mux":        actor.NewMux,
 	"core.router":     actor.NewRouter,
 	"core.throttler":  actor.NewThrottler,
-	"core.fanout":     nil,
+	"core.fanout":     actor.NewFanout,
 	"core.replicator": nil,
 	"core.buffer":     nil,
 	"core.compressor": nil,

@@ -72,6 +72,14 @@ func (msg *Message) Body() []byte {
 	return msg.body
 }
 
+func (msg *Message) MetaKeys() []interface{} {
+	res := make([]interface{}, 0, len(msg.meta))
+	for k := range msg.meta {
+		res = append(res, k)
+	}
+	return res
+}
+
 func (msg *Message) Meta(key interface{}) (interface{}, bool) {
 	msg.mutex.Lock()
 	defer msg.mutex.Unlock()
