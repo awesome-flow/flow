@@ -2,22 +2,11 @@ actors:
   tcp_listener:
     module: core.receiver.tcp
     params:
-      bind: :3110
-  fanout:
-    module: core.fanout
-  dumper-a:
-    module: core.sink.dumper
+      bind: localhost:3110
+  tcp_sink:
+    module: core.sink.tcp
     params:
-      out: a.out
-  dumper-b:
-    module: core.sink.dumper
-    params:
-      out: b.out
-
+      bind: 127.0.0.1:8000
 pipeline:
   tcp_listener:
-    connect: fanout
-  fanout:
-    connect:
-      - dumper-a
-      - dumper-b
+    connect: tcp_sink

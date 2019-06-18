@@ -114,6 +114,7 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 	//conn.SetReadDeadline(time.Now().Add(ConnReadTimeout))
 	for scanner.Scan() {
 		msg := core.NewMessage(scanner.Bytes())
+		r.ctx.Logger().Trace(string(scanner.Bytes()))
 		r.queue <- msg
 
 		if r.silent {
@@ -135,10 +136,10 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 			r.ctx.Logger().Error(err.Error())
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
 		r.ctx.Logger().Error(err.Error())
 	}
+
 	r.ctx.Logger().Debug("closing tcp connnection from %s", conn.RemoteAddr())
 }
 

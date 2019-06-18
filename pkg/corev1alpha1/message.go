@@ -40,8 +40,10 @@ type Message struct {
 }
 
 func NewMessage(body []byte) *Message {
+	cpbody := make([]byte, len(body))
+	copy(cpbody, body)
 	return &Message{
-		body:   body,
+		body:   cpbody,
 		done:   make(chan struct{}),
 		meta:   make(map[interface{}]interface{}),
 		status: MsgStatusNew,
@@ -108,9 +110,7 @@ func (msg *Message) Copy() *Message {
 }
 
 func (msg *Message) unsafeCopy() *Message {
-	cpbody := make([]byte, len(msg.body))
-	copy(cpbody, msg.body)
-	cpmsg := NewMessage(cpbody)
+	cpmsg := NewMessage(msg.Body())
 	for key, val := range msg.meta {
 		cpmsg.unsafeSetMeta(key, val)
 	}
