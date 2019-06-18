@@ -6,11 +6,11 @@ import (
 	"compress/gzip"
 	"compress/lzw"
 	"compress/zlib"
+	"fmt"
 
 	"github.com/DataDog/zstd"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 	"github.com/golang/snappy"
-
-	"github.com/awesome-flow/flow/pkg/core"
 )
 
 type CoderFunc func([]byte, int) ([]byte, error)
@@ -100,7 +100,7 @@ func NewCompressor(name string, ctx *core.Context, params core.Params) (core.Act
 	if !ok {
 		return nil, fmt.Errorf("compressor %q is missing `compress` config", name)
 	}
-	coder, ok := Coders[alg]
+	coder, ok := Coders[alg.(string)]
 	if !ok {
 		return nil, fmt.Errorf("compressor %q failed to initialize: unknown compression algorithm %q", name, alg)
 	}
@@ -112,7 +112,7 @@ func NewCompressor(name string, ctx *core.Context, params core.Params) (core.Act
 		name:  name,
 		ctx:   ctx,
 		queue: make(chan *core.Message),
-		code:  coder,
+		coder: coder,
 		level: level,
 	}, nil
 }
@@ -130,7 +130,7 @@ func (c *Compressor) Stop() error {
 	return nil
 }
 
-func (c *Compressor) Connect(nthreads int, peer core.Receiver) (core.Actor, error) {
+func (c *Compressor) Connect(nthreads int, peer core.Receiver) error {
 	for i := 0; i < nthreads; i++ {
 		go func() {
 			for msg := range c.queue {
@@ -152,7 +152,7 @@ func (c *Compressor) Receive(msg *core.Message) error {
 	}
 	cpmsg := core.NewMessage(data)
 	for _, k := range msg.MetaKeys() {
-		if v, ok := msg.GetMeta(k); ok {
+		if v, ok := msg.Meta(k); ok {
 			cpmsg.SetMeta(k, v)
 		}
 	}

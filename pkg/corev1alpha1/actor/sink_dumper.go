@@ -27,7 +27,7 @@ func NewSinkDumper(name string, ctx *core.Context, params core.Params) (core.Act
 	}
 	out, ok := params["out"]
 	if !ok {
-		return nil, fmt.Errorf("dumper is missing 'out' config")
+		return nil, fmt.Errorf("dumper %q is missing `out` config", name)
 	}
 	d.out = out.(string)
 	return d, nil
@@ -77,7 +77,7 @@ func (d *SinkDumper) Stop() error {
 }
 
 func (d *SinkDumper) Connect(int, core.Receiver) error {
-	panic("this component can not connect to other receivers")
+	return fmt.Errorf("sink %q can not connect to other receivers", d.name)
 }
 
 func (d *SinkDumper) Receive(msg *core.Message) error {
