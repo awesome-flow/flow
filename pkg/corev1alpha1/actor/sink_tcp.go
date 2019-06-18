@@ -57,14 +57,14 @@ func (t *SinkTCP) Start() error {
 			connecting <- struct{}{}
 			backoff := 50 * time.Millisecond
 			for {
-				t.ctx.Logger().Debug("tcp sink %q is establishing a new connection to %s", t.name, t.addr.String())
+				t.ctx.Logger().Debug("tcp sink %q is establishing a new connection to %s", t.name, t.addr)
 				if err := t.connectTCP(); err != nil {
-					t.ctx.Logger().Warn("tcp sink %q failed to establish a tcp connection: %s; next retry in %s ms", t.name, err, backoff)
+					t.ctx.Logger().Warn("tcp sink %q failed to establish a new connection: %s; next retry in %s ms", t.name, err, backoff)
 					time.Sleep(backoff)
 					backoff *= 2
 					continue
 				}
-				t.ctx.Logger().Debug("tcp sink %q has successfully established a new connection to %s", t.name, t.addr.String())
+				t.ctx.Logger().Debug("tcp sink %q has successfully established a new connection to %s", t.name, t.addr)
 				break
 			}
 			if len(reconnect) > 0 {
@@ -93,6 +93,8 @@ func (t *SinkTCP) Start() error {
 				reconnect <- struct{}{}
 			}
 		}
+		close(reconnect)
+		close(connecting)
 	}()
 
 	reconnect <- struct{}{}
@@ -110,7 +112,6 @@ func (t *SinkTCP) Connect(int, core.Receiver) error {
 }
 
 func (t *SinkTCP) Receive(msg *core.Message) error {
-	t.ctx.Logger().Debug("received a new message: %q", msg.Body())
 	t.queue <- msg
 	return nil
 }

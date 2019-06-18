@@ -4,7 +4,7 @@ actors:
     params:
       bind: localhost:3110
   tcp_sink:
-    module: core.sink.tcp
+    module: core.sink.udp
     params:
       bind: 127.0.0.1:8000
 pipeline:
