@@ -27,7 +27,7 @@ var builders map[string]core.Constructor = map[string]core.Constructor{
 
 	"core.sink.dumper": actor.NewSinkDumper,
 	"core.sink.tcp":    actor.NewSinkTCP,
-	"core.sink.udp":    nil,
+	"core.sink.udp":    actor.NewSinkUDP,
 	"core.sink.null":   nil,
 }
 
