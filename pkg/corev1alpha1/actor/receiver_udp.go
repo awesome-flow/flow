@@ -97,6 +97,6 @@ func (r *ReceiverUDP) Connect(nthreads int, peer core.Receiver) error {
 	return nil
 }
 
-func (*ReceiverUDP) Receive(*core.Message) error {
-	panic("this component can not receive messages")
+func (u *ReceiverUDP) Receive(*core.Message) error {
+	return fmt.Errorf("udp receiver %q can not receive internal messages", u.name)
 }

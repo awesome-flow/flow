@@ -1,12 +1,10 @@
 actors:
-  tcp_listener:
-    module: core.receiver.tcp
+  unix_listener:
+    module: core.receiver.unix
+  dumper:
+    module: core.sink.dumper
     params:
-      bind: localhost:3110
-  tcp_sink:
-    module: core.sink.udp
-    params:
-      bind: 127.0.0.1:8000
+      out: STDOUT
 pipeline:
-  tcp_listener:
-    connect: tcp_sink
+  unix_listener:
+    connect: dumper

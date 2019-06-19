@@ -95,6 +95,7 @@ func (r *ReceiverTCP) Start() error {
 			conn, err := l.Accept()
 			if err != nil {
 				r.ctx.Logger().Error(err.Error())
+				continue
 			}
 			go r.handleConn(conn)
 		}
@@ -103,6 +104,33 @@ func (r *ReceiverTCP) Start() error {
 	}()
 
 	return nil
+}
+
+func (r *ReceiverTCP) Stop() error {
+	close(r.done)
+	close(r.queue)
+	return nil
+}
+
+func (r *ReceiverTCP) Connect(nthreads int, peer core.Receiver) error {
+	for i := 0; i < nthreads; i++ {
+		go func() {
+			var err error
+			for msg := range r.queue {
+				if err = peer.Receive(msg); err != nil {
+					if err == io.EOF {
+						return
+					}
+					r.ctx.Logger().Error(err.Error())
+				}
+			}
+		}()
+	}
+	return nil
+}
+
+func (t *ReceiverTCP) Receive(*core.Message) error {
+	return fmt.Errorf("tcp receiver %q can not receive internal messages", t.name)
 }
 
 func (r *ReceiverTCP) handleConn(conn net.Conn) {
@@ -141,31 +169,4 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 	}
 
 	r.ctx.Logger().Debug("closing tcp connnection from %s", conn.RemoteAddr())
-}
-
-func (r *ReceiverTCP) Stop() error {
-	close(r.done)
-	close(r.queue)
-	return nil
-}
-
-func (r *ReceiverTCP) Connect(nthreads int, peer core.Receiver) error {
-	for i := 0; i < nthreads; i++ {
-		go func() {
-			var err error
-			for msg := range r.queue {
-				if err = peer.Receive(msg); err != nil {
-					if err == io.EOF {
-						return
-					}
-					r.ctx.Logger().Error(err.Error())
-				}
-			}
-		}()
-	}
-	return nil
-}
-
-func (*ReceiverTCP) Receive(*core.Message) error {
-	panic("this component can not receive messages")
 }

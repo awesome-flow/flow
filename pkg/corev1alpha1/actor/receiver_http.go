@@ -107,7 +107,7 @@ func (r *ReceiverHTTP) Connect(nthreads int, peer core.Receiver) error {
 }
 
 func (r *ReceiverHTTP) Receive(msg *core.Message) error {
-	panic("this component can not receive messages")
+	return fmt.Errorf("http receiver %q can not receive internal messages", r.name)
 }
 
 func (r *ReceiverHTTP) handleReqV1alpha1(rw http.ResponseWriter, req *http.Request) {
