@@ -14,7 +14,7 @@ var builders map[string]core.Constructor = map[string]core.Constructor{
 	"core.receiver.tcp":  actor.NewReceiverTCP,
 	"core.receiver.udp":  actor.NewReceiverUDP,
 	"core.receiver.http": actor.NewReceiverHTTP,
-	"core.receiver.unix": nil,
+	"core.receiver.unix": actor.NewReceiverUnix,
 
 	"core.demux":      actor.NewDemux,
 	"core.mux":        actor.NewMux,
@@ -28,7 +28,7 @@ var builders map[string]core.Constructor = map[string]core.Constructor{
 	"core.sink.dumper": actor.NewSinkDumper,
 	"core.sink.tcp":    actor.NewSinkTCP,
 	"core.sink.udp":    actor.NewSinkUDP,
-	"core.sink.null":   nil,
+	"core.sink.null":   actor.NewSinkNull,
 }
 
 type Pipeline struct {

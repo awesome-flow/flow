@@ -39,18 +39,18 @@ func main() {
 
 	logger := context.Logger()
 
-	logger.Info("Initializing the pipeline")
+	logger.Info("initializing the pipeline")
 	pipeline, err := pipeline.NewPipeline(context)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init pipeline: %s", err))
 	}
-	logger.Info("The pipeline is initialized")
+	logger.Info("pipeline was initialized")
 
-	logger.Info("Starting the pipeline")
+	logger.Info("starting the pipeline")
 	if err := pipeline.Start(); err != nil {
 		panic(fmt.Sprintf("failed to start pipeline: %s", err))
 	}
-	logger.Info("The pipeline is active")
+	logger.Info("pipeline is active")
 
 	syscfgval, ok := repo.Get(types.NewKey("system"))
 	if !ok {
@@ -60,7 +60,7 @@ func main() {
 	var adminmux *webapp.HttpMux
 	if syscfg.Admin.Enabled {
 		var err error
-		logger.Info("Starting admin interface on %s", syscfg.Admin.BindAddr)
+		logger.Info("starting admin interface on %s", syscfg.Admin.BindAddr)
 		adminmux, err = webapp.NewHttpMux(&syscfg)
 		if err != nil {
 			logger.Fatal("failed to start admin interface: %s", err)
@@ -71,14 +71,14 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	<-c
 
-	logger.Info("Terminating")
+	logger.Info("terminating")
 
 	if adminmux != nil {
-		logger.Info("Stopping admin interface")
+		logger.Info("stopping admin interface")
 		if err := adminmux.Stop(); err != nil {
-			logger.Error("Error while stopping admin interface: %s", err.Error())
+			logger.Error("failed to stop admin interface: %s", err.Error())
 		} else {
-			logger.Info("Admin interface is successfully terminated")
+			logger.Info("admin interface was successfully terminated")
 		}
 	}
 
@@ -86,7 +86,7 @@ func main() {
 		pipeline.Stop,
 		context.Stop,
 	); err != nil {
-		panic(fmt.Sprintf("failed to terminate: %s", err))
+		panic(fmt.Sprintf("failed to terminate pipeline: %s", err))
 	}
 
 	os.Exit(0)
