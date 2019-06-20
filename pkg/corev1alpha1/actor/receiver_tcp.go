@@ -40,7 +40,7 @@ type ReceiverTCP struct {
 	name     string
 	ctx      *core.Context
 	silent   bool
-	bind     string
+	addr     *net.TCPAddr
 	listener net.Listener
 	queue    chan *core.Message
 	done     chan struct{}
@@ -49,27 +49,32 @@ type ReceiverTCP struct {
 var _ core.Actor = (*ReceiverTCP)(nil)
 
 func NewReceiverTCP(name string, ctx *core.Context, params core.Params) (core.Actor, error) {
-	r := &ReceiverTCP{
-		ctx:   ctx,
-		name:  name,
-		queue: make(chan *core.Message),
-		done:  make(chan struct{}),
-	}
-
 	bind, ok := params["bind"]
 	if !ok {
-		return nil, fmt.Errorf("tcp receiver is missing `bind` config")
+		return nil, fmt.Errorf("tcp receiver %q is missing `bind` config", name)
 	}
-	r.bind = bind.(string)
 
-	if silent, ok := params["silent"]; ok {
-		if silent.(string) == "true" {
-			r.silent = true
-		} else if silent.(string) != "false" {
-			return nil, fmt.Errorf("unknown value for silent: %q", silent)
+	addr, err := net.ResolveTCPAddr("tcp", bind.(string))
+	if err != nil {
+		return nil, err
+	}
+
+	var silent bool
+	if s, ok := params["silent"]; ok {
+		if s.(string) == "true" {
+			silent = true
+		} else if s.(string) != "false" {
+			return nil, fmt.Errorf("tcp receiver %q got an unexpected (non-bool) value for silent: %q", name, s)
 		}
 	}
-	return r, nil
+	return &ReceiverTCP{
+		ctx:    ctx,
+		name:   name,
+		addr:   addr,
+		silent: silent,
+		queue:  make(chan *core.Message),
+		done:   make(chan struct{}),
+	}, nil
 }
 
 func (r *ReceiverTCP) Name() string {
@@ -77,7 +82,7 @@ func (r *ReceiverTCP) Name() string {
 }
 
 func (r *ReceiverTCP) Start() error {
-	l, err := net.Listen("tcp", r.bind)
+	l, err := net.Listen("tcp", r.addr.String())
 	if err != nil {
 		return err
 	}
@@ -90,7 +95,7 @@ func (r *ReceiverTCP) Start() error {
 	}()
 
 	go func() {
-		r.ctx.Logger().Info("starting tcp listener at %s", r.bind)
+		r.ctx.Logger().Info("starting tcp listener at %s", r.addr.String())
 		for !isdone {
 			conn, err := l.Accept()
 			if err != nil {
@@ -99,7 +104,7 @@ func (r *ReceiverTCP) Start() error {
 			}
 			go r.handleConn(conn)
 		}
-		r.ctx.Logger().Info("closing tcp listener at %s", r.bind)
+		r.ctx.Logger().Info("closing tcp listener at %s", r.addr.String())
 		l.Close()
 	}()
 
@@ -139,7 +144,6 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	scanner := bufio.NewScanner(reader)
 
-	//conn.SetReadDeadline(time.Now().Add(ConnReadTimeout))
 	for scanner.Scan() {
 		msg := core.NewMessage(scanner.Bytes())
 		r.ctx.Logger().Trace(string(scanner.Bytes()))

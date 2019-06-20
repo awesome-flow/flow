@@ -22,8 +22,8 @@ var builders map[string]core.Constructor = map[string]core.Constructor{
 	"core.throttler":  actor.NewThrottler,
 	"core.fanout":     actor.NewFanout,
 	"core.replicator": nil,
-	"core.buffer":     nil,
-	"core.compressor": nil,
+	"core.buffer":     actor.NewBuffer,
+	"core.compressor": actor.NewCompressor,
 
 	"core.sink.dumper": actor.NewSinkDumper,
 	"core.sink.tcp":    actor.NewSinkTCP,
