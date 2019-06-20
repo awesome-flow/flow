@@ -42,19 +42,19 @@ func main() {
 	logger.Info("initializing the pipeline")
 	pipeline, err := pipeline.NewPipeline(context)
 	if err != nil {
-		panic(fmt.Sprintf("failed to init pipeline: %s", err))
+		logger.Fatal("failed to init pipeline: %s", err)
 	}
 	logger.Info("pipeline was initialized")
 
 	logger.Info("starting the pipeline")
 	if err := pipeline.Start(); err != nil {
-		panic(fmt.Sprintf("failed to start pipeline: %s", err))
+		logger.Fatal("failed to start pipeline: %s", err)
 	}
 	logger.Info("pipeline is active")
 
 	syscfgval, ok := repo.Get(types.NewKey("system"))
 	if !ok {
-		panic("failed to get system config")
+		logger.Fatal("failed to get system config")
 	}
 	syscfg := syscfgval.(types.CfgBlockSystem)
 	var adminmux *webapp.HttpMux
@@ -86,7 +86,7 @@ func main() {
 		pipeline.Stop,
 		context.Stop,
 	); err != nil {
-		panic(fmt.Sprintf("failed to terminate pipeline: %s", err))
+		logger.Fatal("failed to terminate pipeline: %s", err)
 	}
 
 	os.Exit(0)

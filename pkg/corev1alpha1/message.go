@@ -116,3 +116,9 @@ func (msg *Message) unsafeCopy() *Message {
 	}
 	return cpmsg
 }
+
+func (msg *Message) SwapDoneChan(newdone chan struct{}) chan struct{} {
+	var olddone chan struct{}
+	olddone, msg.done = msg.done, newdone
+	return olddone
+}

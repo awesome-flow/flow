@@ -1,10 +1,16 @@
 actors:
-  unix_listener:
-    module: core.receiver.unix
-  dumper:
-    module: core.sink.dumper
+  tcp_listener:
+    module: core.receiver.tcp
     params:
-      out: STDOUT
+      bind: :3110
+  buffer:
+    module: core.buffer
+  tcp_sink:
+    module: core.sink.tcp
+    params:
+      bind: :8000
 pipeline:
-  unix_listener:
-    connect: dumper
+  tcp_listener:
+    connect: buffer
+  buffer:
+    connect: tcp_sink

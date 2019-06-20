@@ -3,6 +3,7 @@ package corev1alpha1
 import (
 	"fmt"
 	"io"
+	"os"
 	"time"
 )
 
@@ -32,6 +33,7 @@ func NewLog(sev LogSev, payload string) *Log {
 type Logger struct {
 	logs chan *Log
 	out  io.Writer
+	done chan struct{}
 }
 
 var _ Runner = (*Logger)(nil)
@@ -40,6 +42,7 @@ func NewLogger(out io.Writer) *Logger {
 	return &Logger{
 		logs: make(chan *Log),
 		out:  out,
+		done: make(chan struct{}),
 	}
 }
 
@@ -52,6 +55,7 @@ func (logger *Logger) Start() error {
 				panic(err.Error())
 			}
 		}
+		close(logger.done)
 	}()
 
 	return nil
@@ -59,6 +63,7 @@ func (logger *Logger) Start() error {
 
 func (logger *Logger) Stop() error {
 	close(logger.logs)
+	<-logger.done
 
 	return nil
 }
@@ -106,5 +111,6 @@ func (logger *Logger) Error(format string, a ...interface{}) {
 
 func (logger *Logger) Fatal(format string, a ...interface{}) {
 	logger.logs <- NewLog(LogSevFatal, fmt.Sprintf(format, a...))
-	panic("terminated")
+	logger.Stop()
+	os.Exit(1)
 }
