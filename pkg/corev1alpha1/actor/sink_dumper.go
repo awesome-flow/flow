@@ -14,6 +14,7 @@ type SinkDumper struct {
 	ctx    *core.Context
 	out    string
 	queue  chan *core.Message
+	done   chan struct{}
 	writer *bufio.Writer
 }
 
@@ -24,6 +25,7 @@ func NewSinkDumper(name string, ctx *core.Context, params core.Params) (core.Act
 		name:  name,
 		ctx:   ctx,
 		queue: make(chan *core.Message),
+		done:  make(chan struct{}),
 	}
 	out, ok := params["out"]
 	if !ok {
@@ -66,6 +68,7 @@ func (d *SinkDumper) Start() error {
 			}
 			msg.Complete(status)
 		}
+		close(d.done)
 	}()
 
 	return nil
@@ -73,6 +76,8 @@ func (d *SinkDumper) Start() error {
 
 func (d *SinkDumper) Stop() error {
 	close(d.queue)
+	<-d.done
+
 	return nil
 }
 

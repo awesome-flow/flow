@@ -17,6 +17,7 @@ type SinkTCP struct {
 	name  string
 	ctx   *core.Context
 	queue chan *core.Message
+	done  chan struct{}
 	addr  *net.TCPAddr
 	conn  net.Conn
 	lock  sync.Mutex
@@ -37,6 +38,7 @@ func NewSinkTCP(name string, ctx *core.Context, params core.Params) (core.Actor,
 		name:  name,
 		ctx:   ctx,
 		queue: make(chan *core.Message),
+		done:  make(chan struct{}),
 		addr:  addr,
 	}, nil
 }
@@ -95,6 +97,7 @@ func (t *SinkTCP) Start() error {
 		}
 		close(reconnect)
 		close(connecting)
+		close(t.done)
 	}()
 
 	reconnect <- struct{}{}
@@ -104,6 +107,8 @@ func (t *SinkTCP) Start() error {
 
 func (t *SinkTCP) Stop() error {
 	close(t.queue)
+	<-t.done
+
 	return nil
 }
 
