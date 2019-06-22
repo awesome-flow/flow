@@ -15,7 +15,7 @@ const (
 	CfgPathKey = "config.path"
 	// PluginPathKey is a string constant used globally to reach up the plugin
 	// path setting.
-	PluginPathKey = "plugins.path"
+	PluginPathKey = "plugin.path"
 )
 
 // TODO(olegs): implement listener interface

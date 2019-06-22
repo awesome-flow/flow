@@ -2,6 +2,9 @@ package pipeline
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"plugin"
 	"strings"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
@@ -115,10 +118,10 @@ func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
 		module := actorcfg.Module
 		if strings.HasPrefix(module, "core.") {
 			actor, err = buildCoreActor(name, ctx, &actorcfg)
-		} else if strings.HasPrefix(name, "plugin.") {
+		} else if strings.HasPrefix(module, "plugin.") {
 			actor, err = buildPluginActor(name, ctx, &actorcfg)
 		} else {
-			err = fmt.Errorf("unknown actor module: %s", name)
+			err = fmt.Errorf("unknown actor module: %s", module)
 		}
 		if err != nil {
 			return nil, err
@@ -138,8 +141,37 @@ func buildCoreActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) (c
 }
 
 func buildPluginActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
-	//TODO
-	return nil, nil
+	pname := strings.Replace(cfg.Module, "plugin.", "", 1)
+
+	ctx.Logger().Debug("building plugin %q", pname)
+
+	ppath, ok := ctx.Config().Get(types.NewKey("plugin.path"))
+	if !ok {
+		return nil, fmt.Errorf("failed to get `plugin.path` config")
+	}
+	fullpath := path.Join(ppath.(string), pname, pname+".so")
+
+	ctx.Logger().Trace("loading plugin shared library: %s", fullpath)
+	if _, err := os.Stat(fullpath); err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to load plugin %q shared library from %s", pname, fullpath)
+		}
+		return nil, err
+	}
+	p, err := plugin.Open(fullpath)
+	if err != nil {
+		return nil, err
+	}
+	ctx.Logger().Trace("successfully loaded plugin %q shared library", pname)
+
+	ctx.Logger().Trace("searching for plugin %q constructor: %q", pname, cfg.Constructor)
+	c, err := p.Lookup(cfg.Constructor)
+	if err != nil {
+		return nil, err
+	}
+	ctx.Logger().Trace("successfully loaded plugin %q constructor", pname)
+
+	return c.(func(string, *core.Context, core.Params) (core.Actor, error))(name, ctx, core.Params(cfg.Params))
 }
 
 func buildTopology(ctx *core.Context, actors map[string]core.Actor) (*data.Topology, error) {
