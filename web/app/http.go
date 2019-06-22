@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
 	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/web/app/agent"
 	log "github.com/sirupsen/logrus"
@@ -13,20 +14,31 @@ type HttpMux struct {
 	server *http.Server
 }
 
-func newAdminSrvMx(cfg *types.CfgBlockSystem) *http.ServeMux {
+func newAdminSrvMx(ppl *pipeline.Pipeline) (*http.ServeMux, error) {
 	srvMx := http.NewServeMux()
 
-	for _, wa := range agent.AllAgents() {
+	for _, ar := range agent.AllAgentRegistrators() {
+		wa, err := ar(ppl)
+		if err != nil {
+			return nil, err
+		}
 		srvMx.Handle(wa.GetPath(), wa.GetHandler())
 	}
 
-	return srvMx
+	return srvMx, nil
 }
 
-func NewHttpMux(cfg *types.CfgBlockSystem) (*HttpMux, error) {
-	srvMx := newAdminSrvMx(cfg)
+func NewHttpMux(ppl *pipeline.Pipeline) (*HttpMux, error) {
+	cfg, ok := ppl.Context().Config().Get(types.NewKey("system"))
+	if !ok {
+		return nil, fmt.Errorf("failed to get system config from the pipeline context")
+	}
+	srvMx, err := newAdminSrvMx(ppl)
+	if err != nil {
+		return nil, err
+	}
 	server := &http.Server{
-		Addr:    cfg.Admin.BindAddr,
+		Addr:    cfg.(types.CfgBlockSystem).Admin.Bind,
 		Handler: srvMx,
 	}
 	h := &HttpMux{server}

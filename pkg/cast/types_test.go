@@ -24,8 +24,8 @@ func TestCfgMapper(t *testing.T) {
 	}
 	sys := types.CfgBlockSystem{
 		Admin: types.CfgBlockSystemAdmin{
-			BindAddr: "123.45.67.89",
-			Enabled:  true,
+			Bind:    "123.45.67.89",
+			Enabled: true,
 		},
 		Maxprocs: 42,
 		Metrics: types.CfgBlockSystemMetrics{
@@ -115,8 +115,8 @@ func TestCfgMapper(t *testing.T) {
 
 func TestCfgBlockSystemMapper(t *testing.T) {
 	adm := types.CfgBlockSystemAdmin{
-		BindAddr: "123.45.67.89",
-		Enabled:  true,
+		Bind:    "123.45.67.89",
+		Enabled: true,
 	}
 	metrics := types.CfgBlockSystemMetrics{
 		Enabled:  true,
@@ -237,7 +237,7 @@ func TestCfgBlockSystemAdminMapper(t *testing.T) {
 				"bind_addr": "123.45.67.89",
 			}},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockSystemAdmin{
-				BindAddr: "123.45.67.89",
+				Bind: "123.45.67.89",
 			}},
 			nil,
 		},

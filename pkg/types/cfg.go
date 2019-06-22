@@ -19,8 +19,8 @@ type CfgBlockSystem struct {
 
 // CfgBlockSystemAdmin represents settings for admin interface.
 type CfgBlockSystemAdmin struct {
-	BindAddr string
-	Enabled  bool
+	Bind    string
+	Enabled bool
 }
 
 // CfgBlockSystemMetrics represents system metrics module settings: sending
