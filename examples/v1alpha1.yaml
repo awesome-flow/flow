@@ -10,9 +10,8 @@ actors:
   buffer:
     module: core.buffer
   dumper:
-    module: core.sink.dumper
-    params:
-      out: STDOUT
+    module: plugin.rainbow-dumper
+    constructor: NewRainbowDumper
 pipeline:
   tcp_listener:
     connect: buffer
