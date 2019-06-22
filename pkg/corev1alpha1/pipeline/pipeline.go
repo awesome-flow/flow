@@ -95,6 +95,14 @@ func (p *Pipeline) Context() *core.Context {
 	return p.ctx
 }
 
+func (p *Pipeline) Explain() (string, error) {
+	// TODO
+	return `
+	digraph G{
+		A -> B
+	}`, nil
+}
+
 func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
 	actblocks, ok := ctx.Config().Get(types.NewKey("actors"))
 	if !ok {

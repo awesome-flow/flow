@@ -2,6 +2,8 @@ package agent
 
 import (
 	"net/http"
+
+	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
 )
 
 type WebAgent interface {
@@ -35,14 +37,17 @@ func (dwa *DummyWebAgent) GetHandler() http.Handler {
 	return dwa.handler
 }
 
+type WebAgentRegistrator func(*pipeline.Pipeline) (WebAgent, error)
+type WebAgentRegistrators []WebAgentRegistrator
+
 var (
-	webAgents = make(WebAgents, 0)
+	webAgentRegistrators = make(WebAgentRegistrators, 0)
 )
 
-func RegisterWebAgent(a WebAgent) {
-	webAgents = append(webAgents, a)
+func RegisterWebAgent(r WebAgentRegistrator) {
+	webAgentRegistrators = append(webAgentRegistrators, r)
 }
 
-func AllAgents() WebAgents {
-	return webAgents
+func AllAgentRegistrators() WebAgentRegistrators {
+	return webAgentRegistrators
 }

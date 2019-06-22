@@ -21,9 +21,9 @@ func init() {
 			"__self__": &CfgBlockSystemMapper{},
 			"maxprocs": ToInt,
 			"admin": map[string]Schema{
-				"__self__":  &CfgBlockSystemAdminMapper{},
-				"enabled":   ToBool,
-				"bind_addr": ToStr,
+				"__self__": &CfgBlockSystemAdminMapper{},
+				"enabled":  ToBool,
+				"bind":     ToStr,
 			},
 			"metrics": map[string]Schema{
 				"__self__": &CfgBlockSystemMetricsMapper{},

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+
+	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
 )
 
 var (
@@ -92,11 +94,13 @@ type IndexPage struct {
 
 func init() {
 	RegisterWebAgent(
-		NewDummyWebAgent(
-			"/",
-			func(rw http.ResponseWriter, req *http.Request) {
-				respondWith(rw, RespHtml, "index", &IndexPage{Title: "Flow admin interface"})
-			},
-		),
+		func(*pipeline.Pipeline) (WebAgent, error) {
+			return NewDummyWebAgent(
+				"/",
+				func(rw http.ResponseWriter, req *http.Request) {
+					respondWith(rw, RespHtml, "index", &IndexPage{Title: "Flow admin interface"})
+				},
+			), nil
+		},
 	)
 }

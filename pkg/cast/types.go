@@ -141,9 +141,9 @@ func (*CfgBlockSystemAdminMapper) Map(kv *types.KeyValue) (*types.KeyValue, erro
 			delete(keys, "enabled")
 			res.Enabled = enabled.(bool)
 		}
-		if bindAddr, ok := vmap["bind_addr"]; ok {
-			delete(keys, "bind_addr")
-			res.BindAddr = bindAddr.(string)
+		if bind, ok := vmap["bind"]; ok {
+			delete(keys, "bind")
+			res.Bind = bind.(string)
 		}
 		if len(keys) > 0 {
 			err = errUnknownKeys("CfgBlockSystemAdmin", kv, keys)

@@ -3,6 +3,8 @@ package agent
 import (
 	"net/http"
 	"net/http/pprof"
+
+	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
 )
 
 type PprofPage struct {
@@ -11,40 +13,50 @@ type PprofPage struct {
 
 func init() {
 	RegisterWebAgent(
-		NewDummyWebAgent(
-			"/pprof/",
-			//pprof.Index,
-			func(rw http.ResponseWriter, req *http.Request) {
-				respondWith(rw, RespHtml, "pprof", &PprofPage{Title: "pprof debug info"})
-			},
-		),
+		func(*pipeline.Pipeline) (WebAgent, error) {
+			return NewDummyWebAgent(
+				"/pprof/",
+				//pprof.Index,
+				func(rw http.ResponseWriter, req *http.Request) {
+					respondWith(rw, RespHtml, "pprof", &PprofPage{Title: "pprof debug info"})
+				},
+			), nil
+		},
 	)
 
 	RegisterWebAgent(
-		NewDummyWebAgent(
-			"/pprof/cmdline",
-			pprof.Cmdline,
-		),
+		func(*pipeline.Pipeline) (WebAgent, error) {
+			return NewDummyWebAgent(
+				"/pprof/cmdline",
+				pprof.Cmdline,
+			), nil
+		},
 	)
 
 	RegisterWebAgent(
-		NewDummyWebAgent(
-			"/pprof/profile",
-			pprof.Profile,
-		),
+		func(*pipeline.Pipeline) (WebAgent, error) {
+			return NewDummyWebAgent(
+				"/pprof/profile",
+				pprof.Profile,
+			), nil
+		},
 	)
 
 	RegisterWebAgent(
-		NewDummyWebAgent(
-			"/pprof/symbol",
-			pprof.Symbol,
-		),
+		func(*pipeline.Pipeline) (WebAgent, error) {
+			return NewDummyWebAgent(
+				"/pprof/symbol",
+				pprof.Symbol,
+			), nil
+		},
 	)
 
 	RegisterWebAgent(
-		NewDummyWebAgent(
-			"/pprof/trace",
-			pprof.Trace,
-		),
+		func(*pipeline.Pipeline) (WebAgent, error) {
+			return NewDummyWebAgent(
+				"/pprof/trace",
+				pprof.Trace,
+			), nil
+		},
 	)
 }

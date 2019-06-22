@@ -1,3 +1,7 @@
+system:
+  admin:
+    enabled: true
+    bind: :8080
 actors:
   tcp_listener:
     module: core.receiver.tcp
@@ -5,12 +9,12 @@ actors:
       bind: :3110
   buffer:
     module: core.buffer
-  tcp_sink:
-    module: core.sink.tcp
+  dumper:
+    module: core.sink.dumper
     params:
-      bind: :8000
+      out: STDOUT
 pipeline:
   tcp_listener:
     connect: buffer
   buffer:
-    connect: tcp_sink
+    connect: dumper
