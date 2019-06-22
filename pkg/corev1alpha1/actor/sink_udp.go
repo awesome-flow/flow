@@ -17,6 +17,7 @@ type SinkUDP struct {
 	name  string
 	ctx   *core.Context
 	queue chan *core.Message
+	done  chan struct{}
 	addr  *net.UDPAddr
 	conn  net.Conn
 	lock  sync.Mutex
@@ -37,6 +38,7 @@ func NewSinkUDP(name string, ctx *core.Context, params core.Params) (core.Actor,
 		name:  name,
 		ctx:   ctx,
 		queue: make(chan *core.Message),
+		done:  make(chan struct{}),
 		addr:  addr,
 	}, nil
 }
@@ -95,6 +97,7 @@ func (u *SinkUDP) Start() error {
 		}
 		close(reconnect)
 		close(connecting)
+		close(u.done)
 	}()
 
 	reconnect <- struct{}{}
@@ -104,6 +107,8 @@ func (u *SinkUDP) Start() error {
 
 func (u *SinkUDP) Stop() error {
 	close(u.queue)
+	<-u.done
+
 	return nil
 }
 

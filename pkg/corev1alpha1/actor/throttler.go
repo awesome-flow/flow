@@ -63,6 +63,7 @@ func (t *Throttler) Start() error {
 
 func (t *Throttler) Stop() error {
 	close(t.queue)
+
 	return nil
 }
 
