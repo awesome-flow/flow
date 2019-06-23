@@ -7,7 +7,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 )
 
 var (
@@ -94,7 +94,7 @@ type IndexPage struct {
 
 func init() {
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/",
 				func(rw http.ResponseWriter, req *http.Request) {

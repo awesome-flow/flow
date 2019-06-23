@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 )
 
 type PprofPage struct {
@@ -13,7 +13,7 @@ type PprofPage struct {
 
 func init() {
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/pprof/",
 				//pprof.Index,
@@ -25,7 +25,7 @@ func init() {
 	)
 
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/pprof/cmdline",
 				pprof.Cmdline,
@@ -34,7 +34,7 @@ func init() {
 	)
 
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/pprof/profile",
 				pprof.Profile,
@@ -43,7 +43,7 @@ func init() {
 	)
 
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/pprof/symbol",
 				pprof.Symbol,
@@ -52,7 +52,7 @@ func init() {
 	)
 
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/pprof/trace",
 				pprof.Trace,

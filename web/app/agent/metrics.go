@@ -6,13 +6,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 	"github.com/awesome-flow/flow/pkg/metrics"
 )
 
 func init() {
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/metrics",
 				func(rw http.ResponseWriter, req *http.Request) {

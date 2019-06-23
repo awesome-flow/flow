@@ -3,8 +3,7 @@ package agent
 import (
 	"net/http"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
-	log "github.com/sirupsen/logrus"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 )
 
 type DescribePage struct {
@@ -14,13 +13,15 @@ type DescribePage struct {
 
 func init() {
 	RegisterWebAgent(
-		func(ppl *pipeline.Pipeline) (WebAgent, error) {
+		func(ctx *core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/pipeline/describe",
 				func(rw http.ResponseWriter, req *http.Request) {
-					expl, err := ppl.Explain()
+					// TODO: expl, err := ppl.Explain()
+					var err error
+					expl := "digraph D { A -> B }"
 					if err != nil {
-						log.Errorf("Failed to explain the pipeline: %s", err.Error())
+						ctx.Logger().Error("Failed to explain the pipeline: %s", err)
 						rw.WriteHeader(http.StatusInternalServerError)
 						return
 					}
