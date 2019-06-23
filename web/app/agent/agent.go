@@ -3,7 +3,7 @@ package agent
 import (
 	"net/http"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 )
 
 type WebAgent interface {
@@ -37,7 +37,7 @@ func (dwa *DummyWebAgent) GetHandler() http.Handler {
 	return dwa.handler
 }
 
-type WebAgentRegistrator func(*pipeline.Pipeline) (WebAgent, error)
+type WebAgentRegistrator func(*core.Context) (WebAgent, error)
 type WebAgentRegistrators []WebAgentRegistrator
 
 var (

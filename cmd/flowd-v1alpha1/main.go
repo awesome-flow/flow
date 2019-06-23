@@ -61,7 +61,7 @@ func main() {
 	if syscfg.Admin.Enabled {
 		var err error
 		logger.Info("starting admin interface on %s", syscfg.Admin.Bind)
-		adminmux, err = webapp.NewHttpMux(pipeline)
+		adminmux, err = webapp.NewHttpMux(context)
 		if err != nil {
 			logger.Fatal("failed to start admin interface: %s", err)
 		}

@@ -4,7 +4,7 @@ import (
 	"expvar"
 	"net/http"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 )
 
 type ExpvarWebAgent struct {
@@ -25,7 +25,7 @@ func NewExpvarWebAgent(path string) *ExpvarWebAgent {
 
 func init() {
 	RegisterWebAgent(
-		func(*pipeline.Pipeline) (WebAgent, error) {
+		func(ctx *core.Context) (WebAgent, error) {
 			return NewExpvarWebAgent("/expvar"), nil
 		},
 	)

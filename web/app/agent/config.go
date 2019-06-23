@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 )
 
 type ConfigPage struct {
@@ -14,11 +14,11 @@ type ConfigPage struct {
 
 func init() {
 	RegisterWebAgent(
-		func(ppl *pipeline.Pipeline) (WebAgent, error) {
+		func(ctx *core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/config",
 				func(rw http.ResponseWriter, req *http.Request) {
-					cfgdata := ppl.Context().Config().Explain()
+					cfgdata := ctx.Config().Explain()
 					js, err := json.Marshal(cfgdata)
 					if err != nil {
 						rw.WriteHeader(http.StatusInternalServerError)

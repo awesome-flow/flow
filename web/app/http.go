@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/pipeline"
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/web/app/agent"
-	log "github.com/sirupsen/logrus"
 )
 
 type HttpMux struct {
 	server *http.Server
 }
 
-func newAdminSrvMx(ppl *pipeline.Pipeline) (*http.ServeMux, error) {
+func newAdminSrvMx(ctx *core.Context) (*http.ServeMux, error) {
 	srvMx := http.NewServeMux()
 
 	for _, ar := range agent.AllAgentRegistrators() {
-		wa, err := ar(ppl)
+		wa, err := ar(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -28,17 +27,17 @@ func newAdminSrvMx(ppl *pipeline.Pipeline) (*http.ServeMux, error) {
 	return srvMx, nil
 }
 
-func NewHttpMux(ppl *pipeline.Pipeline) (*HttpMux, error) {
-	cfg, ok := ppl.Context().Config().Get(types.NewKey("system"))
+func NewHttpMux(ctx *core.Context) (*HttpMux, error) {
+	syscfg, ok := ctx.Config().Get(types.NewKey("system"))
 	if !ok {
 		return nil, fmt.Errorf("failed to get system config from the pipeline context")
 	}
-	srvMx, err := newAdminSrvMx(ppl)
+	srvMx, err := newAdminSrvMx(ctx)
 	if err != nil {
 		return nil, err
 	}
 	server := &http.Server{
-		Addr:    cfg.(types.CfgBlockSystem).Admin.Bind,
+		Addr:    syscfg.(types.CfgBlockSystem).Admin.Bind,
 		Handler: srvMx,
 	}
 	h := &HttpMux{server}
@@ -47,9 +46,9 @@ func NewHttpMux(ppl *pipeline.Pipeline) (*HttpMux, error) {
 		if err := server.ListenAndServe(); err != nil {
 			switch err {
 			case http.ErrServerClosed:
-				log.Info("Admin server closed")
+				ctx.Logger().Info("Admin server closed")
 			default:
-				log.Errorf(fmt.Sprintf("Admin server critical error: %s", err))
+				ctx.Logger().Fatal("Admin server critical error: %s", err)
 			}
 		}
 	}()
