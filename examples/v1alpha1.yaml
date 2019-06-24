@@ -9,11 +9,11 @@ actors:
       bind: :3110
   buffer:
     module: core.buffer
-  dumper:
+  rainbow-dumper:
     module: plugin.rainbow-dumper
     constructor: NewRainbowDumper
 pipeline:
   tcp_listener:
     connect: buffer
   buffer:
-    connect: dumper
+    connect: rainbow-dumper

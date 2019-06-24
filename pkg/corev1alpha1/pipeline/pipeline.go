@@ -98,14 +98,6 @@ func (p *Pipeline) Context() *core.Context {
 	return p.ctx
 }
 
-func (p *Pipeline) Explain() (string, error) {
-	// TODO
-	return `
-	digraph G{
-		A -> B
-	}`, nil
-}
-
 func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
 	actblocks, ok := ctx.Config().Get(types.NewKey("actors"))
 	if !ok {
@@ -143,7 +135,7 @@ func buildCoreActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) (c
 func buildPluginActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
 	pname := strings.Replace(cfg.Module, "plugin.", "", 1)
 
-	ctx.Logger().Debug("building plugin %q", pname)
+	ctx.Logger().Debug("initializing plugin %q", pname)
 
 	ppath, ok := ctx.Config().Get(types.NewKey("plugin.path"))
 	if !ok {

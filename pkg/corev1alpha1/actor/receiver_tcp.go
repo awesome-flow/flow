@@ -146,7 +146,6 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 
 	for scanner.Scan() {
 		msg := core.NewMessage(scanner.Bytes())
-		r.ctx.Logger().Trace(string(scanner.Bytes()))
 		r.queue <- msg
 
 		if r.silent {
