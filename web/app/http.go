@@ -10,53 +10,70 @@ import (
 )
 
 type HttpMux struct {
+	ctx    *core.Context
 	server *http.Server
+	agents agent.WebAgents
 }
 
-func newAdminSrvMx(ctx *core.Context) (*http.ServeMux, error) {
-	srvMx := http.NewServeMux()
-
-	for _, ar := range agent.AllAgentRegistrators() {
-		wa, err := ar(ctx)
-		if err != nil {
-			return nil, err
-		}
-		srvMx.Handle(wa.GetPath(), wa.GetHandler())
-	}
-
-	return srvMx, nil
-}
+var _ core.Runner = (*HttpMux)(nil)
 
 func NewHttpMux(ctx *core.Context) (*HttpMux, error) {
 	syscfg, ok := ctx.Config().Get(types.NewKey("system"))
 	if !ok {
 		return nil, fmt.Errorf("failed to get system config from the pipeline context")
 	}
-	srvMx, err := newAdminSrvMx(ctx)
-	if err != nil {
-		return nil, err
+
+	srvMx := http.NewServeMux()
+	regs := agent.AllAgentRegistrators()
+	agents := make(agent.WebAgents, 0, len(regs))
+
+	for _, ar := range regs {
+		wa, err := ar(ctx)
+		if err != nil {
+			return nil, err
+		}
+		srvMx.Handle(wa.GetPath(), wa.GetHandler())
+		agents = append(agents, wa)
 	}
+
 	server := &http.Server{
 		Addr:    syscfg.(types.CfgBlockSystem).Admin.Bind,
 		Handler: srvMx,
 	}
-	h := &HttpMux{server}
 
+	return &HttpMux{
+		ctx:    ctx,
+		server: server,
+		agents: agents,
+	}, nil
+}
+
+func (h *HttpMux) Start() error {
+	for _, wa := range h.agents {
+		if err := wa.Start(); err != nil {
+			return err
+		}
+	}
 	go func() {
-		if err := server.ListenAndServe(); err != nil {
+		if err := h.server.ListenAndServe(); err != nil {
 			switch err {
 			case http.ErrServerClosed:
-				ctx.Logger().Info("Admin server closed")
+				h.ctx.Logger().Info("admin server closed")
 			default:
-				ctx.Logger().Fatal("Admin server critical error: %s", err)
+				h.ctx.Logger().Fatal("admin server critical error: %s", err)
 			}
 		}
 	}()
 
-	return h, nil
+	return nil
 }
 
 func (h *HttpMux) Stop() error {
-	// TODO(olegs): shut down the agents gracefully
-	return nil
+	for _, wa := range h.agents {
+		if err := wa.Stop(); err != nil {
+			return err
+		}
+	}
+
+	return h.server.Close()
 }

@@ -9,6 +9,7 @@ import (
 type WebAgent interface {
 	GetPath() string
 	GetHandler() http.Handler
+	core.Runner
 }
 
 type WebAgents []WebAgent
@@ -35,6 +36,14 @@ func (dwa *DummyWebAgent) GetPath() string {
 
 func (dwa *DummyWebAgent) GetHandler() http.Handler {
 	return dwa.handler
+}
+
+func (dwa *DummyWebAgent) Start() error {
+	return nil
+}
+
+func (dws *DummyWebAgent) Stop() error {
+	return nil
 }
 
 type WebAgentRegistrator func(*core.Context) (WebAgent, error)
