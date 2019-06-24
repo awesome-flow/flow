@@ -21,7 +21,8 @@ func init() {
 			if !ok {
 				return nil, fmt.Errorf("failed to get `pipeline` config")
 			}
-			expl, err := explain.ExplainCfgPpl(cfgppl.(map[string]types.CfgBlockPipeline))
+			e := new(explain.Pipeline)
+			expl, err := e.Explain(cfgppl)
 			if err != nil {
 				return nil, err
 			}
@@ -31,7 +32,7 @@ func init() {
 				func(rw http.ResponseWriter, req *http.Request) {
 					respondWith(rw, RespHtml, "graphviz", &DescribePage{
 						Title:    "Flow Pipeline",
-						GraphViz: expl,
+						GraphViz: string(expl),
 					})
 				},
 			), nil
