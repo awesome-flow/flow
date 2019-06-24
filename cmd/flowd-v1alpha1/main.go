@@ -63,6 +63,9 @@ func main() {
 		logger.Info("starting admin interface on %s", syscfg.Admin.Bind)
 		adminmux, err = webapp.NewHttpMux(context)
 		if err != nil {
+			logger.Fatal("failed to initialize admin interface: %s", err)
+		}
+		if err := adminmux.Start(); err != nil {
 			logger.Fatal("failed to start admin interface: %s", err)
 		}
 	}
@@ -78,7 +81,7 @@ func main() {
 		if err := adminmux.Stop(); err != nil {
 			logger.Error("failed to stop admin interface: %s", err.Error())
 		} else {
-			logger.Info("admin interface was successfully terminated")
+			logger.Info("admin interface was successfully stopped")
 		}
 	}
 

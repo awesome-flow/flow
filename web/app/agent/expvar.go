@@ -11,6 +11,10 @@ type ExpvarWebAgent struct {
 	path string
 }
 
+func NewExpvarWebAgent(path string) *ExpvarWebAgent {
+	return &ExpvarWebAgent{path: path}
+}
+
 func (eva *ExpvarWebAgent) GetPath() string {
 	return eva.path
 }
@@ -19,8 +23,12 @@ func (eva *ExpvarWebAgent) GetHandler() http.Handler {
 	return expvar.Handler()
 }
 
-func NewExpvarWebAgent(path string) *ExpvarWebAgent {
-	return &ExpvarWebAgent{path: path}
+func (eva *ExpvarWebAgent) Start() error {
+	return nil
+}
+
+func (eva *ExpvarWebAgent) Stop() error {
+	return nil
 }
 
 func init() {
