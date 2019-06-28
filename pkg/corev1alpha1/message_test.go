@@ -56,3 +56,52 @@ func TestAwaitChan(t *testing.T) {
 		t.Fatalf("timed out to await chan")
 	}
 }
+
+func TestMetaKeys(t *testing.T) {
+	msg := NewMessage(testutil.RandBytes(1024))
+	meta := make(map[string]interface{})
+	for i, max := 0, testutil.RandInt(128); i < max; i++ {
+		k := string(testutil.RandBytes(1024))
+		v := testutil.RandBytes(1024)
+		meta[k] = v
+		msg.SetMeta(k, v)
+	}
+	for k, v := range meta {
+		if msgv, _ := msg.Meta(k); !reflect.DeepEqual(msgv, v) {
+			t.Fatalf("unexpected value in msg meta: %q, want: %q", msgv, v)
+		}
+	}
+}
+
+func TestCopy(t *testing.T) {
+	msg := NewMessage(testutil.RandBytes(1024))
+	for i, max := 0, testutil.RandInt(128); i < max; i++ {
+		k := string(testutil.RandBytes(1024))
+		v := testutil.RandBytes(1024)
+		msg.SetMeta(k, v)
+	}
+	cpmsg := msg.Copy()
+	if !reflect.DeepEqual(msg.Body(), cpmsg.Body()) {
+		t.Fatalf("unexpected message body: %q, want: %q", cpmsg.Body(), msg.Body())
+	}
+	if !reflect.DeepEqual(cpmsg.meta, msg.meta) {
+		t.Fatalf("unexpected message meta: %v, want: %v", cpmsg.meta, msg.meta)
+	}
+}
+
+func TestSwapDoneChan(t *testing.T) {
+	repl := make(chan struct{})
+	msg := NewMessage(testutil.RandBytes(1024))
+	msg.SwapDoneChan(repl)
+	done := make(chan struct{})
+	go func() {
+		<-repl
+		close(done)
+	}()
+	msg.Complete(MsgStatusDone)
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatalf("timed out to receive a chan close signal")
+	}
+}

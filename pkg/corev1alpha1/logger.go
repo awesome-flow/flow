@@ -80,6 +80,7 @@ func init() {
 		LogSevFatal: "FATAL",
 	}
 }
+
 func (logger *Logger) Format(log *Log) string {
 	return fmt.Sprintf(
 		"%s\t%s\t%s",
@@ -112,5 +113,9 @@ func (logger *Logger) Error(format string, a ...interface{}) {
 func (logger *Logger) Fatal(format string, a ...interface{}) {
 	logger.logs <- NewLog(LogSevFatal, fmt.Sprintf(format, a...))
 	logger.Stop()
+	logger.terminate()
+}
+
+func (logger *Logger) terminate() {
 	os.Exit(1)
 }

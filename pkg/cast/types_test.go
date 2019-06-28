@@ -11,10 +11,10 @@ import (
 func TestCfgMapper(t *testing.T) {
 	actors := map[string]types.CfgBlockActor{
 		"bar": types.CfgBlockActor{
-			Constructor: "constructor",
-			Module:      "module",
-			Params:      map[string]types.Value{"baz": 42},
-			Plugin:      "plugin",
+			Builder: "builder",
+			Module:  "module",
+			Params:  map[string]types.Value{"baz": 42},
+			Plugin:  "plugin",
 		},
 	}
 	ppl := map[string]types.CfgBlockPipeline{
@@ -419,16 +419,16 @@ func TestMapCfgBlockActorMapper(t *testing.T) {
 	p1 := map[string]types.Value{"p11": 11, "p12": "12"}
 	p2 := map[string]types.Value{"p21": 21, "p22": "22"}
 	comp1 := types.CfgBlockActor{
-		Constructor: "constructor1",
-		Module:      "module1",
-		Params:      p1,
-		Plugin:      "plugin1",
+		Builder: "builder1",
+		Module:  "module1",
+		Params:  p1,
+		Plugin:  "plugin1",
 	}
 	comp2 := types.CfgBlockActor{
-		Constructor: "constructor2",
-		Module:      "module2",
-		Params:      p2,
-		Plugin:      "plugin2",
+		Builder: "builder2",
+		Module:  "module2",
+		Params:  p2,
+		Plugin:  "plugin2",
 	}
 	tests := []struct {
 		name    string
@@ -500,12 +500,12 @@ func TestCfgBlockActorMapper(t *testing.T) {
 			fmt.Errorf("CfgBlockActor cast failed for key: %q, val: %#v: unknown value type", types.NewKey("foo"), nil),
 		},
 		{
-			"Constructor defined",
+			"Builder defined",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
-				"constructor": "constructor",
+				"builder": "builder",
 			}},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{
-				Constructor: "constructor",
+				Builder: "builder",
 			}},
 			nil,
 		},
