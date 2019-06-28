@@ -13,7 +13,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/util/data"
 )
 
-var builders map[string]core.Constructor = map[string]core.Constructor{
+var CoreBuilders map[string]core.Builder = map[string]core.Builder{
 	"core.receiver.tcp":  actor.NewReceiverTCP,
 	"core.receiver.udp":  actor.NewReceiverUDP,
 	"core.receiver.http": actor.NewReceiverHTTP,
@@ -41,8 +41,11 @@ type Pipeline struct {
 
 var _ core.Runner = (*Pipeline)(nil)
 
-func NewPipeline(ctx *core.Context) (*Pipeline, error) {
-	actors, err := buildActors(ctx)
+func NewPipeline(ctx *core.Context, builders map[string]core.Builder) (*Pipeline, error) {
+	if builders == nil {
+		builders = CoreBuilders
+	}
+	actors, err := buildActors(ctx, builders)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +100,7 @@ func (p *Pipeline) Context() *core.Context {
 	return p.ctx
 }
 
-func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
+func buildActors(ctx *core.Context, builders map[string]core.Builder) (map[string]core.Actor, error) {
 	actblocks, ok := ctx.Config().Get(types.NewKey("actors"))
 	if !ok {
 		return nil, fmt.Errorf("`actors` config is missing")
@@ -108,7 +111,7 @@ func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
 		var err error
 		module := actorcfg.Module
 		if strings.HasPrefix(module, "core.") {
-			actor, err = buildCoreActor(name, ctx, &actorcfg)
+			actor, err = buildCoreActor(builders, name, ctx, &actorcfg)
 		} else if strings.HasPrefix(module, "plugin.") {
 			actor, err = buildPluginActor(name, ctx, &actorcfg)
 		} else {
@@ -123,7 +126,7 @@ func buildActors(ctx *core.Context) (map[string]core.Actor, error) {
 	return actors, nil
 }
 
-func buildCoreActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
+func buildCoreActor(builders map[string]core.Builder, name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
 	module := cfg.Module
 	if _, ok := builders[module]; !ok {
 		return nil, fmt.Errorf("unrecognised core module: %s", module)
@@ -155,8 +158,8 @@ func buildPluginActor(name string, ctx *core.Context, cfg *types.CfgBlockActor) 
 	}
 	ctx.Logger().Trace("successfully loaded plugin %q shared library", pname)
 
-	ctx.Logger().Trace("searching for plugin %q constructor: %q", pname, cfg.Constructor)
-	c, err := p.Lookup(cfg.Constructor)
+	ctx.Logger().Trace("searching for plugin %q constructor: %q", pname, cfg.Builder)
+	c, err := p.Lookup(cfg.Builder)
 	if err != nil {
 		return nil, err
 	}

@@ -294,9 +294,9 @@ func (*CfgBlockActorMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {
 		for k := range vmap {
 			keys[k] = struct{}{}
 		}
-		if constructor, ok := vmap["constructor"]; ok {
-			delete(keys, "constructor")
-			res.Constructor = constructor.(string)
+		if builder, ok := vmap["builder"]; ok {
+			delete(keys, "builder")
+			res.Builder = builder.(string)
 		}
 		if module, ok := vmap["module"]; ok {
 			delete(keys, "module")

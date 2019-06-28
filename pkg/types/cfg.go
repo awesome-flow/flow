@@ -40,12 +40,12 @@ type CfgBlockSystemMetricsReceiver struct {
 
 // CfgBlockActor represents a singular component config: it's module name,
 // parameter list and (if applicable) plugin name and the corresponding
-// constructor.
+// builder function.
 type CfgBlockActor struct {
-	Constructor string
-	Module      string
-	Params      map[string]Value
-	Plugin      string
+	Builder string
+	Module  string
+	Params  map[string]Value
+	Plugin  string
 }
 
 // CfgBlockPipeline represents a singular pipeline config: one of 3: connection,

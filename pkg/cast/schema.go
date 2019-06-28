@@ -42,10 +42,10 @@ func init() {
 		"actors": map[string]Schema{
 			"__self__": &MapCfgBlockActorMapper{},
 			"*": map[string]Schema{
-				"__self__":    &CfgBlockActorMapper{},
-				"constructor": ToStr,
-				"module":      ToStr,
-				"plugin":      ToStr,
+				"__self__": &CfgBlockActorMapper{},
+				"builder":  ToStr,
+				"module":   ToStr,
+				"plugin":   ToStr,
 				"params": map[string]Schema{
 					"__self__": nil,
 					"*":        Identity,
