@@ -59,7 +59,9 @@ func (dp *DefaultProvider) Weight() int { return dp.weight }
 func (dp *DefaultProvider) SetUp(repo *Repository) error {
 	defer close(dp.ready)
 	for k := range dp.registry {
-		repo.RegisterKey(types.NewKey(k), dp)
+		if err := repo.RegisterKey(types.NewKey(k), dp); err != nil {
+			return err
+		}
 	}
 	return nil
 }

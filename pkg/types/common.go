@@ -1,6 +1,9 @@
 package types
 
-import "strings"
+import (
+	"reflect"
+	"strings"
+)
 
 const (
 	// KeySepCh is a char used as a key fragment separator. A dot by default.
@@ -15,6 +18,10 @@ type Key []string
 // String satisfies Stringer interface
 func (key Key) String() string {
 	return strings.Join(key, KeySepCh)
+}
+
+func (key Key) Equals(k2 Key) bool {
+	return reflect.DeepEqual(key, k2)
 }
 
 // NewKey is a default constructor used for a new key instantiation.

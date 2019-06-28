@@ -1,6 +1,7 @@
 package cfg
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -279,13 +280,18 @@ func (repo *Repository) RegisterProvider(prov Provider) {
 // If a provider can serve multiple keys, every key registration must be
 // created explicitly, 1 at a time.
 // This method is thread safe.
-func (repo *Repository) RegisterKey(key types.Key, prov Provider) {
+func (repo *Repository) RegisterKey(key types.Key, prov Provider) error {
+	if prov == nil {
+		return fmt.Errorf("provider for key %s can not be nil", key)
+	}
 	repo.mx.Lock()
 	defer repo.mx.Unlock()
 	repo.root.add(key, prov)
 	if _, ok := repo.providers[prov.Name()]; !ok {
 		repo.providers[prov.Name()] = prov
 	}
+
+	return nil
 }
 
 //func (repo *Repository) Subscribe(key cast.Key, listener Listener) {
