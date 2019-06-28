@@ -75,6 +75,7 @@ func (p *Pipeline) Start() error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -93,6 +94,7 @@ func (p *Pipeline) Stop() error {
 			return err
 		}
 	}
+
 	return nil
 }
 
