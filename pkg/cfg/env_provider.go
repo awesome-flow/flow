@@ -74,7 +74,9 @@ func (ep *EnvProvider) SetUp(repo *Repository) error {
 		k = canonise(k)
 		registry[k] = v
 		if repo != nil {
-			repo.RegisterKey(types.NewKey(k), ep)
+			if err := repo.RegisterKey(types.NewKey(k), ep); err != nil {
+				return err
+			}
 		}
 	}
 

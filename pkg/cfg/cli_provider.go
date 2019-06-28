@@ -84,7 +84,9 @@ func (cp *CliProvider) SetUp(repo *Repository) error {
 	defer close(cp.ready)
 	regFlags(cp)
 	for k := range cp.registry {
-		repo.RegisterKey(types.NewKey(k), cp)
+		if err := repo.RegisterKey(types.NewKey(k), cp); err != nil {
+			return err
+		}
 	}
 	return nil
 }
