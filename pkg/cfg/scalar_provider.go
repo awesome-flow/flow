@@ -20,7 +20,7 @@ func NewScalarConfigProvider(kv *types.KeyValue, repo *Repository, weight int) (
 		kv:     kv,
 		name:   fmt.Sprintf("scalar-provider-%s", kv.Key),
 	}
-	repo.RegisterProvider(p)
+	repo.RegisterKey(kv.Key, p)
 
 	return p, nil
 }
