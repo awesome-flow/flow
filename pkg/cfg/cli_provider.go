@@ -48,6 +48,7 @@ func NewCliProvider(repo *Repository, weight int) (*CliProvider, error) {
 		ready:    make(chan struct{}),
 	}
 	repo.RegisterProvider(prov)
+
 	return prov, nil
 }
 
