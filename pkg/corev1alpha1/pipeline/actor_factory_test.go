@@ -79,7 +79,7 @@ func TestPluginActorFactoryBuild(t *testing.T) {
 		t.Fatalf("failed to build actor: %s", err)
 	}
 	if _, ok := actor.(*TestActor); !ok {
-		t.Fatalf("unexpected type of actor: got: %s, want: %s", reflect.TypeOf(actor).String(), "TestActor")
+		t.Fatalf("unexpected type of actor: got: %s, want: %s", reflect.TypeOf(actor).String(), "*pipeline.TestActor")
 	}
 	if actor.Name() != name {
 		t.Fatalf("unexpected actor name: got: %s, want: %s", actor.Name(), name)
