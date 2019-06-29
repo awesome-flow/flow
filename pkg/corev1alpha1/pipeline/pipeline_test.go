@@ -229,34 +229,6 @@ func TestStopPropogatesToActors(t *testing.T) {
 	}
 }
 
-func TestBuildCoreActor(t *testing.T) {
-	builders := map[string]core.Builder{
-		"test-actor": NewTestActor,
-	}
-	repo := cfg.NewRepository()
-	ctx, err := core.NewContext(core.NewConfig(repo))
-	if err != nil {
-		t.Fatalf("failed to create a context: %s", err)
-	}
-	actorcfg := &types.CfgBlockActor{
-		Module: "test-actor",
-	}
-	actorname := "test-actor-1"
-	a, err := buildCoreActor(builders, actorname, ctx, actorcfg)
-	if err != nil {
-		t.Fatalf("failed to build core actor: %s", err)
-	}
-	if _, ok := a.(core.Actor); !ok {
-		t.Fatalf("actor does not conform to core.Actor interface: %s", reflect.TypeOf(a))
-	}
-	if _, ok := a.(*TestActor); !ok {
-		t.Fatalf("unexpected actor type: got: %s, want: %s", reflect.TypeOf(a), reflect.TypeOf(new(TestActor)))
-	}
-	if name := a.Name(); name != actorname {
-		t.Fatalf("unexpected actor name: got: %s, want: %s", name, actorname)
-	}
-}
-
 type TestPlugin struct {
 	path string
 }
@@ -311,35 +283,4 @@ func (s *ScalarConfigProvider) Get(key types.Key) (*types.KeyValue, bool) {
 
 func (s *ScalarConfigProvider) Weight() int {
 	return 42
-}
-
-func TestBuildPluginActor(t *testing.T) {
-	repo := cfg.NewRepository()
-	ctx, err := core.NewContext(core.NewConfig(repo))
-	if err != nil {
-		t.Fatalf("failed to create a context: %s", err)
-	}
-	if err := ctx.Start(); err != nil {
-		t.Fatalf("failed to start context: %s", err)
-	}
-	key := types.NewKey("plugin.path")
-	kv := &types.KeyValue{Key: key, Value: "/no/where"}
-	prov := NewScalarConfigProvider(kv)
-	if err := repo.RegisterKey(key, prov); err != nil {
-		t.Fatalf("failed to register a key in repo: %s", err)
-	}
-	plugincfg := &types.CfgBlockActor{
-		Module: "plugin.test-plugin",
-	}
-	actorname := "test-plugin-1"
-	a, err := buildPluginActor(MockPluginLoader, actorname, ctx, plugincfg)
-	if err != nil {
-		t.Fatalf("failed to build plugin actor: %s", err)
-	}
-	if _, ok := a.(*TestActor); !ok {
-		t.Fatalf("unexpected actor type: got: %s, want: %s", reflect.TypeOf(a), reflect.TypeOf(new(TestActor)))
-	}
-	if name := a.Name(); name != actorname {
-		t.Fatalf("unexpected actor name: got: %s, want: %s", name, actorname)
-	}
 }
