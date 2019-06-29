@@ -53,9 +53,3 @@ type CfgBlockActor struct {
 type CfgBlockPipeline struct {
 	Connect []string
 }
-
-// IsDisconnected is a helper method indicating a pipeline block has no
-// outgoing connections: 0 connections, 0 links and no routes.
-func (cbp CfgBlockPipeline) IsDisconnected() bool {
-	return len(cbp.Connect) == 0
-}

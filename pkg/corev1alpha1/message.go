@@ -35,8 +35,8 @@ type Message struct {
 	body   []byte
 	done   chan struct{}
 	meta   map[interface{}]interface{}
-	mutex  sync.Mutex
 	status MsgStatus
+	mutex  sync.Mutex
 }
 
 func NewMessage(body []byte) *Message {

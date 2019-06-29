@@ -49,5 +49,10 @@ func (ctx *Context) Stop() error {
 	return nil
 }
 
-func (ctx *Context) Logger() *Logger { return ctx.logger }
-func (ctx *Context) Config() *Config { return ctx.config }
+func (ctx *Context) Logger() *Logger {
+	return ctx.logger
+}
+
+func (ctx *Context) Config() *Config {
+	return ctx.config
+}

@@ -10,10 +10,6 @@ import (
 	flowplugin "github.com/awesome-flow/flow/pkg/util/plugin"
 )
 
-type ActorFactory interface {
-	Build(name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error)
-}
-
 var CoreBuilders map[string]core.Builder = map[string]core.Builder{
 	"core.receiver.tcp":  actor.NewReceiverTCP,
 	"core.receiver.udp":  actor.NewReceiverUDP,
@@ -32,6 +28,10 @@ var CoreBuilders map[string]core.Builder = map[string]core.Builder{
 	"core.sink.tcp":    actor.NewSinkTCP,
 	"core.sink.udp":    actor.NewSinkUDP,
 	"core.sink.null":   actor.NewSinkNull,
+}
+
+type ActorFactory interface {
+	Build(name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error)
 }
 
 type CoreActorFactory struct {
