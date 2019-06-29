@@ -1,14 +1,12 @@
 package pipeline
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 	"testing"
 
 	"github.com/awesome-flow/flow/pkg/cfg"
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
-	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util/data"
 	flowplugin "github.com/awesome-flow/flow/pkg/util/plugin"
 )
@@ -243,44 +241,4 @@ func (p *TestPlugin) Lookup(symName string) (flowplugin.Symbol, error) {
 
 func MockPluginLoader(path string) (flowplugin.Plugin, error) {
 	return &TestPlugin{path: path}, nil
-}
-
-type ScalarConfigProvider struct {
-	kv *types.KeyValue
-}
-
-var _ cfg.Provider = (*ScalarConfigProvider)(nil)
-
-func NewScalarConfigProvider(kv *types.KeyValue) *ScalarConfigProvider {
-	return &ScalarConfigProvider{
-		kv: kv,
-	}
-}
-
-func (s *ScalarConfigProvider) Name() string {
-	return fmt.Sprintf("scalar-provider-%s", s.kv.Key)
-}
-
-func (s *ScalarConfigProvider) Depends() []string {
-	return []string{}
-}
-
-func (*ScalarConfigProvider) SetUp(repo *cfg.Repository) error {
-	return nil
-}
-
-func (*ScalarConfigProvider) TearDown(*cfg.Repository) error {
-	return nil
-}
-
-func (s *ScalarConfigProvider) Get(key types.Key) (*types.KeyValue, bool) {
-	if key.Equals(s.kv.Key) {
-		return s.kv, true
-	}
-
-	return nil, false
-}
-
-func (s *ScalarConfigProvider) Weight() int {
-	return 42
 }
