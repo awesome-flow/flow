@@ -6,7 +6,9 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/cfg"
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util/data"
+	flowplugin "github.com/awesome-flow/flow/pkg/util/plugin"
 )
 
 func TestStartPropogatesToActors(t *testing.T) {
@@ -16,6 +18,7 @@ func TestStartPropogatesToActors(t *testing.T) {
 	if err := ctx.Start(); err != nil {
 		t.Fatalf("failed to start context: %s", err)
 	}
+	defer ctx.Stop()
 
 	act1, err := NewTestActor("test-actor-1", ctx, nil)
 	if err != nil {
@@ -70,6 +73,7 @@ func TestStopPropogatesToActors(t *testing.T) {
 	if err := ctx.Start(); err != nil {
 		t.Fatalf("failed to start context: %s", err)
 	}
+	defer ctx.Stop()
 
 	act1, err := NewTestActor("test-actor-1", ctx, nil)
 	if err != nil {
@@ -118,5 +122,86 @@ func TestStopPropogatesToActors(t *testing.T) {
 
 	if !reflect.DeepEqual(events, wantevents) {
 		t.Fatalf("unexpected events: got: %v, want: %v", events, wantevents)
+	}
+}
+
+func TestBuildActors(t *testing.T) {
+	coreActorName := "test-core-actor-1"
+	pluginActorName := "test-plugin-actor-1"
+
+	factories := map[string]ActorFactory{
+		"core": NewCoreActorFactoryWithBuilders(
+			map[string]core.Builder{
+				"core.test-actor": NewTestActor,
+			},
+		),
+		"plugin": NewPluginActorFactoryWithLoader(
+			func(path, name string) (flowplugin.Plugin, error) {
+				return &TestPlugin{
+					path: path,
+					name: name,
+				}, nil
+			},
+		),
+	}
+	repo := cfg.NewRepository()
+	ctx, err := core.NewContext(core.NewConfig(repo))
+	if err != nil {
+		t.Fatalf("failed to create a context: %s", err)
+	}
+	actorscfg := map[string]types.CfgBlockActor{
+		coreActorName: types.CfgBlockActor{
+			Module: "core.test-actor",
+		},
+		pluginActorName: types.CfgBlockActor{
+			Module: "plugin.test-plugin",
+		},
+	}
+
+	if _, err := cfg.NewScalarConfigProvider(
+		&types.KeyValue{
+			Key:   types.NewKey("actors"),
+			Value: actorscfg,
+		},
+		repo,
+		42, // doesn't matter
+	); err != nil {
+		t.Fatalf("failed to create scalar provider: %s", err)
+	}
+	if _, err := cfg.NewScalarConfigProvider(
+		&types.KeyValue{
+			Key:   types.NewKey("plugin.path"),
+			Value: "/never/where",
+		},
+		repo,
+		42, // doesn't matter
+	); err != nil {
+		t.Fatalf("failed to create scalar provider: %s", err)
+	}
+
+	if err := ctx.Start(); err != nil {
+		t.Fatalf("failed to start context: %s", err)
+	}
+	defer ctx.Stop()
+
+	actors, err := buildActors(ctx, factories)
+	if err != nil {
+		t.Fatalf("failed to build actors: %s", err)
+	}
+
+	if len(actors) > 2 {
+		t.Fatalf("Unexpected contents of actors map: %+v", actors)
+	}
+
+	for _, name := range []string{coreActorName, pluginActorName} {
+		if _, ok := actors[name]; !ok {
+			t.Fatalf("actor %s is missing from actors map", name)
+		}
+		if _, ok := actors[name].(*TestActor); !ok {
+			t.Fatalf("unexpected actor type: got: %s, want: %s", reflect.TypeOf(actors[name]), "*pipeline.TestActor")
+		}
+		if actorname := actors[name].Name(); actorname != name {
+			t.Fatalf("unexpected actor name: got: %s, want: %s", actors[name].Name(), name)
+		}
 	}
 }
