@@ -2,51 +2,34 @@ package pipeline
 
 import (
 	"fmt"
-	"path"
 	"strings"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
-	"github.com/awesome-flow/flow/pkg/corev1alpha1/actor"
 	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util/data"
-	flowplugin "github.com/awesome-flow/flow/pkg/util/plugin"
 )
 
-var CoreBuilders map[string]core.Builder = map[string]core.Builder{
-	"core.receiver.tcp":  actor.NewReceiverTCP,
-	"core.receiver.udp":  actor.NewReceiverUDP,
-	"core.receiver.http": actor.NewReceiverHTTP,
-	"core.receiver.unix": actor.NewReceiverUnix,
-
-	"core.demux":      actor.NewDemux,
-	"core.mux":        actor.NewMux,
-	"core.router":     actor.NewRouter,
-	"core.throttler":  actor.NewThrottler,
-	"core.fanout":     actor.NewFanout,
-	"core.buffer":     actor.NewBuffer,
-	"core.compressor": actor.NewCompressor,
-
-	"core.sink.dumper": actor.NewSinkDumper,
-	"core.sink.tcp":    actor.NewSinkTCP,
-	"core.sink.udp":    actor.NewSinkUDP,
-	"core.sink.null":   actor.NewSinkNull,
-}
-
 type Pipeline struct {
-	ctx          *core.Context
-	actors       map[string]core.Actor
-	topology     *data.Topology
-	pluginloader func(string) (flowplugin.Plugin, error)
+	ctx       *core.Context
+	actors    map[string]core.Actor
+	topology  *data.Topology
+	factories map[string]ActorFactory
 }
 
 var _ core.Runner = (*Pipeline)(nil)
 
 func NewPipeline(ctx *core.Context) (*Pipeline, error) {
-	return NewPipelineWithBuilders(ctx, CoreBuilders)
+	return NewPipelineWithFactories(
+		ctx,
+		map[string]ActorFactory{
+			"core":   NewCoreActorFactory(),
+			"plugin": NewPluginActorFactory(),
+		},
+	)
 }
 
-func NewPipelineWithBuilders(ctx *core.Context, builders map[string]core.Builder) (*Pipeline, error) {
-	actors, err := buildActors(ctx, builders, flowplugin.GoPluginLoader)
+func NewPipelineWithFactories(ctx *core.Context, factories map[string]ActorFactory) (*Pipeline, error) {
+	actors, err := buildActors(ctx, factories)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +40,10 @@ func NewPipelineWithBuilders(ctx *core.Context, builders map[string]core.Builder
 	}
 
 	p := &Pipeline{
-		ctx:          ctx,
-		actors:       actors,
-		topology:     topology,
-		pluginloader: flowplugin.GoPluginLoader,
+		ctx:       ctx,
+		actors:    actors,
+		topology:  topology,
+		factories: factories,
 	}
 
 	return p, nil
@@ -104,68 +87,34 @@ func (p *Pipeline) Context() *core.Context {
 	return p.ctx
 }
 
-func buildActors(ctx *core.Context, builders map[string]core.Builder, pl flowplugin.Loader) (map[string]core.Actor, error) {
+func buildActors(ctx *core.Context, factories map[string]ActorFactory) (map[string]core.Actor, error) {
 	actblocks, ok := ctx.Config().Get(types.NewKey("actors"))
 	if !ok {
 		return nil, fmt.Errorf("`actors` config is missing")
 	}
 	actors := make(map[string]core.Actor)
+
 	for name, actorcfg := range actblocks.(map[string]types.CfgBlockActor) {
-		var actor core.Actor
-		var err error
 		module := actorcfg.Module
-		if strings.HasPrefix(module, "core.") {
-			actor, err = buildCoreActor(builders, name, ctx, &actorcfg)
-		} else if strings.HasPrefix(module, "plugin.") {
-			actor, err = buildPluginActor(pl, name, ctx, &actorcfg)
-		} else {
-			err = fmt.Errorf("unknown actor module: %s", module)
+
+		factkey := strings.Split(module, ".")[0]
+		if len(factkey) == 0 {
+			factkey = module
 		}
+
+		if _, ok := factories[factkey]; !ok {
+			return nil, fmt.Errorf("failed to find an actor factory for key %s", factkey)
+		}
+
+		actor, err := factories[factkey].Build(name, ctx, &actorcfg)
 		if err != nil {
 			return nil, err
 		}
+
 		actors[name] = actor
 	}
 
 	return actors, nil
-}
-
-func buildCoreActor(builders map[string]core.Builder, name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
-	module := cfg.Module
-	if _, ok := builders[module]; !ok {
-		return nil, fmt.Errorf("unrecognised core module: %s", module)
-	}
-	return (builders[module])(name, ctx, core.Params(cfg.Params))
-}
-
-func buildPluginActor(pl flowplugin.Loader, name string, ctx *core.Context, cfg *types.CfgBlockActor) (core.Actor, error) {
-	pname := strings.Replace(cfg.Module, "plugin.", "", 1)
-
-	ctx.Logger().Debug("initializing plugin %q", pname)
-
-	ppath, ok := ctx.Config().Get(types.NewKey("plugin.path"))
-	if !ok {
-		return nil, fmt.Errorf("failed to get `plugin.path` config")
-	}
-	fullpath := path.Join(ppath.(string), pname, pname+".so")
-
-	ctx.Logger().Trace("loading plugin shared library: %s", fullpath)
-
-	plugin, err := pl(fullpath)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx.Logger().Trace("successfully loaded plugin %q shared library", pname)
-
-	ctx.Logger().Trace("searching for plugin %q constructor: %q", pname, cfg.Builder)
-	c, err := plugin.Lookup(cfg.Builder)
-	if err != nil {
-		return nil, err
-	}
-	ctx.Logger().Trace("successfully loaded plugin %q constructor", pname)
-
-	return c.(func(string, *core.Context, core.Params) (core.Actor, error))(name, ctx, core.Params(cfg.Params))
 }
 
 func buildTopology(ctx *core.Context, actors map[string]core.Actor) (*data.Topology, error) {
