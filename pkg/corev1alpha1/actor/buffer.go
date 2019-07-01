@@ -12,7 +12,7 @@ const (
 
 type MsgCnt struct {
 	msg *core.Message
-	cnt int
+	cnt uint32
 }
 
 func NewMsgCnt(msg *core.Message) *MsgCnt {
