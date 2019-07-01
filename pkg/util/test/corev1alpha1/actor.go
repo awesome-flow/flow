@@ -1,10 +1,17 @@
-package pipeline
+package corev1alpha1
 
 import (
 	"sync"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
-	flowplugin "github.com/awesome-flow/flow/pkg/util/plugin"
+)
+
+type TestActorState string
+
+const (
+	TestActorStateNew     TestActorState = "new"
+	TestActorStateStarted                = "started"
+	TestActorStateStopped                = "stopped"
 )
 
 type TestActor struct {
@@ -13,7 +20,7 @@ type TestActor struct {
 	ctx       *core.Context
 	lock      sync.Mutex
 	params    core.Params
-	state     string
+	state     TestActorState
 	queue     chan *core.Message
 	done      chan struct{}
 	onstart   []func()
@@ -27,9 +34,9 @@ func NewTestActor(name string, ctx *core.Context, params core.Params) (core.Acto
 		name:      name,
 		ctx:       ctx,
 		params:    params,
-		queue:     make(chan *core.Message),
+		queue:     make(chan *core.Message, 1),
 		done:      make(chan struct{}),
-		state:     "initialized",
+		state:     TestActorStateNew,
 		onstart:   make([]func(), 0, 1),
 		onstop:    make([]func(), 0, 1),
 		onconnect: make([]func(int, core.Receiver), 0, 1),
@@ -44,7 +51,7 @@ func (t *TestActor) Name() string {
 func (t *TestActor) Start() error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	t.state = "started"
+	t.state = TestActorStateStarted
 	for _, h := range t.onstart {
 		h()
 	}
@@ -63,7 +70,7 @@ func (t *TestActor) Stop() error {
 	if t.peerscnt > 0 {
 		<-t.done
 	}
-	t.state = "stopped"
+	t.state = TestActorStateStopped
 	for _, h := range t.onstop {
 		h()
 	}
@@ -111,15 +118,12 @@ func (t *TestActor) OnReceive(h func(*core.Message)) {
 	t.onreceive = append(t.onreceive, h)
 }
 
-type TestPlugin struct {
-	path string
-	name string
+func (t *TestActor) State() TestActorState {
+	return t.state
 }
 
-func (p *TestPlugin) Load() error {
-	return nil
-}
-
-func (p *TestPlugin) Lookup(symName string) (flowplugin.Symbol, error) {
-	return NewTestActor, nil
+func (t *TestActor) Flush() {
+	for len(t.queue) > 0 {
+		<-t.queue
+	}
 }

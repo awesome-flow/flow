@@ -8,13 +8,14 @@ import (
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 	"github.com/awesome-flow/flow/pkg/types"
 	flowplugin "github.com/awesome-flow/flow/pkg/util/plugin"
+	flowtest "github.com/awesome-flow/flow/pkg/util/test/corev1alpha1"
 )
 
 func TestCoreActorFctoryBuild(t *testing.T) {
 	module := "test.builder"
 	builders := map[string]core.Builder{
 		module: func(name string, ctx *core.Context, params core.Params) (core.Actor, error) {
-			return NewTestActor(name, ctx, params)
+			return flowtest.NewTestActor(name, ctx, params)
 		},
 	}
 	factory := NewCoreActorFactoryWithBuilders(builders)
@@ -35,7 +36,7 @@ func TestCoreActorFctoryBuild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to build actor: %s", err)
 	}
-	if _, ok := actor.(*TestActor); !ok {
+	if _, ok := actor.(*flowtest.TestActor); !ok {
 		t.Fatalf("unexpected type of actor: got: %s, want: %s", reflect.TypeOf(actor).String(), "TestActor")
 	}
 	if actor.Name() != name {
@@ -46,9 +47,9 @@ func TestCoreActorFctoryBuild(t *testing.T) {
 func TestPluginActorFactoryBuild(t *testing.T) {
 	name := "test-plugin-actor-1"
 	loader := func(path, name string) (flowplugin.Plugin, error) {
-		return &TestPlugin{
-			path: path,
-			name: name,
+		return &flowtest.TestPlugin{
+			Path: path,
+			Name: name,
 		}, nil
 	}
 	repo := cfg.NewRepository()
@@ -78,7 +79,7 @@ func TestPluginActorFactoryBuild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to build actor: %s", err)
 	}
-	if _, ok := actor.(*TestActor); !ok {
+	if _, ok := actor.(*flowtest.TestActor); !ok {
 		t.Fatalf("unexpected type of actor: got: %s, want: %s", reflect.TypeOf(actor).String(), "*pipeline.TestActor")
 	}
 	if actor.Name() != name {
