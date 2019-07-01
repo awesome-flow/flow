@@ -9,6 +9,7 @@ import (
 	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util/data"
 	flowplugin "github.com/awesome-flow/flow/pkg/util/plugin"
+	flowtest "github.com/awesome-flow/flow/pkg/util/test/corev1alpha1"
 )
 
 func TestStartPropogatesToActors(t *testing.T) {
@@ -20,11 +21,11 @@ func TestStartPropogatesToActors(t *testing.T) {
 	}
 	defer ctx.Stop()
 
-	act1, err := NewTestActor("test-actor-1", ctx, nil)
+	act1, err := flowtest.NewTestActor("test-actor-1", ctx, nil)
 	if err != nil {
 		t.Fatalf("failed to create a test actor: %s", err)
 	}
-	act2, err := NewTestActor("test-actor-2", ctx, nil)
+	act2, err := flowtest.NewTestActor("test-actor-2", ctx, nil)
 	if err != nil {
 		t.Fatalf("failed to create a test actor: %s", err)
 	}
@@ -38,11 +39,11 @@ func TestStartPropogatesToActors(t *testing.T) {
 
 	events := make([]string, 0, 2)
 
-	act1.(*TestActor).OnStart(func() {
+	act1.(*flowtest.TestActor).OnStart(func() {
 		events = append(events, act1.Name())
 	})
 
-	act2.(*TestActor).OnStart(func() {
+	act2.(*flowtest.TestActor).OnStart(func() {
 		events = append(events, act2.Name())
 	})
 
@@ -75,11 +76,11 @@ func TestStopPropogatesToActors(t *testing.T) {
 	}
 	defer ctx.Stop()
 
-	act1, err := NewTestActor("test-actor-1", ctx, nil)
+	act1, err := flowtest.NewTestActor("test-actor-1", ctx, nil)
 	if err != nil {
 		t.Fatalf("failed to create a test actor: %s", err)
 	}
-	act2, err := NewTestActor("test-actor-2", ctx, nil)
+	act2, err := flowtest.NewTestActor("test-actor-2", ctx, nil)
 	if err != nil {
 		t.Fatalf("failed to create a test actor: %s", err)
 	}
@@ -93,11 +94,11 @@ func TestStopPropogatesToActors(t *testing.T) {
 
 	events := make([]string, 0, 2)
 
-	act1.(*TestActor).OnStop(func() {
+	act1.(*flowtest.TestActor).OnStop(func() {
 		events = append(events, act1.Name())
 	})
 
-	act2.(*TestActor).OnStop(func() {
+	act2.(*flowtest.TestActor).OnStop(func() {
 		events = append(events, act2.Name())
 	})
 
@@ -132,14 +133,14 @@ func TestBuildActors(t *testing.T) {
 	factories := map[string]ActorFactory{
 		"core": NewCoreActorFactoryWithBuilders(
 			map[string]core.Builder{
-				"core.test-actor": NewTestActor,
+				"core.test-actor": flowtest.NewTestActor,
 			},
 		),
 		"plugin": NewPluginActorFactoryWithLoader(
 			func(path, name string) (flowplugin.Plugin, error) {
-				return &TestPlugin{
-					path: path,
-					name: name,
+				return &flowtest.TestPlugin{
+					Path: path,
+					Name: name,
 				}, nil
 			},
 		),
@@ -197,7 +198,7 @@ func TestBuildActors(t *testing.T) {
 		if _, ok := actors[name]; !ok {
 			t.Fatalf("actor %s is missing from actors map", name)
 		}
-		if _, ok := actors[name].(*TestActor); !ok {
+		if _, ok := actors[name].(*flowtest.TestActor); !ok {
 			t.Fatalf("unexpected actor type: got: %s, want: %s", reflect.TypeOf(actors[name]), "*pipeline.TestActor")
 		}
 		if actorname := actors[name].Name(); actorname != name {

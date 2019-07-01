@@ -11,16 +11,12 @@ const (
 )
 
 type MsgCnt struct {
-	msg  *core.Message
-	cnt  int
-	done chan struct{}
+	msg *core.Message
+	cnt int
 }
 
-func NewMsgCnt(msg *core.Message, done chan struct{}) *MsgCnt {
-	return &MsgCnt{
-		msg:  msg,
-		done: done,
-	}
+func NewMsgCnt(msg *core.Message) *MsgCnt {
+	return &MsgCnt{msg: msg}
 }
 
 type Buffer struct {
@@ -50,19 +46,24 @@ func (b *Buffer) Start() error {
 	for i := 0; i < nthreads.(int); i++ {
 		go func() {
 			for msgcnt := range b.queueIn {
-				b.queueOut <- msgcnt.msg
-				s := msgcnt.msg.Await()
-				if s != core.MsgStatusDone && s != core.MsgStatusPartialSend && msgcnt.cnt < DefaultBufMaxAttempts {
-					msgcnt.msg.SwapDoneChan(make(chan struct{}))
+				msgcp := msgcnt.msg.Copy()
+				done := msgcp.AwaitChan()
+				b.queueOut <- msgcp
+				sts := <-done
+				msgcnt.cnt++
+				if sts != core.MsgStatusDone &&
+					sts != core.MsgStatusPartialSend &&
+					msgcnt.cnt < DefaultBufMaxAttempts {
 					b.queueIn <- msgcnt
 					continue
 				}
-
-				msgcnt.msg.SwapDoneChan(msgcnt.done)
-				msgcnt.msg.Complete(s)
+				if err := msgcnt.msg.Complete(sts); err != nil {
+					b.ctx.Logger().Error("failed to complete mesage: %s", err)
+				}
 			}
 		}()
 	}
+
 	return nil
 }
 
@@ -88,8 +89,7 @@ func (b *Buffer) Connect(nthreads int, peer core.Receiver) error {
 }
 
 func (b *Buffer) Receive(msg *core.Message) error {
-	done := msg.SwapDoneChan(make(chan struct{}))
-	b.queueIn <- NewMsgCnt(msg, done)
+	b.queueIn <- NewMsgCnt(msg)
 
 	return nil
 }

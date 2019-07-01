@@ -88,20 +88,3 @@ func TestCopy(t *testing.T) {
 		t.Fatalf("unexpected message meta: %v, want: %v", cpmsg.meta, msg.meta)
 	}
 }
-
-func TestSwapDoneChan(t *testing.T) {
-	repl := make(chan struct{})
-	msg := NewMessage(testutil.RandBytes(1024))
-	msg.SwapDoneChan(repl)
-	done := make(chan struct{})
-	go func() {
-		<-repl
-		close(done)
-	}()
-	msg.Complete(MsgStatusDone)
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-		t.Fatalf("timed out to receive a chan close signal")
-	}
-}

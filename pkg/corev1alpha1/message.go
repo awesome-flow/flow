@@ -1,6 +1,7 @@
 package corev1alpha1
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -29,6 +30,10 @@ const (
 	// MsgStatusThrottled represents a message which submission process was
 	// cancelled due to a quota exhausting.
 	MsgStatusThrottled
+)
+
+var (
+	MsgCompletedBeforeErr = fmt.Errorf("message has been completed before")
 )
 
 type Message struct {
@@ -65,9 +70,15 @@ func (msg *Message) AwaitChan() <-chan MsgStatus {
 	return res
 }
 
-func (msg *Message) Complete(status MsgStatus) {
+func (msg *Message) Complete(status MsgStatus) error {
+	msg.mutex.Lock()
+	defer msg.mutex.Unlock()
+	if msg.status != MsgStatusNew {
+		return MsgCompletedBeforeErr
+	}
 	msg.status = status
 	close(msg.done)
+	return nil
 }
 
 func (msg *Message) Body() []byte {
@@ -115,10 +126,4 @@ func (msg *Message) unsafeCopy() *Message {
 		cpmsg.unsafeSetMeta(key, val)
 	}
 	return cpmsg
-}
-
-func (msg *Message) SwapDoneChan(newdone chan struct{}) chan struct{} {
-	var olddone chan struct{}
-	olddone, msg.done = msg.done, newdone
-	return olddone
 }
