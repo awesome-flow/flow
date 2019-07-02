@@ -1,12 +1,10 @@
 package actor
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 	"testing"
 
-	"github.com/awesome-flow/flow/pkg/cfg"
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util"
@@ -14,28 +12,7 @@ import (
 	flowtest "github.com/awesome-flow/flow/pkg/util/test/corev1alpha1"
 )
 
-func newCtxForBuffer(t *testing.T) *core.Context {
-	repo := cfg.NewRepository()
-	nthreads := 1 + testutil.RandInt(4)
-	if _, err := cfg.NewScalarConfigProvider(
-		&types.KeyValue{
-			Key:   types.NewKey("system.maxprocs"),
-			Value: nthreads,
-		},
-		repo,
-		42, // doesn't matter
-	); err != nil {
-		t.Fatalf("failed to create a new scalar provider: %s", err)
-	}
-	ctx, err := core.NewContext(core.NewConfig(repo))
-	if err != nil {
-		t.Fatalf("failed to create a new context: %s", err)
-	}
-	return ctx
-}
-
 func TestBufferRetry(t *testing.T) {
-
 	tests := []struct {
 		name      string
 		counts    []uint32
@@ -65,14 +42,14 @@ func TestBufferRetry(t *testing.T) {
 			expstatus: core.MsgStatusDone,
 		},
 		{
-			name:      fmt.Sprintf("fails %d times", DefaultBufMaxAttempts-1),
+			name:      "fails maxAttempts-1 times",
 			counts:    []uint32{0, DefaultBufMaxAttempts - 1},
 			statuses:  []core.MsgStatus{core.MsgStatusFailed, core.MsgStatusDone},
 			expcnt:    DefaultBufMaxAttempts,
 			expstatus: core.MsgStatusDone,
 		},
 		{
-			name:      fmt.Sprintf("fails %d times", DefaultBufMaxAttempts),
+			name:      "fails maxAttempts times",
 			counts:    []uint32{0, DefaultBufMaxAttempts},
 			statuses:  []core.MsgStatus{core.MsgStatusFailed, core.MsgStatusDone},
 			expcnt:    DefaultBufMaxAttempts,
@@ -84,7 +61,10 @@ func TestBufferRetry(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			ctx := newCtxForBuffer(t)
+			ctx, err := newContextWithConfig(map[string]interface{}{"system.maxprocs": 1 + testutil.RandInt(4)})
+			if err != nil {
+				t.Fatalf("failed to create a context: %s", err)
+			}
 			if err := ctx.Start(); err != nil {
 				t.Fatalf("failed to start context: %s", err)
 			}

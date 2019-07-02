@@ -15,7 +15,7 @@ import (
 
 type CoderFunc func([]byte, int) ([]byte, error)
 
-var Coders = map[string]CoderFunc{
+var DefaultCoders = map[string]CoderFunc{
 	"gzip": func(payload []byte, level int) ([]byte, error) {
 		var b bytes.Buffer
 		w, err := gzip.NewWriterLevel(&b, level)
@@ -96,18 +96,26 @@ type Compressor struct {
 var _ core.Actor = (*Compressor)(nil)
 
 func NewCompressor(name string, ctx *core.Context, params core.Params) (core.Actor, error) {
+	return NewCompressorWithCoders(name, ctx, params, DefaultCoders)
+}
+
+func NewCompressorWithCoders(name string, ctx *core.Context, params core.Params, coders map[string]CoderFunc) (core.Actor, error) {
 	alg, ok := params["compress"]
 	if !ok {
 		return nil, fmt.Errorf("compressor %q is missing `compress` config", name)
 	}
-	coder, ok := Coders[alg.(string)]
+	coder, ok := coders[alg.(string)]
 	if !ok {
-		return nil, fmt.Errorf("compressor %q failed to initialize: unknown compression algorithm %q", name, alg)
+		return nil, fmt.Errorf("compressor %q: unknown compression algorithm %q", name, alg)
 	}
 	level := -1
 	if l, ok := params["level"]; ok {
+		if _, ok := l.(int); !ok {
+			return nil, fmt.Errorf("compressor %q: malformed compression level provided: got: %+v, want: an integer", name, l)
+		}
 		level = l.(int)
 	}
+
 	return &Compressor{
 		name:  name,
 		ctx:   ctx,
