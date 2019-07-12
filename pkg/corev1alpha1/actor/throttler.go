@@ -23,6 +23,7 @@ type Throttler struct {
 	buckets map[string]*int64
 	mutex   sync.RWMutex
 	queue   chan *core.Message
+	wg      sync.WaitGroup
 }
 
 var _ core.Actor = (*Throttler)(nil)
@@ -63,18 +64,21 @@ func (t *Throttler) Start() error {
 
 func (t *Throttler) Stop() error {
 	close(t.queue)
+	t.wg.Wait()
 
 	return nil
 }
 
 func (t *Throttler) Connect(nthreads int, peer core.Receiver) error {
 	for i := 0; i < nthreads; i++ {
+		t.wg.Add(1)
 		go func() {
 			for msg := range t.queue {
 				if err := peer.Receive(msg); err != nil {
 					t.ctx.Logger().Error(err.Error())
 				}
 			}
+			t.wg.Done()
 		}()
 	}
 
