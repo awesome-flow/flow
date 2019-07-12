@@ -43,6 +43,10 @@ func (d *Demux) Start() error {
 }
 
 func (d *Demux) Stop() error {
+	for _, q := range d.queues {
+		close(q)
+	}
+
 	return nil
 }
 

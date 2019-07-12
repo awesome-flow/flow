@@ -40,6 +40,7 @@ func (r *Router) Connect(nthreads int, peer core.Receiver) error {
 		go func() {
 			for msg := range queue {
 				if err := peer.Receive(msg); err != nil {
+					msg.Complete(core.MsgStatusFailed)
 					r.ctx.Logger().Error(err.Error())
 				}
 			}
