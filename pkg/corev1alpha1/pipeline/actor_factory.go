@@ -11,23 +11,22 @@ import (
 )
 
 var CoreBuilders map[string]core.Builder = map[string]core.Builder{
+	"core.receiver.http": actor.NewReceiverHTTP,
 	"core.receiver.tcp":  actor.NewReceiverTCP,
 	"core.receiver.udp":  actor.NewReceiverUDP,
-	"core.receiver.http": actor.NewReceiverHTTP,
 	"core.receiver.unix": actor.NewReceiverUnix,
 
-	"core.demux":      actor.NewDemux,
-	"core.mux":        actor.NewMux,
-	"core.router":     actor.NewRouter,
-	"core.throttler":  actor.NewThrottler,
-	"core.fanout":     actor.NewFanout,
 	"core.buffer":     actor.NewBuffer,
 	"core.compressor": actor.NewCompressor,
+	"core.mux":        actor.NewMux,
+	"core.replicator": actor.NewReplicator,
+	"core.router":     actor.NewRouter,
+	"core.throttler":  actor.NewThrottler,
 
 	"core.sink.dumper": actor.NewSinkDumper,
+	"core.sink.null":   actor.NewSinkNull,
 	"core.sink.tcp":    actor.NewSinkTCP,
 	"core.sink.udp":    actor.NewSinkUDP,
-	"core.sink.null":   actor.NewSinkNull,
 }
 
 type ActorFactory interface {
