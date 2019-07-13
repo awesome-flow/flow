@@ -144,3 +144,107 @@ func TestReplicate(t *testing.T) {
 		}(mask)
 	}
 }
+
+func TestReplicateStatus(t *testing.T) {
+	tests := []struct {
+		name      string
+		statuses  []core.MsgStatus
+		expstatus core.MsgStatus
+	}{
+		{
+			name:      "all done",
+			statuses:  []core.MsgStatus{core.MsgStatusDone, core.MsgStatusDone, core.MsgStatusDone, core.MsgStatusDone},
+			expstatus: core.MsgStatusDone,
+		},
+		{
+			name:      "partial send",
+			statuses:  []core.MsgStatus{core.MsgStatusPartialSend, core.MsgStatusDone, core.MsgStatusDone, core.MsgStatusDone},
+			expstatus: core.MsgStatusPartialSend,
+		},
+		{
+			name:      "timeout",
+			statuses:  []core.MsgStatus{core.MsgStatusTimedOut, core.MsgStatusDone, core.MsgStatusDone, core.MsgStatusDone},
+			expstatus: core.MsgStatusTimedOut,
+		},
+		{
+			name:      "other failures",
+			statuses:  []core.MsgStatus{core.MsgStatusThrottled, core.MsgStatusFailed, core.MsgStatusInvalid, core.MsgStatusUnroutable},
+			expstatus: core.MsgStatusFailed,
+		},
+		{
+			name:      "mixed failures resolved as failure",
+			statuses:  []core.MsgStatus{core.MsgStatusDone, core.MsgStatusPartialSend, core.MsgStatusTimedOut, core.MsgStatusFailed},
+			expstatus: core.MsgStatusFailed,
+		},
+		{
+			name:      "mixed failures resolved as timeout",
+			statuses:  []core.MsgStatus{core.MsgStatusDone, core.MsgStatusPartialSend, core.MsgStatusTimedOut},
+			expstatus: core.MsgStatusTimedOut,
+		},
+		{
+			name:      "mixed failures resolved as timeout",
+			statuses:  []core.MsgStatus{core.MsgStatusDone, core.MsgStatusPartialSend},
+			expstatus: core.MsgStatusPartialSend,
+		},
+	}
+
+	t.Parallel()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			repo := cfg.NewRepository()
+			ctx, err := core.NewContext(core.NewConfig(repo))
+			if err != nil {
+				t.Fatalf("failed to create context: %s", err)
+			}
+			if err := ctx.Start(); err != nil {
+				t.Fatalf("failed to start context: %s", err)
+			}
+
+			r, err := NewReplicator("replicator", ctx, core.Params{"mode": "each"})
+			if err != nil {
+				t.Fatalf("failed to create replicator: %s", err)
+			}
+
+			npeers := len(testCase.statuses)
+			nthreads := 4
+			for i := 0; i < npeers; i++ {
+				peer, err := flowtest.NewTestActor(
+					fmt.Sprintf("test-actor-%d", i),
+					ctx,
+					core.Params{},
+				)
+				if err != nil {
+					t.Fatalf("failed to create test actor: %s", err)
+				}
+
+				func(status core.MsgStatus) {
+					peer.(*flowtest.TestActor).OnReceive(func(msg *core.Message) {
+						msg.Complete(status)
+						peer.(*flowtest.TestActor).Flush()
+					})
+				}(testCase.statuses[i])
+
+				if err := r.Connect(nthreads, peer); err != nil {
+					t.Fatalf("failed to connect test actor: %s", err)
+				}
+				if err := peer.Start(); err != nil {
+					t.Fatalf("failed to start test actor: %s", err)
+				}
+			}
+
+			if err := r.Start(); err != nil {
+				t.Fatalf("failed to start replicator: %s", err)
+			}
+
+			msg := core.NewMessage(testutil.RandBytes(1024))
+			if err := r.(*Replicator).replicate(msg, (1<<uint8(npeers))-1); err != nil {
+				t.Fatalf("failed to send message: %s", err)
+			}
+
+			if s := msg.Await(); s != testCase.expstatus {
+				t.Fatalf("unexpected message status: got: %d, want: %d", s, testCase.expstatus)
+			}
+		})
+	}
+}
