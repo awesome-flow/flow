@@ -22,7 +22,7 @@ const (
 	ReplicateFanout
 	ReplicateRand
 	ReplicateNcopy
-	ReplicateAll
+	ReplicateEach
 )
 
 type Replicator struct {
@@ -58,8 +58,8 @@ func NewReplicator(name string, ctx *core.Context, params core.Params) (core.Act
 		maskfunc = maskRand
 	case "ncopy":
 		maskfunc = maskNcopy
-	case "all":
-		maskfunc = maskAll
+	case "each":
+		maskfunc = maskEach
 	default:
 		return nil, fmt.Errorf("replicator %s `mode` is unknown: %s", name, mode.(string))
 	}
@@ -90,7 +90,7 @@ func maskNcopy(uint64, int) uint64 {
 	panic("not implemented")
 }
 
-func maskAll(mask uint64, lenq int) uint64 {
+func maskEach(mask uint64, lenq int) uint64 {
 	return (1 << uint64(lenq)) - 1
 }
 
@@ -135,7 +135,7 @@ func (r *Replicator) replicate(msg *core.Message, mask uint64) error {
 			compsts |= 1 << 3
 		}
 	}
-	if compsts == 1 {
+	if compsts <= 1 { // 0 stands for no-send (0-mask)
 		msg.Complete(core.MsgStatusDone)
 	} else if compsts>>1 == 1 {
 		msg.Complete(core.MsgStatusPartialSend)
