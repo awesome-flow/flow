@@ -15,22 +15,6 @@ import (
 	flowtest "github.com/awesome-flow/flow/pkg/util/test/corev1alpha1"
 )
 
-type testResponseWriter struct {
-	headers map[string][]string
-	status  int
-	bytes.Buffer
-}
-
-var _ http.ResponseWriter = (*testResponseWriter)(nil)
-
-func (rw *testResponseWriter) Header() http.Header {
-	return rw.headers
-}
-
-func (rw *testResponseWriter) WriteHeader(status int) {
-	rw.status = status
-}
-
 func TestHandleReqV1alpha1(t *testing.T) {
 	nthreads := 4
 

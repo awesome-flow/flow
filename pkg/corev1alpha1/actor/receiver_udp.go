@@ -6,6 +6,7 @@ import (
 	"net"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type ReceiverUDP struct {
@@ -42,7 +43,22 @@ func (r *ReceiverUDP) Name() string {
 	return r.name
 }
 
+func (r *ReceiverUDP) handleConn(conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	scanner := bufio.NewScanner(reader)
+
+	for scanner.Scan() {
+		msg := core.NewMessage(scanner.Bytes())
+		r.queue <- msg
+	}
+
+	if err := scanner.Err(); err != nil {
+		r.ctx.Logger().Error(err.Error())
+	}
+}
+
 func (r *ReceiverUDP) Start() error {
+	r.ctx.Logger().Info("starting udp listener at %s", r.addr)
 	conn, err := net.ListenUDP("udp", r.addr)
 	if err != nil {
 		return err
@@ -55,24 +71,20 @@ func (r *ReceiverUDP) Start() error {
 		isdone = true
 	}()
 
-	go func() {
-		r.ctx.Logger().Info("starting udp listener at %s", r.addr)
-		for !isdone {
-			reader := bufio.NewReader(r.conn)
-			scanner := bufio.NewScanner(reader)
+	nthreads, ok := r.ctx.Config().Get(types.NewKey("system.maxprocs"))
+	if !ok {
+		nthreads = 1
+	}
 
-			for scanner.Scan() {
-				msg := core.NewMessage(scanner.Bytes())
-				r.queue <- msg
+	for i := 0; i < nthreads.(int); i++ {
+		go func() {
+			for !isdone {
+				r.handleConn(conn)
 			}
 
-			if err := scanner.Err(); err != nil {
-				r.ctx.Logger().Error(err.Error())
-			}
-		}
-
-		r.conn.Close()
-	}()
+			r.conn.Close()
+		}()
+	}
 
 	return nil
 }
