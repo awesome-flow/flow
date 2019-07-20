@@ -114,7 +114,7 @@ func (u *ReceiverUnix) Receive(msg *core.Message) error {
 	return fmt.Errorf("unix receiver %q can not receive internal messages", u.name)
 }
 
-func (u *ReceiverUnix) handleConn(conn *net.UnixConn) {
+func (u *ReceiverUnix) handleConn(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	scanner := bufio.NewScanner(reader)

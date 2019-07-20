@@ -9,20 +9,17 @@ import (
 	flowtest "github.com/awesome-flow/flow/pkg/util/test/corev1alpha1"
 )
 
-func TestUDPHandleConn(t *testing.T) {
+func TestUnixHandleConn(t *testing.T) {
 	nthreads := 4
-	ctx, err := newContextWithConfig(map[string]interface{}{
-		"system.maxprocs": nthreads,
-	})
+	ctx, err := newContextWithConfig(map[string]interface{}{})
 	if err != nil {
-		t.Fatalf("failed to create context: %d", err)
+		t.Fatalf("failed to create context: %s", err)
 	}
-
-	rcv, err := NewReceiverUDP("receiver", ctx, core.Params{
-		"bind": "127.0.0.1:12345",
+	rcv, err := NewReceiverUnix("receiver", ctx, core.Params{
+		"bind": "/never/where",
 	})
 	if err != nil {
-		t.Fatalf("failed to create UDP receiver: %s", err)
+		t.Fatalf("failed to create Unix receiver: %s", err)
 	}
 
 	peer, err := flowtest.NewTestActor("test-actor", ctx, core.Params{})
@@ -35,21 +32,21 @@ func TestUDPHandleConn(t *testing.T) {
 		mailbox <- msg
 		peer.(*flowtest.TestActor).Flush()
 	})
-
 	if err := rcv.Connect(nthreads, peer); err != nil {
 		t.Fatalf("failed to connect test actor: %s", err)
 	}
 
 	conn := newTestConn(
-		newTestAddr("tcp", "127.0.0.1:12345"),
-		newTestAddr("tcp", "127.0.0.1:23456"),
+		newTestAddr("unix", "/never/where"),
+		newTestAddr("unix", "/never/where"),
 	)
+
 	body := testutil.RandBytes(1024)
 	if _, err := conn.Write(body); err != nil {
 		t.Fatalf("failed to write body data to test conn: %s", err)
 	}
 
-	rcv.(*ReceiverUDP).handleConn(conn)
+	rcv.(*ReceiverUnix).handleConn(conn)
 	msg := <-mailbox
 
 	if !reflect.DeepEqual(msg.Body(), body) {
