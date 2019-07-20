@@ -67,6 +67,7 @@ func NewReceiverTCP(name string, ctx *core.Context, params core.Params) (core.Ac
 			return nil, fmt.Errorf("tcp receiver %q got an unexpected (non-bool) value for silent: %q", name, s)
 		}
 	}
+
 	return &ReceiverTCP{
 		ctx:    ctx,
 		name:   name,

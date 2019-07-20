@@ -35,3 +35,20 @@ func eqErr(e1, e2 error) bool {
 	}
 	return e1.Error() == e2.Error()
 }
+
+func sts2name(sts core.MsgStatus) string {
+	switch sts {
+	case core.MsgStatusDone:
+		return "MsgStatusDone"
+	case core.MsgStatusFailed:
+		return "MsgStatusFailed"
+	case core.MsgStatusTimedOut:
+		return "MsgStatusTimedOut"
+	case core.MsgStatusUnroutable:
+		return "MsgStatusUnroutable"
+	case core.MsgStatusThrottled:
+		return "MsgStatusThrottled"
+	default:
+		return "Unknown"
+	}
+}
