@@ -46,23 +46,6 @@ func TestHandleReqV1alpha1(t *testing.T) {
 
 	tests := make([]teststruct, 0, len(MsgStatusToHttpResp)+1)
 
-	sts2name := func(sts core.MsgStatus) string {
-		switch sts {
-		case core.MsgStatusDone:
-			return "MsgStatusDone"
-		case core.MsgStatusFailed:
-			return "MsgStatusFailed"
-		case core.MsgStatusTimedOut:
-			return "MsgStatusTimedOut"
-		case core.MsgStatusUnroutable:
-			return "MsgStatusUnroutable"
-		case core.MsgStatusThrottled:
-			return "MsgStatusThrottled"
-		default:
-			return "Unknown"
-		}
-	}
-
 	for sts, ct := range MsgStatusToHttpResp {
 		tests = append(tests, teststruct{
 			name:      fmt.Sprintf("%s to %d %s", sts2name(sts), ct.code, ct.text),
@@ -120,7 +103,7 @@ func TestHandleReqV1alpha1(t *testing.T) {
 
 			peer, err := flowtest.NewTestActor("test-actor", ctx, core.Params{})
 			if err != nil {
-				t.Fatalf("failed to start test actor: %s", err)
+				t.Fatalf("failed to create test actor: %s", err)
 			}
 			if err := rcv.Connect(nthreads, peer); err != nil {
 				t.Fatalf("failed to connect test actor: %s", err)
