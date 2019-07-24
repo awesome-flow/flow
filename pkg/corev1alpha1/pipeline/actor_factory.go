@@ -24,9 +24,7 @@ var CoreBuilders map[string]core.Builder = map[string]core.Builder{
 	"core.throttler":  actor.NewThrottler,
 
 	"core.sink.dumper": actor.NewSinkDumper,
-	"core.sink.null":   actor.NewSinkNull,
-	"core.sink.tcp":    actor.NewSinkTCP,
-	"core.sink.udp":    actor.NewSinkUDP,
+	"core.sink":        actor.NewSink,
 }
 
 type ActorFactory interface {
