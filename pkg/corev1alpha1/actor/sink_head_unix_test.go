@@ -10,21 +10,21 @@ import (
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
 )
 
-func TestSinkHeadTCPConnect(t *testing.T) {
+func TestSinkHeadUnixConnect(t *testing.T) {
 	conn := newTestConn(
-		newTestAddr("tcp", "127.0.0.1:12345"),
-		newTestAddr("tcp", "127.0.0.1:23456"),
+		newTestAddr("unix", "/dev/null"),
+		newTestAddr("unix", "/dev/null"),
 	)
-	connbuilder := func(addr *net.TCPAddr, timeout time.Duration) (net.Conn, error) {
+	connbuilder := func(addr *net.UnixAddr, timeout time.Duration) (net.Conn, error) {
 		return conn, nil
 	}
-	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:12345")
+	addr, err := net.ResolveUnixAddr("unix", "/dev/null")
 	if err != nil {
-		t.Fatalf("failed to resolve tcp addr: %s", err)
+		t.Fatalf("failed to resolve unix addr: %s", err)
 	}
-	head, err := NewSinkHeadTCP(addr)
+	head, err := NewSinkHeadUnix(addr)
 	if err != nil {
-		t.Fatalf("failed to initialize tcp sink: %s", err)
+		t.Fatalf("failed to initialize unix sink: %s", err)
 	}
 	head.connbuilder = connbuilder
 	if err := head.Connect(); err != nil {
@@ -35,18 +35,18 @@ func TestSinkHeadTCPConnect(t *testing.T) {
 	}
 }
 
-func TestSinkHeadTCPConnectFail(t *testing.T) {
+func TestSinkHeadUnixConnectFail(t *testing.T) {
 	wanterr := fmt.Errorf("expected error")
-	connbuilder := func(addr *net.TCPAddr, timeout time.Duration) (net.Conn, error) {
+	connbuilder := func(addr *net.UnixAddr, timeout time.Duration) (net.Conn, error) {
 		return nil, wanterr
 	}
-	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:12345")
+	addr, err := net.ResolveUnixAddr("unix", "/dev/null")
 	if err != nil {
-		t.Fatalf("failed to resolve tcp addr: %s", err)
+		t.Fatalf("failed to resolve unix addr: %s", err)
 	}
-	head, err := NewSinkHeadTCP(addr)
+	head, err := NewSinkHeadUnix(addr)
 	if err != nil {
-		t.Fatalf("failed to initialize tcp sink: %s", err)
+		t.Fatalf("failed to initialize unix sink: %s", err)
 	}
 	head.connbuilder = connbuilder
 	err = head.Connect()
@@ -55,18 +55,18 @@ func TestSinkHeadTCPConnectFail(t *testing.T) {
 	}
 }
 
-func TestSinkHeadTCPWrite(t *testing.T) {
+func TestSinkHeadUnixWrite(t *testing.T) {
 	conn := newTestConn(
-		newTestAddr("tcp", "127.0.0.1:12345"),
-		newTestAddr("tcp", "127.0.0.1:23456"),
+		newTestAddr("unix", "/dev/null"),
+		newTestAddr("unix", "/dev/null"),
 	)
-	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:12345")
+	addr, err := net.ResolveUnixAddr("unix", "/dev/null")
 	if err != nil {
-		t.Fatalf("failed to resolve tcp addr: %s", err)
+		t.Fatalf("failed to resolve unix addr: %s", err)
 	}
-	head, err := NewSinkHeadTCP(addr)
+	head, err := NewSinkHeadUnix(addr)
 	if err != nil {
-		t.Fatalf("failed to initialize tcp sink: %s", err)
+		t.Fatalf("failed to initialize unix sink: %s", err)
 	}
 	head.conn = conn
 	data := testutil.RandBytes(1024)
