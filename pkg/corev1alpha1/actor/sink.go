@@ -68,6 +68,7 @@ func (s *Sink) doConnectHead(notify chan struct{}) error {
 
 		}
 		close(notify)
+		break
 	}
 
 	return nil
@@ -87,6 +88,7 @@ func (s *Sink) Start() error {
 		for msg := range s.queue {
 			if _, err, rec := s.head.Write(msg.Body()); err != nil {
 				s.ctx.Logger().Error("sink %q failed to send message: %s", s.name, err)
+				msg.Complete(core.MsgStatusFailed)
 				if rec {
 					// reconnect routine will close the
 					// notify channel
@@ -94,11 +96,21 @@ func (s *Sink) Start() error {
 					s.reconnect <- notify
 					<-notify
 				}
+				continue
 			}
+			msg.Complete(core.MsgStatusDone)
 		}
 	}()
 
-	return s.head.Start()
+	if err := s.head.Start(); err != nil {
+		return err
+	}
+
+	notify := make(chan struct{})
+	s.reconnect <- notify
+	<-notify
+
+	return nil
 }
 
 func (s *Sink) Stop() error {

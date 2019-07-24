@@ -46,7 +46,7 @@ func (h *SinkHeadTCP) Connect() error {
 }
 
 func (h *SinkHeadTCP) Start() error {
-	return h.Connect()
+	return nil
 }
 
 func (h *SinkHeadTCP) Stop() error {
