@@ -46,7 +46,7 @@ func (h *SinkHeadUDP) Connect() error {
 }
 
 func (h *SinkHeadUDP) Start() error {
-	return h.Connect()
+	return nil
 }
 
 func (h *SinkHeadUDP) Stop() error {
