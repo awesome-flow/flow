@@ -32,6 +32,12 @@ func SinkHeadFactory(params core.Params) (SinkHead, error) {
 			return nil, err
 		}
 		return NewSinkHeadUDP(udpaddr)
+	} else if strings.HasPrefix(bind, "unix://") {
+		unixaddr, err := net.ResolveUnixAddr("unix", bind[7:])
+		if err != nil {
+			return nil, err
+		}
+		return NewSinkHeadUnix(unixaddr)
 	}
 
 	return nil, fmt.Errorf("unrecognised address format: %q", bind)
