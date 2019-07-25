@@ -1,17 +1,17 @@
 system:
   admin:
     enabled: true
-    bind_addr: :8080
+    bind: :8080
 
-components:
+actors:
   http_rcv:
-    module: receiver.http
+    module: core.receiver.http
     params:
-      bind_addr: :7071
+      bind: :7071
   dumper:
-    module: sink.dumper
+    module: core.sink
     params:
-      out: STDOUT
+      bind: file://STDOUT
 
 pipeline:
   http_rcv:

@@ -29,7 +29,8 @@ var _ (SinkHead) = (*SinkHeadFile)(nil)
 
 func NewSinkHeadFile(path string) (*SinkHeadFile, error) {
 	return &SinkHeadFile{
-		path: path,
+		path:   path,
+		Opener: DefaultFileOpener,
 	}, nil
 }
 
@@ -45,7 +46,9 @@ func (h *SinkHeadFile) Connect() error {
 
 func (h *SinkHeadFile) Stop() error {
 	if h.out != nil {
-		return h.out.Close()
+		if h.out != os.Stdin && h.out != os.Stdout {
+			return h.out.Close()
+		}
 	}
 	return nil
 }

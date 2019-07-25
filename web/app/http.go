@@ -13,6 +13,7 @@ type HttpMux struct {
 	ctx    *core.Context
 	server *http.Server
 	agents agent.WebAgents
+	done   chan struct{}
 }
 
 var _ core.Runner = (*HttpMux)(nil)
@@ -45,6 +46,7 @@ func NewHttpMux(ctx *core.Context) (*HttpMux, error) {
 		ctx:    ctx,
 		server: server,
 		agents: agents,
+		done:   make(chan struct{}),
 	}, nil
 }
 
@@ -62,6 +64,7 @@ func (h *HttpMux) Start() error {
 			default:
 				h.ctx.Logger().Fatal("admin server critical error: %s", err)
 			}
+			close(h.done)
 		}
 	}()
 
@@ -75,5 +78,8 @@ func (h *HttpMux) Stop() error {
 		}
 	}
 
-	return h.server.Close()
+	err := h.server.Close()
+	<-h.done
+
+	return err
 }

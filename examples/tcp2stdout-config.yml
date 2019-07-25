@@ -1,15 +1,17 @@
 system:
-  maxprocs: 4
+  admin:
+    enabled: true
+    bind: :8080
 
-components:
+actors:
   tcp_rcv:
     module: core.receiver.tcp
     params:
       bind: :3110
   stdout:
-    module: core.sink.dumper
+    module: core.sink
     params:
-      out: STDOUT
+            bind: file://STDOUT
 
 pipeline:
   tcp_rcv:

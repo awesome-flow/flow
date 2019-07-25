@@ -36,6 +36,7 @@ type ReceiverHTTP struct {
 	ctx     *core.Context
 	queue   chan *core.Message
 	httpsrv *http.Server
+	done    chan struct{}
 }
 
 var _ core.Actor = (*ReceiverHTTP)(nil)
@@ -51,6 +52,7 @@ func NewReceiverHTTP(name string, ctx *core.Context, params core.Params) (core.A
 		ctx:   ctx,
 		bind:  bind.(string),
 		queue: make(chan *core.Message),
+		done:  make(chan struct{}),
 	}
 
 	srvmx := http.NewServeMux()
@@ -80,6 +82,7 @@ func (r *ReceiverHTTP) Start() error {
 				r.ctx.Logger().Fatal(err.Error())
 			}
 		}
+		close(r.done)
 	}()
 
 	return nil
@@ -89,7 +92,10 @@ func (r *ReceiverHTTP) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
 	defer cancel()
 	defer close(r.queue)
-	return r.httpsrv.Shutdown(ctx)
+	err := r.httpsrv.Shutdown(ctx)
+	<-r.done
+
+	return err
 }
 
 func (r *ReceiverHTTP) Connect(nthreads int, peer core.Receiver) error {
