@@ -38,6 +38,8 @@ func SinkHeadFactory(params core.Params) (SinkHead, error) {
 			return nil, err
 		}
 		return NewSinkHeadUnix(unixaddr)
+	} else if strings.HasPrefix(bind, "file://") {
+		return NewSinkHeadFile(bind[7:])
 	}
 
 	return nil, fmt.Errorf("unrecognised address format: %q", bind)
