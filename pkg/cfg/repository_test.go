@@ -499,7 +499,7 @@ func Test_DefineSchema_Struct(t *testing.T) {
 	repoSchema := cast.Schema(map[string]cast.Schema{
 		"system": map[string]cast.Schema{
 			"__self__": &systemcfgmapper{},
-			"maxproc":  cast.ToInt,
+			"maxprocs": cast.ToInt,
 			"admin": map[string]cast.Schema{
 				"__self__": &admincfgmapper{},
 				"enabled":  cast.ToBool,
@@ -515,11 +515,11 @@ func Test_DefineSchema_Struct(t *testing.T) {
 		{
 			name: "No casting",
 			input: map[string]types.Value{
-				"system.maxproc":       4,
+				"system.maxprocs":      4,
 				"system.admin.enabled": true,
 			},
 			expected: map[string]types.Value{
-				"system.maxproc":       4,
+				"system.maxprocs":      4,
 				"system.admin.enabled": true,
 				"system.admin":         &admincfg{enabled: true},
 				"system":               &systemcfg{admincfg: &admincfg{enabled: true}, maxproc: 4},
@@ -528,11 +528,11 @@ func Test_DefineSchema_Struct(t *testing.T) {
 		{
 			name: "Casting from all-strings",
 			input: map[string]types.Value{
-				"system.maxproc":       "4",
+				"system.maxprocs":      "4",
 				"system.admin.enabled": "true",
 			},
 			expected: map[string]types.Value{
-				"system.maxproc":       4,
+				"system.maxprocs":      4,
 				"system.admin.enabled": true,
 				"system.admin":         &admincfg{enabled: true},
 				"system":               &systemcfg{admincfg: &admincfg{enabled: true}, maxproc: 4},
@@ -541,11 +541,11 @@ func Test_DefineSchema_Struct(t *testing.T) {
 		{
 			name: "Casting from ptrs",
 			input: map[string]types.Value{
-				"system.maxproc":       intptr(4),
+				"system.maxprocs":      intptr(4),
 				"system.admin.enabled": boolptr(true),
 			},
 			expected: map[string]types.Value{
-				"system.maxproc":       4,
+				"system.maxprocs":      4,
 				"system.admin.enabled": true,
 				"system.admin":         &admincfg{enabled: true},
 				"system":               &systemcfg{admincfg: &admincfg{enabled: true}, maxproc: 4},

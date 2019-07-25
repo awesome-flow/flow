@@ -1,3 +1,0 @@
-sync=true {"id":1,"foo":"bar"}
-{"id":2,"foo":"bar"}
-foo=bar {"id":3,"foo":["bar","baz"]}
