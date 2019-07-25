@@ -14,7 +14,6 @@ func TestCfgMapper(t *testing.T) {
 			Builder: "builder",
 			Module:  "module",
 			Params:  map[string]types.Value{"baz": 42},
-			Plugin:  "plugin",
 		},
 	}
 	ppl := map[string]types.CfgBlockPipeline{
@@ -234,7 +233,7 @@ func TestCfgBlockSystemAdminMapper(t *testing.T) {
 		{
 			"BindAddr defined",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
-				"bind_addr": "123.45.67.89",
+				"bind": "123.45.67.89",
 			}},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockSystemAdmin{
 				Bind: "123.45.67.89",
@@ -422,13 +421,11 @@ func TestMapCfgBlockActorMapper(t *testing.T) {
 		Builder: "builder1",
 		Module:  "module1",
 		Params:  p1,
-		Plugin:  "plugin1",
 	}
 	comp2 := types.CfgBlockActor{
 		Builder: "builder2",
 		Module:  "module2",
 		Params:  p2,
-		Plugin:  "plugin2",
 	}
 	tests := []struct {
 		name    string
@@ -516,16 +513,6 @@ func TestCfgBlockActorMapper(t *testing.T) {
 			}},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{
 				Module: "module",
-			}},
-			nil,
-		},
-		{
-			"Plugin defined",
-			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
-				"plugin": "plugin",
-			}},
-			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockActor{
-				Plugin: "plugin",
 			}},
 			nil,
 		},
@@ -644,7 +631,7 @@ func TestCfgBlockPipelineMapper(t *testing.T) {
 		{
 			"Connect defined",
 			&types.KeyValue{Key: types.NewKey("foo"), Value: map[string]types.Value{
-				"connect": "connect",
+				"connect": []string{"connect"},
 			}},
 			&types.KeyValue{Key: types.NewKey("foo"), Value: types.CfgBlockPipeline{
 				Connect: []string{"connect"},

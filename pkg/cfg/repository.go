@@ -17,6 +17,8 @@ const (
 	// PluginPathKey is a string constant used globally to reach up the plugin
 	// path setting.
 	PluginPathKey = "plugin.path"
+
+	SystemMaxprocs = "system.maxprocs"
 )
 
 // TODO(olegs): implement listener interface

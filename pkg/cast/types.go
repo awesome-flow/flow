@@ -282,7 +282,6 @@ var _ Mapper = (*CfgBlockActorMapper)(nil)
 // Lookup keys are:
 // * constructor
 // * module
-// * plugin
 // * params
 // No extra keys are allowed in this section.
 func (*CfgBlockActorMapper) Map(kv *types.KeyValue) (*types.KeyValue, error) {

@@ -20,9 +20,9 @@ var (
 
 func init() {
 	defaults = map[string]types.Value{
-		CfgPathKey:        "/etc/flowd/flow-config.yaml",
-		PluginPathKey:     "/etc/flowd/plugins",
-		"system.maxprocs": 1,
+		CfgPathKey:     "/etc/flowd/flow-config.yaml",
+		PluginPathKey:  "/etc/flowd/plugins",
+		SystemMaxprocs: 1,
 	}
 }
 

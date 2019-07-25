@@ -45,7 +45,6 @@ type CfgBlockActor struct {
 	Builder string
 	Module  string
 	Params  map[string]Value
-	Plugin  string
 }
 
 // CfgBlockPipeline represents a singular pipeline config: one of 3: connection,

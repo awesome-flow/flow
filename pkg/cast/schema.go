@@ -45,7 +45,6 @@ func init() {
 				"__self__": &CfgBlockActorMapper{},
 				"builder":  ToStr,
 				"module":   ToStr,
-				"plugin":   ToStr,
 				"params": map[string]Schema{
 					"__self__": nil,
 					"*":        Identity,
