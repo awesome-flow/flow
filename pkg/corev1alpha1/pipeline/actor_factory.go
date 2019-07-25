@@ -22,9 +22,7 @@ var CoreBuilders map[string]core.Builder = map[string]core.Builder{
 	"core.replicator": actor.NewReplicator,
 	"core.router":     actor.NewRouter,
 	"core.throttler":  actor.NewThrottler,
-
-	"core.sink.dumper": actor.NewSinkDumper,
-	"core.sink":        actor.NewSink,
+	"core.sink":       actor.NewSink,
 }
 
 type ActorFactory interface {
