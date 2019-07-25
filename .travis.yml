@@ -9,7 +9,7 @@ go:
 
 before_install:                                                                 
   - go get github.com/mattn/goveralls
-  - go test
+  - go test ./...
 
 install: true
 
