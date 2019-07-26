@@ -40,7 +40,7 @@ func (s *Sink) Name() string {
 const (
 	minbackoff = 50 * time.Millisecond
 	maxbackoff = 5 * time.Second
-	maxretries = 100
+	maxretries = 20
 )
 
 func (s *Sink) doConnectHead(notify chan struct{}) error {
@@ -57,11 +57,13 @@ func (s *Sink) doConnectHead(notify chan struct{}) error {
 	for !isdone {
 		if err := s.head.Connect(); err != nil {
 			s.ctx.Logger().Error("sink %q failed to reconnect: %s", s.name, err)
+			if retried >= maxretries {
+				return fmt.Errorf("gave up after %d retries", retried)
+			}
+			s.ctx.Logger().Trace("sink %q will try to reconnect in %dms", s.name, backoff/1000000)
+			time.Sleep(backoff)
 			if backoff < maxbackoff {
 				backoff *= 2
-			}
-			if retried > maxretries {
-				return fmt.Errorf("gave up after %d retries", retried)
 			}
 			retried++
 			continue
@@ -75,6 +77,15 @@ func (s *Sink) doConnectHead(notify chan struct{}) error {
 }
 
 func (s *Sink) Start() error {
+
+	var reqreconn = func() {
+		// reconnect routine will close the
+		// notify channel
+		notify := make(chan struct{})
+		s.reconnect <- notify
+		<-notify
+	}
+
 	go func() {
 		for notify := range s.reconnect {
 			if err := s.doConnectHead(notify); err != nil {
@@ -90,11 +101,7 @@ func (s *Sink) Start() error {
 				s.ctx.Logger().Error("sink %q failed to send message: %s", s.name, err)
 				msg.Complete(core.MsgStatusFailed)
 				if rec {
-					// reconnect routine will close the
-					// notify channel
-					notify := make(chan struct{})
-					s.reconnect <- notify
-					<-notify
+					reqreconn()
 				}
 				continue
 			}
@@ -106,9 +113,7 @@ func (s *Sink) Start() error {
 		return err
 	}
 
-	notify := make(chan struct{})
-	s.reconnect <- notify
-	<-notify
+	reqreconn()
 
 	return nil
 }

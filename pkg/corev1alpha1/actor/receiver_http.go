@@ -73,19 +73,21 @@ func (r *ReceiverHTTP) Name() string {
 }
 
 func (r *ReceiverHTTP) Start() error {
-	go func() {
-		if err := r.httpsrv.ListenAndServe(); err != nil {
-			switch err {
-			case http.ErrServerClosed:
-				r.ctx.Logger().Info(err.Error())
-			default:
-				r.ctx.Logger().Fatal(err.Error())
-			}
-		}
-		close(r.done)
-	}()
+	go r.runsrv()
 
 	return nil
+}
+
+func (r *ReceiverHTTP) runsrv() {
+	if err := r.httpsrv.ListenAndServe(); err != nil {
+		switch err {
+		case http.ErrServerClosed:
+			r.ctx.Logger().Trace("http receiver %q was successfully terminated", r.name)
+		default:
+			r.ctx.Logger().Fatal(err.Error())
+		}
+	}
+	close(r.done)
 }
 
 func (r *ReceiverHTTP) Stop() error {

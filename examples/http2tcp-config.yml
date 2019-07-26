@@ -1,0 +1,31 @@
+system:
+  maxprocs: 4
+  admin:
+    enabled: true
+    bind: :8080
+
+actors:
+  http_rcv:
+    module: core.receiver.http
+    params:
+      bind: :8081
+  replicator:
+    module: core.replicator
+    params:
+      mode: each
+  tcp_sink:
+    module: core.sink
+    params:
+      bind: tcp://:7071
+  dumper:
+    module: core.sink
+    params:
+      bind: file://STDOUT
+
+pipeline:
+  http_rcv:
+    connect: replicator
+  replicator:
+    connect:
+      - tcp_sink
+      - dumper

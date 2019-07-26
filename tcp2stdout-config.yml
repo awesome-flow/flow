@@ -1,0 +1,18 @@
+system:
+  maxprocs: 4
+  admin:
+    enabled: false
+
+actors:
+  tcp_rcv:
+    module: core.receiver.tcp
+    params:
+      bind: :7071
+  dumper:
+    module: core.sink
+    params:
+      bind: file://STDOUT
+
+pipeline:
+  tcp_rcv:
+    connect: dumper
