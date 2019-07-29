@@ -8,6 +8,8 @@ go:
  - "1.12.x"
 
 before_install:                                                                 
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+  - dep ensure
   - go get github.com/mattn/goveralls
   - go test ./...
 
