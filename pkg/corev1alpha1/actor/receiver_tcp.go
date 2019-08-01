@@ -2,6 +2,7 @@ package actor
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"net"
@@ -139,11 +140,39 @@ func (t *ReceiverTCP) Receive(*core.Message) error {
 	return fmt.Errorf("tcp receiver %q can not receive internal messages", t.name)
 }
 
+// dropCR drops a terminal \r from the data.
+func dropCR(data []byte) []byte {
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		return data[0 : len(data)-1]
+	}
+	return data
+}
+
+func ScanBin(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if i := bytes.Index(data, []byte{'\r', '\n'}); i >= 0 {
+		// We have a full newline-terminated line.
+		return i + 2, dropCR(data[0:i]), nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), dropCR(data), nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
 func (r *ReceiverTCP) handleConn(conn net.Conn) {
 	r.ctx.Logger().Debug("new tcp connection from %s", conn.RemoteAddr())
 	defer conn.Close()
+
 	reader := bufio.NewReader(conn)
 	scanner := bufio.NewScanner(reader)
+	buf := make([]byte, 1024)
+	scanner.Buffer(buf, 2*1024*1024)
+	scanner.Split(ScanBin)
 
 	for scanner.Scan() {
 		msg := core.NewMessage(scanner.Bytes())

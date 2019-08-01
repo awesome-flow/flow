@@ -71,7 +71,7 @@ func TestTCPHandleConn(t *testing.T) {
 				peer.(*flowtest.TestActor).Flush()
 			})
 
-			body := testutil.RandBytes(1024)
+			body := testutil.RandBytes(8 * 1024)
 			if _, err := conn.Write(body); err != nil {
 				t.Fatalf("failed to write body data to test conn: %s", err)
 			}

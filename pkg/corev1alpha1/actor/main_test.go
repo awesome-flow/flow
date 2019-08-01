@@ -119,7 +119,7 @@ func (c *testConn) Read(b []byte) (int, error) {
 	n := copy(b, c.buf[c.offset:c.offset+l+0])
 
 	c.offset += l
-	if c.offset == l {
+	if c.offset == len(c.buf) {
 		err = io.EOF
 	}
 
