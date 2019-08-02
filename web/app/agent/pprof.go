@@ -26,6 +26,15 @@ func init() {
 
 	RegisterWebAgent(
 		func(*core.Context) (WebAgent, error) {
+			return &DummyWebAgent{
+				path:    "/pprof/heap",
+				handler: pprof.Handler("heap"),
+			}, nil
+		},
+	)
+
+	RegisterWebAgent(
+		func(*core.Context) (WebAgent, error) {
 			return NewDummyWebAgent(
 				"/pprof/cmdline",
 				pprof.Cmdline,

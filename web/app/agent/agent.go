@@ -23,6 +23,7 @@ type DummyWebAgent struct {
 	handler http.Handler
 }
 
+// TODO: accept both handler and handler func
 func NewDummyWebAgent(path string, handler http.HandlerFunc) *DummyWebAgent {
 	return &DummyWebAgent{
 		path:    path,
