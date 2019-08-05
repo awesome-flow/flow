@@ -7,9 +7,41 @@ import (
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 )
 
+const (
+	minbackoff = 50 * time.Millisecond
+	maxbackoff = 5 * time.Second
+	maxretries = 0
+)
+
+type SinkCfg struct {
+	minbackoff time.Duration
+	maxbackoff time.Duration
+	maxretries int
+}
+
+func NewSinkCfg(params core.Params) (*SinkCfg, error) {
+	cfg := &SinkCfg{
+		minbackoff: minbackoff,
+		maxbackoff: maxbackoff,
+		maxretries: maxretries,
+	}
+	if v, ok := params["max_retries"]; ok {
+		cfg.maxretries = v.(int)
+	}
+	if v, ok := params["min_backoff"]; ok {
+		cfg.minbackoff = time.Duration(v.(int)) * time.Millisecond
+	}
+	if v, ok := params["max_backoff"]; ok {
+		cfg.maxbackoff = time.Duration(v.(int)) * time.Millisecond
+	}
+
+	return cfg, nil
+}
+
 type Sink struct {
 	name      string
 	ctx       *core.Context
+	cfg       *SinkCfg
 	head      SinkHead
 	queue     chan *core.Message
 	reconnect chan chan struct{}
@@ -19,13 +51,19 @@ type Sink struct {
 var _ core.Actor = (*Sink)(nil)
 
 func NewSink(name string, ctx *core.Context, params core.Params) (core.Actor, error) {
+	cfg, err := NewSinkCfg(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize sink %q: %s", name, err)
+	}
 	head, err := SinkHeadFactory(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize sink %q: %s", name, err)
 	}
+
 	return &Sink{
 		name:      name,
 		ctx:       ctx,
+		cfg:       cfg,
 		head:      head,
 		queue:     make(chan *core.Message),
 		reconnect: make(chan chan struct{}),
@@ -36,12 +74,6 @@ func NewSink(name string, ctx *core.Context, params core.Params) (core.Actor, er
 func (s *Sink) Name() string {
 	return s.name
 }
-
-const (
-	minbackoff = 50 * time.Millisecond
-	maxbackoff = 5 * time.Second
-	maxretries = 20
-)
 
 func (s *Sink) doConnectHead(notify chan struct{}) error {
 	isdone := false
@@ -57,12 +89,12 @@ func (s *Sink) doConnectHead(notify chan struct{}) error {
 	for !isdone {
 		if err := s.head.Connect(); err != nil {
 			s.ctx.Logger().Error("sink %q failed to reconnect: %s", s.name, err)
-			if retried >= maxretries {
+			if mr := s.cfg.maxretries; mr > 0 && retried >= mr {
 				return fmt.Errorf("gave up after %d retries", retried)
 			}
 			s.ctx.Logger().Trace("sink %q will try to reconnect in %dms", s.name, backoff/1000000)
 			time.Sleep(backoff)
-			if backoff < maxbackoff {
+			if backoff < s.cfg.maxbackoff {
 				backoff *= 2
 			}
 			retried++
