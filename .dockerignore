@@ -2,3 +2,4 @@
 vendor/*/.git
 vendor/*/*/.git
 vendor/*/*/*/.git
+builds/*
