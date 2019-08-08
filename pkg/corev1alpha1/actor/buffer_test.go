@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	coretest "github.com/awesome-flow/flow/pkg/corev1alpha1/test"
 	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/awesome-flow/flow/pkg/util"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
@@ -61,7 +62,7 @@ func TestBufferRetry(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			ctx, err := newContextWithConfig(map[string]interface{}{"system.maxprocs": 1 + testutil.RandInt(4)})
+			ctx, err := coretest.NewContextWithConfig(map[string]interface{}{"system.maxprocs": 1 + testutil.RandInt(4)})
 			if err != nil {
 				t.Fatalf("failed to create a context: %s", err)
 			}

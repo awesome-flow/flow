@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	coretest "github.com/awesome-flow/flow/pkg/corev1alpha1/test"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
 	flowtest "github.com/awesome-flow/flow/pkg/util/test/corev1alpha1"
 )
 
 func TestUnixHandleConn(t *testing.T) {
 	nthreads := 4
-	ctx, err := newContextWithConfig(map[string]interface{}{})
+	ctx, err := coretest.NewContextWithConfig(map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("failed to create context: %s", err)
 	}

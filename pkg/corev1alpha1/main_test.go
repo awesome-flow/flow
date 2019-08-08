@@ -1,4 +1,4 @@
-package actor
+package corev1alpha1
 
 import (
 	"bytes"
@@ -9,8 +9,40 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	"github.com/awesome-flow/flow/pkg/cfg"
+	"github.com/awesome-flow/flow/pkg/types"
+	"github.com/whiteboxio/flow/pkg/core"
 )
+
+func newContextWithConfig(config map[string]interface{}) (*Context, error) {
+	repo := cfg.NewRepository()
+	for k, v := range config {
+		if _, err := cfg.NewScalarConfigProvider(
+			&types.KeyValue{
+				Key:   types.NewKey(k),
+				Value: v,
+			},
+			repo,
+			42, // doesn't matter
+		); err != nil {
+			return nil, err
+		}
+	}
+
+	ctx, err := NewContext(NewConfig(repo))
+	if err != nil {
+		return nil, err
+	}
+
+	return ctx, nil
+}
+
+func eqErr(e1, e2 error) bool {
+	if e1 == nil || e2 == nil {
+		return e1 == e2
+	}
+	return e1.Error() == e2.Error()
+}
 
 func sts2name(sts core.MsgStatus) string {
 	switch sts {

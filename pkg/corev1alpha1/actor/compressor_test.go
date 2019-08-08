@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	coretest "github.com/awesome-flow/flow/pkg/corev1alpha1/test"
 	"github.com/awesome-flow/flow/pkg/util"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
 	flowtest "github.com/awesome-flow/flow/pkg/util/test/corev1alpha1"
@@ -75,7 +76,7 @@ func TestNewCompressor(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			ctx, err := newContextWithConfig(map[string]interface{}{})
+			ctx, err := coretest.NewContextWithConfig(map[string]interface{}{})
 			if err != nil {
 				t.Fatalf("failed to create a context: %s", err)
 			}
@@ -86,7 +87,7 @@ func TestNewCompressor(t *testing.T) {
 			defer ctx.Stop()
 
 			compressor, err := NewCompressorWithCoders(name, ctx, testCase.params, testCoders)
-			if !eqErr(err, testCase.experr) {
+			if !coretest.EqErr(err, testCase.experr) {
 				t.Fatalf("unexpected error: got: %q, want: %q", err, testCase.experr)
 			}
 			if err != nil {
@@ -141,7 +142,7 @@ func TestCompressorReceive(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			ctx, err := newContextWithConfig(map[string]interface{}{
+			ctx, err := coretest.NewContextWithConfig(map[string]interface{}{
 				"system.maxprocs": rand.Intn(4) + 1,
 			})
 			if err != nil {

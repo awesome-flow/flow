@@ -8,11 +8,12 @@ import (
 	"time"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	coretest "github.com/awesome-flow/flow/pkg/corev1alpha1/test"
 	testutil "github.com/awesome-flow/flow/pkg/util/test"
 )
 
 func TestSinkDoConnectHead(t *testing.T) {
-	ctx, err := newContextWithConfig(map[string]interface{}{})
+	ctx, err := coretest.NewContextWithConfig(map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("failed to initialise context: %s", err)
 	}
@@ -57,7 +58,7 @@ func TestSinkDoConnectHead(t *testing.T) {
 }
 
 func TestSinkStartStop(t *testing.T) {
-	ctx, err := newContextWithConfig(map[string]interface{}{})
+	ctx, err := coretest.NewContextWithConfig(map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("failed to initialise context: %s", err)
 	}
@@ -95,7 +96,7 @@ func TestSinkStartStop(t *testing.T) {
 }
 
 func TestSinkReceive(t *testing.T) {
-	ctx, err := newContextWithConfig(map[string]interface{}{})
+	ctx, err := coretest.NewContextWithConfig(map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("failed to initialise context: %s", err)
 	}
