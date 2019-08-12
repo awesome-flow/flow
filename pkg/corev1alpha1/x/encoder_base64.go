@@ -11,7 +11,6 @@ type EncoderBase64 struct {
 	name     string
 	ctx      *core.Context
 	queue    chan *core.Message
-	done     chan struct{}
 	wg       sync.WaitGroup
 	encoding *base64.Encoding
 }
@@ -67,6 +66,5 @@ func (e *EncoderBase64) encodeBase64(data []byte) []byte {
 	newlen := e.encoding.EncodedLen(len(data))
 	out := make([]byte, newlen)
 	e.encoding.Encode(out, data)
-
 	return out
 }
