@@ -11,7 +11,6 @@ import (
 
 	"github.com/awesome-flow/flow/pkg/cfg"
 	"github.com/awesome-flow/flow/pkg/types"
-	"github.com/whiteboxio/flow/pkg/core"
 )
 
 func newContextWithConfig(config map[string]interface{}) (*Context, error) {
@@ -44,17 +43,17 @@ func eqErr(e1, e2 error) bool {
 	return e1.Error() == e2.Error()
 }
 
-func sts2name(sts core.MsgStatus) string {
+func sts2name(sts MsgStatus) string {
 	switch sts {
-	case core.MsgStatusDone:
+	case MsgStatusDone:
 		return "MsgStatusDone"
-	case core.MsgStatusFailed:
+	case MsgStatusFailed:
 		return "MsgStatusFailed"
-	case core.MsgStatusTimedOut:
+	case MsgStatusTimedOut:
 		return "MsgStatusTimedOut"
-	case core.MsgStatusUnroutable:
+	case MsgStatusUnroutable:
 		return "MsgStatusUnroutable"
-	case core.MsgStatusThrottled:
+	case MsgStatusThrottled:
 		return "MsgStatusThrottled"
 	default:
 		return "Unknown"

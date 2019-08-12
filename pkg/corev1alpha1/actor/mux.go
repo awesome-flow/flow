@@ -1,11 +1,16 @@
 package actor
 
-import core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+import (
+	"sync"
+
+	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+)
 
 type Mux struct {
 	name  string
 	ctx   *core.Context
 	queue chan *core.Message
+	wg    sync.WaitGroup
 }
 
 var _ core.Actor = (*Mux)(nil)
@@ -28,17 +33,20 @@ func (m *Mux) Start() error {
 
 func (m *Mux) Stop() error {
 	close(m.queue)
+	m.wg.Wait()
 	return nil
 }
 
 func (m *Mux) Connect(nthreads int, peer core.Receiver) error {
 	for i := 0; i < nthreads; i++ {
+		m.wg.Add(1)
 		go func() {
 			for msg := range m.queue {
 				if err := peer.Receive(msg); err != nil {
 					m.ctx.Logger().Error(err.Error())
 				}
 			}
+			m.wg.Done()
 		}()
 	}
 	return nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
@@ -36,7 +37,7 @@ type ReceiverHTTP struct {
 	ctx     *core.Context
 	queue   chan *core.Message
 	httpsrv *http.Server
-	done    chan struct{}
+	wg      sync.WaitGroup
 }
 
 var _ core.Actor = (*ReceiverHTTP)(nil)
@@ -52,7 +53,6 @@ func NewReceiverHTTP(name string, ctx *core.Context, params core.Params) (core.A
 		ctx:   ctx,
 		bind:  bind.(string),
 		queue: make(chan *core.Message),
-		done:  make(chan struct{}),
 	}
 
 	srvmx := http.NewServeMux()
@@ -79,6 +79,7 @@ func (r *ReceiverHTTP) Start() error {
 }
 
 func (r *ReceiverHTTP) runsrv() {
+	r.wg.Add(1)
 	if err := r.httpsrv.ListenAndServe(); err != nil {
 		switch err {
 		case http.ErrServerClosed:
@@ -87,7 +88,7 @@ func (r *ReceiverHTTP) runsrv() {
 			r.ctx.Logger().Fatal(err.Error())
 		}
 	}
-	close(r.done)
+	r.wg.Done()
 }
 
 func (r *ReceiverHTTP) Stop() error {
@@ -95,19 +96,21 @@ func (r *ReceiverHTTP) Stop() error {
 	defer cancel()
 	defer close(r.queue)
 	err := r.httpsrv.Shutdown(ctx)
-	<-r.done
+	r.wg.Wait()
 
 	return err
 }
 
 func (r *ReceiverHTTP) Connect(nthreads int, peer core.Receiver) error {
 	for i := 0; i < nthreads; i++ {
+		r.wg.Add(1)
 		go func() {
 			for msg := range r.queue {
 				if err := peer.Receive(msg); err != nil {
 					r.ctx.Logger().Error(err.Error())
 				}
 			}
+			r.wg.Done()
 		}()
 	}
 

@@ -11,7 +11,6 @@ import (
 
 	"github.com/DataDog/zstd"
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
-	"github.com/awesome-flow/flow/pkg/types"
 	"github.com/golang/snappy"
 )
 
@@ -88,13 +87,12 @@ var DefaultCoders = map[string]CoderFunc{
 }
 
 type Compressor struct {
-	name     string
-	ctx      *core.Context
-	coder    CoderFunc
-	level    int
-	queueIn  chan *core.Message
-	queueOut chan *core.Message
-	done     chan struct{}
+	name  string
+	ctx   *core.Context
+	coder CoderFunc
+	level int
+	queue chan *core.Message
+	wg    sync.WaitGroup
 }
 
 var _ core.Actor = (*Compressor)(nil)
@@ -121,13 +119,11 @@ func NewCompressorWithCoders(name string, ctx *core.Context, params core.Params,
 	}
 
 	return &Compressor{
-		name:     name,
-		ctx:      ctx,
-		coder:    coder,
-		level:    level,
-		queueIn:  make(chan *core.Message),
-		queueOut: make(chan *core.Message),
-		done:     make(chan struct{}),
+		name:  name,
+		ctx:   ctx,
+		coder: coder,
+		level: level,
+		queue: make(chan *core.Message),
 	}, nil
 }
 
@@ -136,57 +132,26 @@ func (c *Compressor) Name() string {
 }
 
 func (c *Compressor) Start() error {
-	nthreads, ok := c.ctx.Config().Get(types.NewKey("system.maxprocs"))
-	if !ok {
-		return fmt.Errorf("failed to fetch `system.maxprocs` config")
-	}
-	for i := 0; i < nthreads.(int); i++ {
-		go func() {
-			for msg := range c.queueIn {
-				data, err := c.coder(msg.Body(), c.level)
-				if err != nil {
-					msg.Complete(core.MsgStatusFailed)
-					c.ctx.Logger().Error(err.Error())
-					continue
-				}
-				cpmsg := core.NewMessage(data)
-				for _, k := range msg.MetaKeys() {
-					if v, ok := msg.Meta(k); ok {
-						cpmsg.SetMeta(k, v)
-					}
-				}
-				c.queueOut <- cpmsg
-				s := cpmsg.Await()
-				msg.Complete(s)
-			}
-		}()
-	}
-
 	return nil
 }
 
 func (c *Compressor) Stop() error {
-	close(c.queueIn)
-	close(c.queueOut)
-	<-c.done
+	close(c.queue)
+	c.wg.Wait()
 
 	return nil
 }
 
 func (c *Compressor) Connect(nthreads int, peer core.Receiver) error {
-	var once sync.Once
-	closedone := func() {
-		close(c.done)
-	}
-
 	for i := 0; i < nthreads; i++ {
+		c.wg.Add(1)
 		go func() {
-			for msg := range c.queueOut {
+			for msg := range c.queue {
 				if err := peer.Receive(msg); err != nil {
 					c.ctx.Logger().Error(err.Error())
 				}
 			}
-			once.Do(closedone)
+			c.wg.Done()
 		}()
 	}
 
@@ -194,7 +159,12 @@ func (c *Compressor) Connect(nthreads int, peer core.Receiver) error {
 }
 
 func (c *Compressor) Receive(msg *core.Message) error {
-	c.queueIn <- msg
+	data, err := c.coder(msg.Body(), c.level)
+	if err != nil {
+		return err
+	}
+	msg.SetBody(data)
+	c.queue <- msg
 
 	return nil
 }

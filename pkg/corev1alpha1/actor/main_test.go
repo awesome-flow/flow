@@ -147,3 +147,10 @@ func (rw *testResponseWriter) Header() http.Header {
 func (rw *testResponseWriter) WriteHeader(status int) {
 	rw.status = status
 }
+
+func eqErr(e1, e2 error) bool {
+	if e1 == nil || e2 == nil {
+		return e1 == e2
+	}
+	return e1.Error() == e2.Error()
+}

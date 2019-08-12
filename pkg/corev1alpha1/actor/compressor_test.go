@@ -126,17 +126,19 @@ func TestCompressorReceive(t *testing.T) {
 	tests := []struct {
 		name      string
 		codername string
+		experr    error
 		expstatus core.MsgStatus
 	}{
 		{
 			name:      "working coder",
 			codername: "working-coder",
+			experr:    nil,
 			expstatus: core.MsgStatusDone,
 		},
 		{
 			name:      "broken coder",
 			codername: "broken-coder",
-			expstatus: core.MsgStatusFailed,
+			experr:    fmt.Errorf("failed to encode"),
 		},
 	}
 
@@ -185,8 +187,13 @@ func TestCompressorReceive(t *testing.T) {
 			)
 
 			msg := core.NewMessage(testutil.RandBytes(1024))
-			if err := compressor.Receive(msg); err != nil {
-				t.Fatalf("compressor failed to receive a message: %s", err)
+			err = compressor.Receive(msg)
+			if !eqErr(err, testCase.experr) {
+				t.Fatalf("unexpected error: got: %s, want: %s", err, testCase.experr)
+			}
+
+			if err != nil {
+				return
 			}
 
 			if s := msg.Await(); s != testCase.expstatus {

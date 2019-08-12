@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"time"
 
+	"github.com/awesome-flow/flow/pkg/cfg"
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 const (
@@ -45,6 +48,8 @@ type ReceiverTCP struct {
 	listener net.Listener
 	queue    chan *core.Message
 	done     chan struct{}
+	wgconn   sync.WaitGroup
+	wgpeer   sync.WaitGroup
 }
 
 var _ core.Actor = (*ReceiverTCP)(nil)
@@ -89,38 +94,52 @@ func (r *ReceiverTCP) Start() error {
 		return err
 	}
 	r.listener = l
+	nthreads, ok := r.ctx.Config().Get(types.NewKey(cfg.SystemMaxprocs))
+	if !ok {
+		return fmt.Errorf("failed to fetch %q config", cfg.SystemMaxprocs)
+	}
 
-	isdone := false
 	go func() {
 		<-r.done
-		isdone = true
+		r.ctx.Logger().Info("closing tcp listener at %s", r.addr.String())
+		if err := l.Close(); err != nil {
+			r.ctx.Logger().Error("failed to close tcp listener gracefuly: %s", err)
+		}
 	}()
 
-	go func() {
-		r.ctx.Logger().Info("starting tcp listener at %s", r.addr.String())
-		for !isdone {
-			conn, err := l.Accept()
-			if err != nil {
-				r.ctx.Logger().Error(err.Error())
-				continue
+	for i := 0; i < nthreads.(int); i++ {
+		go func() {
+			r.ctx.Logger().Info("starting tcp listener at %s", r.addr.String())
+			for {
+				conn, err := l.Accept()
+				if err != nil {
+					r.ctx.Logger().Error(err.Error())
+					continue
+				}
+				go r.handleConn(conn)
+				select {
+				case <-r.done:
+					break
+				default:
+				}
 			}
-			go r.handleConn(conn)
-		}
-		r.ctx.Logger().Info("closing tcp listener at %s", r.addr.String())
-		l.Close()
-	}()
+		}()
+	}
 
 	return nil
 }
 
 func (r *ReceiverTCP) Stop() error {
 	close(r.done)
+	r.wgconn.Wait()
 	close(r.queue)
+	r.wgpeer.Wait()
 	return nil
 }
 
 func (r *ReceiverTCP) Connect(nthreads int, peer core.Receiver) error {
 	for i := 0; i < nthreads; i++ {
+		r.wgpeer.Add(1)
 		go func() {
 			var err error
 			for msg := range r.queue {
@@ -131,6 +150,7 @@ func (r *ReceiverTCP) Connect(nthreads int, peer core.Receiver) error {
 					r.ctx.Logger().Error(err.Error())
 				}
 			}
+			r.wgpeer.Done()
 		}()
 	}
 	return nil
@@ -166,15 +186,27 @@ func ScanBin(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
 func (r *ReceiverTCP) handleConn(conn net.Conn) {
 	r.ctx.Logger().Debug("new tcp connection from %s", conn.RemoteAddr())
-	defer conn.Close()
+
+	r.wgconn.Add(1)
 
 	reader := bufio.NewReader(conn)
 	scanner := bufio.NewScanner(reader)
 	buf := make([]byte, 1024)
+	// TODO: make it configurable
 	scanner.Buffer(buf, 2*1024*1024)
 	scanner.Split(ScanBin)
 
-	for scanner.Scan() {
+	isdone := false
+	scanover := make(chan struct{})
+	go func() {
+		select {
+		case <-r.done:
+			isdone = true
+		case <-scanover:
+		}
+	}()
+
+	for !isdone && scanner.Scan() {
 		msg := core.NewMessage(scanner.Bytes())
 		r.queue <- msg
 
@@ -197,9 +229,12 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 			r.ctx.Logger().Error(err.Error())
 		}
 	}
+	close(scanover)
 	if err := scanner.Err(); err != nil {
 		r.ctx.Logger().Error(err.Error())
 	}
+
+	r.wgconn.Done()
 
 	r.ctx.Logger().Debug("closing tcp connnection from %s", conn.RemoteAddr())
 }
