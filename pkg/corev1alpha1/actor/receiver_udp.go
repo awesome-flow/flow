@@ -4,18 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"sync"
 
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
 	"github.com/awesome-flow/flow/pkg/types"
 )
 
 type ReceiverUDP struct {
-	name  string
-	ctx   *core.Context
-	addr  *net.UDPAddr
-	conn  *net.UDPConn
-	queue chan *core.Message
-	done  chan struct{}
+	name   string
+	ctx    *core.Context
+	addr   *net.UDPAddr
+	conn   *net.UDPConn
+	queue  chan *core.Message
+	done   chan struct{}
+	wgconn sync.WaitGroup
+	wgpeer sync.WaitGroup
 }
 
 var _ core.Actor = (*ReceiverUDP)(nil)
@@ -77,12 +80,14 @@ func (r *ReceiverUDP) Start() error {
 	}
 
 	for i := 0; i < nthreads.(int); i++ {
+		r.wgconn.Add(1)
 		go func() {
 			for !isdone {
 				r.handleConn(conn)
 			}
 
 			r.conn.Close()
+			r.wgconn.Done()
 		}()
 	}
 
@@ -91,19 +96,23 @@ func (r *ReceiverUDP) Start() error {
 
 func (r *ReceiverUDP) Stop() error {
 	close(r.done)
+	r.wgconn.Wait()
 	close(r.queue)
+	r.wgpeer.Wait()
 
 	return nil
 }
 
 func (r *ReceiverUDP) Connect(nthreads int, peer core.Receiver) error {
 	for i := 0; i < nthreads; i++ {
+		r.wgpeer.Add(1)
 		go func() {
 			for msg := range r.queue {
 				if err := peer.Receive(msg); err != nil {
 					r.ctx.Logger().Error(err.Error())
 				}
 			}
+			r.wgpeer.Done()
 		}()
 	}
 	return nil
