@@ -188,16 +188,18 @@ func (r *Replicator) Connect(nthreads int, peer core.Receiver) error {
 	}
 
 	q := make(chan *core.Message)
-	r.wg.Add(1)
-	go func() {
-		for msg := range q {
-			if err := peer.Receive(msg); err != nil {
-				msg.Complete(core.MsgStatusFailed)
-				r.ctx.Logger().Error(err.Error())
+	for i := 0; i < nthreads; i++ {
+		r.wg.Add(1)
+		go func() {
+			for msg := range q {
+				if err := peer.Receive(msg); err != nil {
+					msg.Complete(core.MsgStatusFailed)
+					r.ctx.Logger().Error(err.Error())
+				}
 			}
-		}
-		r.wg.Done()
-	}()
+			r.wg.Done()
+		}()
+	}
 	r.queuesOut = append(r.queuesOut, q)
 
 	return nil

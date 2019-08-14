@@ -1,8 +1,10 @@
 package actor
 
 import (
+	"fmt"
+	"sync"
+
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
-	"github.com/awesome-flow/flow/pkg/types"
 )
 
 const (
@@ -20,20 +22,19 @@ func NewMsgCnt(msg *core.Message) *MsgCnt {
 }
 
 type Buffer struct {
-	name     string
-	ctx      *core.Context
-	queueIn  chan *MsgCnt
-	queueOut chan *core.Message
+	name  string
+	ctx   *core.Context
+	queue chan *MsgCnt
+	wg    sync.WaitGroup
 }
 
 var _ core.Actor = (*Buffer)(nil)
 
 func NewBuffer(name string, ctx *core.Context, params core.Params) (core.Actor, error) {
 	return &Buffer{
-		name:     name,
-		ctx:      ctx,
-		queueIn:  make(chan *MsgCnt, DefaultBufCapacity),
-		queueOut: make(chan *core.Message),
+		name:  name,
+		ctx:   ctx,
+		queue: make(chan *MsgCnt, DefaultBufCapacity),
 	}, nil
 }
 
@@ -42,46 +43,44 @@ func (b *Buffer) Name() string {
 }
 
 func (b *Buffer) Start() error {
-	nthreads, _ := b.ctx.Config().Get(types.NewKey("system.maxprocs"))
-	for i := 0; i < nthreads.(int); i++ {
-		go func() {
-			for msgcnt := range b.queueIn {
-				msgcp := msgcnt.msg.Copy()
-				done := msgcp.AwaitChan()
-				b.queueOut <- msgcp
-				sts := <-done
-				msgcnt.cnt++
-				if sts != core.MsgStatusDone &&
-					sts != core.MsgStatusPartialSend &&
-					msgcnt.cnt < DefaultBufMaxAttempts {
-					b.queueIn <- msgcnt
-					continue
-				}
-				if err := msgcnt.msg.Complete(sts); err != nil {
-					b.ctx.Logger().Error("failed to complete mesage: %s", err)
-				}
-			}
-		}()
-	}
-
 	return nil
 }
 
 func (b *Buffer) Stop() error {
-	close(b.queueIn)
-	close(b.queueOut)
+	close(b.queue)
+	b.wg.Wait()
 
 	return nil
 }
 
 func (b *Buffer) Connect(nthreads int, peer core.Receiver) error {
 	for i := 0; i < nthreads; i++ {
+		b.wg.Add(1)
 		go func() {
-			for msg := range b.queueOut {
-				if err := peer.Receive(msg); err != nil {
-					b.ctx.Logger().Error(err.Error())
+			var sts core.MsgStatus
+			for msgcnt := range b.queue {
+				msgcp := msgcnt.msg.Copy()
+				err := peer.Receive(msgcp)
+				sts = 0
+				if err == nil {
+					sts = msgcp.Await()
+					switch sts {
+					case core.MsgStatusDone, core.MsgStatusPartialSend:
+					default:
+						err = fmt.Errorf("failed to send message: code(%d)", sts)
+					}
 				}
+				if err != nil {
+					msgcnt.cnt++
+					if msgcnt.cnt < DefaultBufMaxAttempts {
+						b.queue <- msgcnt
+						continue
+					}
+					sts = core.MsgStatusFailed
+				}
+				msgcnt.msg.Complete(sts)
 			}
+			b.wg.Done()
 		}()
 	}
 
@@ -89,7 +88,7 @@ func (b *Buffer) Connect(nthreads int, peer core.Receiver) error {
 }
 
 func (b *Buffer) Receive(msg *core.Message) error {
-	b.queueIn <- NewMsgCnt(msg)
+	b.queue <- NewMsgCnt(msg)
 
 	return nil
 }

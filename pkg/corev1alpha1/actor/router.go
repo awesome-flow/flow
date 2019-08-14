@@ -11,6 +11,7 @@ type Router struct {
 	ctx   *core.Context
 	rtmap map[string]chan *core.Message
 	lock  sync.Mutex
+	wg    sync.WaitGroup
 }
 
 var _ core.Actor = (*Router)(nil)
@@ -28,6 +29,15 @@ func (r *Router) Name() string {
 	return r.name
 }
 
+func (r *Router) Start() error {
+	return nil
+}
+
+func (r *Router) Stop() error {
+	r.wg.Wait()
+	return nil
+}
+
 func (r *Router) Connect(nthreads int, peer core.Receiver) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -37,6 +47,7 @@ func (r *Router) Connect(nthreads int, peer core.Receiver) error {
 	}
 	queue := r.rtmap[peername]
 	for i := 0; i < nthreads; i++ {
+		r.wg.Add(1)
 		go func() {
 			for msg := range queue {
 				if err := peer.Receive(msg); err != nil {
@@ -44,6 +55,7 @@ func (r *Router) Connect(nthreads int, peer core.Receiver) error {
 					r.ctx.Logger().Error(err.Error())
 				}
 			}
+			r.wg.Done()
 		}()
 	}
 	return nil
@@ -57,13 +69,5 @@ func (r *Router) Receive(msg *core.Message) error {
 		}
 	}
 	msg.Complete(core.MsgStatusUnroutable)
-	return nil
-}
-
-func (r *Router) Start() error {
-	return nil
-}
-
-func (r *Router) Stop() error {
 	return nil
 }
