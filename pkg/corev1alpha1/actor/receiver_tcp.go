@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"net"
 	"sync"
 	"time"
@@ -144,9 +143,7 @@ func (r *ReceiverTCP) Connect(nthreads int, peer core.Receiver) error {
 			var err error
 			for msg := range r.queue {
 				if err = peer.Receive(msg); err != nil {
-					if err == io.EOF {
-						return
-					}
+					msg.Complete(core.MsgStatusFailed)
 					r.ctx.Logger().Error(err.Error())
 				}
 			}

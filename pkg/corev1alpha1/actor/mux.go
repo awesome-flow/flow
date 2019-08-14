@@ -43,6 +43,7 @@ func (m *Mux) Connect(nthreads int, peer core.Receiver) error {
 		go func() {
 			for msg := range m.queue {
 				if err := peer.Receive(msg); err != nil {
+					msg.Complete(core.MsgStatusFailed)
 					m.ctx.Logger().Error(err.Error())
 				}
 			}

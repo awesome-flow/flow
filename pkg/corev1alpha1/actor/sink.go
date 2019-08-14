@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/awesome-flow/flow/pkg/cfg"
 	core "github.com/awesome-flow/flow/pkg/corev1alpha1"
+	"github.com/awesome-flow/flow/pkg/types"
 )
 
 const (
@@ -109,6 +111,10 @@ func (s *Sink) doConnectHead(notify chan struct{}) error {
 }
 
 func (s *Sink) Start() error {
+	nthreads, ok := s.ctx.Config().Get(types.NewKey(cfg.SystemMaxprocs))
+	if !ok {
+		return fmt.Errorf("failed to fetch `%s` config", cfg.SystemMaxprocs)
+	}
 
 	var reqreconn = func() {
 		// reconnect routine will close the
@@ -127,19 +133,21 @@ func (s *Sink) Start() error {
 		}
 	}()
 
-	go func() {
-		for msg := range s.queue {
-			if _, err, rec := s.head.Write(msg.Body()); err != nil {
-				s.ctx.Logger().Error("sink %q failed to send message: %s", s.name, err)
-				msg.Complete(core.MsgStatusFailed)
-				if rec {
-					reqreconn()
+	for i := 0; i < nthreads.(int); i++ {
+		go func() {
+			for msg := range s.queue {
+				if _, err, rec := s.head.Write(msg.Body()); err != nil {
+					s.ctx.Logger().Error("sink %q failed to send message: %s", s.name, err)
+					msg.Complete(core.MsgStatusFailed)
+					if rec {
+						reqreconn()
+					}
+					continue
 				}
-				continue
+				msg.Complete(core.MsgStatusDone)
 			}
-			msg.Complete(core.MsgStatusDone)
-		}
-	}()
+		}()
+	}
 
 	if err := s.head.Start(); err != nil {
 		return err

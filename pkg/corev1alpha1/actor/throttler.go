@@ -75,6 +75,7 @@ func (t *Throttler) Connect(nthreads int, peer core.Receiver) error {
 		go func() {
 			for msg := range t.queue {
 				if err := peer.Receive(msg); err != nil {
+					msg.Complete(core.MsgStatusFailed)
 					t.ctx.Logger().Error(err.Error())
 				}
 			}

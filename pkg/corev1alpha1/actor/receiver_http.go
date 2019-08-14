@@ -107,6 +107,7 @@ func (r *ReceiverHTTP) Connect(nthreads int, peer core.Receiver) error {
 		go func() {
 			for msg := range r.queue {
 				if err := peer.Receive(msg); err != nil {
+					msg.Complete(core.MsgStatusFailed)
 					r.ctx.Logger().Error(err.Error())
 				}
 			}

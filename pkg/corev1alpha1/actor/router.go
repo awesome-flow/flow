@@ -34,6 +34,9 @@ func (r *Router) Start() error {
 }
 
 func (r *Router) Stop() error {
+	for _, ch := range r.rtmap {
+		close(ch)
+	}
 	r.wg.Wait()
 	return nil
 }
