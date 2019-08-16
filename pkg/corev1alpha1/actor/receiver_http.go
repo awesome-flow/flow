@@ -94,7 +94,7 @@ func (r *ReceiverHTTP) runsrv() {
 func (r *ReceiverHTTP) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
 	defer cancel()
-	defer close(r.queue)
+	close(r.queue)
 	err := r.httpsrv.Shutdown(ctx)
 	r.wg.Wait()
 

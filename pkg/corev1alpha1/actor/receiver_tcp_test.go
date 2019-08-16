@@ -47,8 +47,9 @@ func TestTCPHandleConn(t *testing.T) {
 				newTestAddr("tcp", "127.0.0.1:23456"),
 			)
 			params := core.Params{
-				"bind": "127.0.0.1:12345",
-				"sync": testCase.sync,
+				"bind":     "127.0.0.1:12345",
+				"sync":     testCase.sync,
+				"buf_size": 8 * 1024,
 			}
 			rcv, err := NewReceiverTCP("receiver", ctx, params)
 			if err != nil {

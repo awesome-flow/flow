@@ -17,6 +17,8 @@ const (
 	ConnReadTimeout  = 50 * time.Millisecond
 	ConnWriteTimeout = 50 * time.Millisecond
 	MsgSendTimeout   = 100 * time.Millisecond
+
+	DefaultBufSize = 4 * 1024
 )
 
 var (
@@ -43,6 +45,7 @@ type ReceiverTCP struct {
 	name     string
 	ctx      *core.Context
 	silent   bool
+	bufsize  int
 	addr     *net.TCPAddr
 	listener net.Listener
 	queue    chan *core.Message
@@ -73,13 +76,19 @@ func NewReceiverTCP(name string, ctx *core.Context, params core.Params) (core.Ac
 		}
 	}
 
+	bufsize, ok := params["buf_size"]
+	if !ok {
+		bufsize = DefaultBufSize
+	}
+
 	return &ReceiverTCP{
-		ctx:    ctx,
-		name:   name,
-		addr:   addr,
-		silent: silent,
-		queue:  make(chan *core.Message),
-		done:   make(chan struct{}),
+		ctx:     ctx,
+		name:    name,
+		addr:    addr,
+		silent:  silent,
+		bufsize: bufsize.(int),
+		queue:   make(chan *core.Message),
+		done:    make(chan struct{}),
 	}, nil
 }
 
@@ -189,8 +198,7 @@ func (r *ReceiverTCP) handleConn(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	scanner := bufio.NewScanner(reader)
 	buf := make([]byte, 1024)
-	// TODO: make it configurable
-	scanner.Buffer(buf, 2*1024*1024)
+	scanner.Buffer(buf, r.bufsize)
 	scanner.Split(ScanBin)
 
 	isdone := false
