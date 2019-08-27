@@ -11,11 +11,7 @@ import (
 )
 
 var CoreBuilders map[string]core.Builder = map[string]core.Builder{
-	"core.receiver.http": actor.NewReceiverHTTP,
-	"core.receiver.tcp":  actor.NewReceiverTCP,
-	"core.receiver.udp":  actor.NewReceiverUDP,
-	"core.receiver.unix": actor.NewReceiverUnix,
-
+	"core.receiver":   actor.ReceiverFactory,
 	"core.buffer":     actor.NewBuffer,
 	"core.compressor": actor.NewCompressor,
 	"core.mux":        actor.NewMux,

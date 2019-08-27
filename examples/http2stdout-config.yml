@@ -5,9 +5,9 @@ system:
 
 actors:
   http_rcv:
-    module: core.receiver.http
+    module: core.receiver
     params:
-      bind: :7071
+      bind: http://:7071
   dumper:
     module: core.sink
     params:
